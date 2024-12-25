@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
+import 'package:flutter/foundation.dart';
+import '../models/window_event.dart';
+import 'rule_matching_service.dart';
 
 /// 服务器连接状态
 enum ConnectionStatus { connected, disconnected, connecting, error }
@@ -29,6 +32,10 @@ class ConnectionService {
   final _apiStatusController = StreamController<ConnectionStatus>.broadcast();
   final _wsStatusController = StreamController<ConnectionStatus>.broadcast();
 
+  // 窗口事件流
+  final _windowEventController = StreamController<WindowEvent>.broadcast();
+  Stream<WindowEvent> get windowEvents => _windowEventController.stream;
+
   Stream<ConnectionStatus> get apiStatus => _apiStatusController.stream;
   Stream<ConnectionStatus> get wsStatus => _wsStatusController.stream;
 
@@ -42,13 +49,15 @@ class ConnectionService {
   final _serviceStatusController = StreamController<bool>.broadcast();
   Stream<bool> get serviceStatus => _serviceStatusController.stream;
 
+  final RuleMatchingService _ruleMatchingService = RuleMatchingService();
+
   /// 更新服务器地址
   void updateUrls(String apiUrl, String wsUrl) {
     _apiUrl = apiUrl;
     _wsUrl = wsUrl;
   }
 
-  /// 检查 API 服务器健康状态
+  /// 检查 API 服务器健康状态（用于初始连接）
   Future<bool> checkApiHealth() async {
     try {
       _currentApiStatus = ConnectionStatus.connecting;
@@ -99,6 +108,9 @@ class ConnectionService {
           final data = json.decode(message);
           if (data['type'] == 'ping') {
             _sendPong();
+          } else if (data['type'] == 'WINDOW_STATE_CHANGED') {
+            final event = WindowEvent.fromJson(data);
+            _windowEventController.add(event);
           }
           if (!connected) {
             connected = true;
@@ -160,8 +172,31 @@ class ConnectionService {
   void _startPingTimer() {
     _pingTimer?.cancel();
     _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      checkApiHealth();
+      // 只更新API状态，不触发重连
+      _checkApiHealthStatus();
     });
+  }
+
+  /// 只检查API状态，不触发重连
+  Future<void> _checkApiHealthStatus() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$_apiUrl/health'))
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final isHealthy = data['status'] == 'healthy';
+        _currentApiStatus =
+            isHealthy ? ConnectionStatus.connected : ConnectionStatus.error;
+      } else {
+        _currentApiStatus = ConnectionStatus.error;
+      }
+      _apiStatusController.add(_currentApiStatus);
+    } catch (e) {
+      _currentApiStatus = ConnectionStatus.error;
+      _apiStatusController.add(_currentApiStatus);
+    }
   }
 
   /// 安排重连
@@ -178,23 +213,40 @@ class ConnectionService {
 
   /// 重新连接服务器
   Future<void> reconnect() async {
-    await checkApiHealth();
-    await connectWebSocket();
+    // 只在WebSocket断开时重连WebSocket
+    if (_currentWsStatus != ConnectionStatus.connected) {
+      await connectWebSocket();
+    }
   }
 
   /// 启动连接
   Future<void> start() async {
+    if (kDebugMode) {
+      print('ConnectionService: Starting services');
+    }
     _isServiceRunning = true;
     _serviceStatusController.add(_isServiceRunning);
+
+    // 启动规则匹配服务
+    await _ruleMatchingService.start();
+
+    // 重新连接
     await reconnect();
   }
 
   /// 停止连接
   Future<void> stop() async {
+    if (kDebugMode) {
+      print('ConnectionService: Stopping services');
+    }
     _isServiceRunning = false;
     _serviceStatusController.add(_isServiceRunning);
     _pingTimer?.cancel();
     _reconnectTimer?.cancel();
+
+    // 停止规则匹配服务
+    _ruleMatchingService.stop();
+
     if (_channel != null) {
       await _channel!.sink.close(status.goingAway);
       _channel = null;
@@ -205,10 +257,14 @@ class ConnectionService {
 
   /// 释放资源
   void dispose() {
+    if (kDebugMode) {
+      print('ConnectionService: Disposing');
+    }
     stop();
     _apiStatusController.close();
     _wsStatusController.close();
     _serviceStatusController.close();
+    _windowEventController.close();
   }
 
   /// 检查并连接服务器
