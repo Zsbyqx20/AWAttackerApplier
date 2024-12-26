@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'dart:convert';
 
 enum ConnectionStatus {
   connected,
@@ -17,7 +18,6 @@ class ConnectionProvider extends ChangeNotifier {
   ConnectionStatus _apiStatus = ConnectionStatus.disconnected;
   ConnectionStatus _wsStatus = ConnectionStatus.disconnected;
   WebSocketChannel? _channel;
-  Timer? _pingTimer;
   Timer? _reconnectTimer;
 
   // 状态获取器
@@ -84,46 +84,58 @@ class ConnectionProvider extends ChangeNotifier {
       // 监听 WebSocket 消息
       _channel?.stream.listen(
         (message) {
-          // 处理消息
+          try {
+            final data = jsonDecode(message);
+            if (data['type'] == 'ping') {
+              if (kDebugMode) {
+                print('Received ping from server');
+              }
+              _channel?.sink.add(jsonEncode({'type': 'pong'}));
+            } else {
+              _handleMessage(data);
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error parsing message: $e');
+            }
+          }
         },
         onError: (error) {
+          if (kDebugMode) {
+            print('WebSocket error: $error');
+          }
           _setWsStatus(ConnectionStatus.error);
           _scheduleReconnect();
         },
         onDone: () {
+          if (kDebugMode) {
+            print('WebSocket connection closed');
+          }
           _setWsStatus(ConnectionStatus.disconnected);
           _scheduleReconnect();
         },
       );
-
-      // 启动心跳检测
-      _startPingTimer();
     } catch (e) {
+      if (kDebugMode) {
+        print('WebSocket connection error: $e');
+      }
       _setWsStatus(ConnectionStatus.error);
       rethrow;
     }
   }
 
+  void _handleMessage(dynamic message) {
+    // TODO: 处理其他类型的消息
+    if (kDebugMode) {
+      print('Received message: $message');
+    }
+  }
+
   // 断开 WebSocket 连接
   Future<void> _disconnectWebSocket() async {
-    _stopPingTimer();
     _stopReconnectTimer();
     await _channel?.sink.close();
     _channel = null;
-  }
-
-  // 启动心跳检测
-  void _startPingTimer() {
-    _pingTimer?.cancel();
-    _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _channel?.sink.add('ping');
-    });
-  }
-
-  // 停止心跳检测
-  void _stopPingTimer() {
-    _pingTimer?.cancel();
-    _pingTimer = null;
   }
 
   // 安排重连
@@ -158,7 +170,6 @@ class ConnectionProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _stopPingTimer();
     _stopReconnectTimer();
     _disconnectWebSocket();
     super.dispose();
