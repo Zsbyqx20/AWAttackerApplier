@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../constants/storage_keys.dart';
 import '../pages/rule/rule_list_page.dart';
 import '../providers/connection_provider.dart';
 import '../repositories/storage_repository.dart';
+import '../services/overlay_service.dart';
 import '../widgets/permission_card.dart';
 import '../widgets/server_config_card.dart';
 import '../widgets/server_status_card.dart';
@@ -20,6 +22,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   final TextEditingController _apiController = TextEditingController();
   final TextEditingController _wsController = TextEditingController();
   final StorageRepository _storageRepository;
+  final _channel = const MethodChannel('com.example.awattacker/overlay');
 
   bool _hasOverlayPermission = false;
   bool _isCheckingPermission = false;
@@ -32,24 +35,33 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: 2, vsync: this);
-    _initializeServices();
+    _tabController.addListener(_handleTabChange);
+    WidgetsBinding.instance.addObserver(this);
+    _loadUrls();
+    _checkOverlayPermission();
+    _setupPermissionListener();
   }
 
-  Future<void> _initializeServices() async {
-    await _storageRepository.init();
-    await _loadSavedUrls();
-    await _checkOverlayPermission();
+  void _setupPermissionListener() {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'onPermissionChanged') {
+        final bool hasPermission = call.arguments as bool;
+        if (mounted) {
+          setState(() {
+            _hasOverlayPermission = hasPermission;
+          });
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
     _apiController.dispose();
     _wsController.dispose();
-    _hideNotification();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -60,7 +72,8 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     }
   }
 
-  Future<void> _loadSavedUrls() async {
+  Future<void> _loadUrls() async {
+    await _storageRepository.init();
     final urls = await _storageRepository.loadUrls();
     if (mounted) {
       setState(() {
@@ -85,8 +98,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     });
 
     try {
-      const hasPermission = true;
-
+      final hasPermission = await OverlayService().checkPermission();
       if (mounted) {
         setState(() {
           _hasOverlayPermission = hasPermission;
@@ -110,14 +122,16 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     });
 
     try {
-      const granted = true;
+      final granted = await OverlayService().requestPermission();
       if (mounted) {
+        setState(() {
+          _hasOverlayPermission = granted;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(granted ? '权限已授予' : '权限请求被拒绝'),
           ),
         );
-        await _checkOverlayPermission();
       }
     } catch (e) {
       if (mounted) {
@@ -134,14 +148,13 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     }
   }
 
-  void _onTabTapped(int index) {
-    if (!_hasOverlayPermission && index > 0) {
+  void _handleTabChange() {
+    if (!_hasOverlayPermission && _tabController.index > 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('请先授予悬浮窗权限')),
       );
-      return;
+      _tabController.animateTo(0);
     }
-    _tabController.animateTo(index);
   }
 
   Future<void> _startService() async {
@@ -154,20 +167,12 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     try {
       final provider = context.read<ConnectionProvider>();
       provider.updateUrls(_apiController.text, _wsController.text);
-
-      final success = await provider.checkAndConnect();
-      if (!success) {
-        if (mounted) {
-          _showTopBanner(
-            '无法连接到服务器，请检查服务器地址和状态',
-            isError: true,
-          );
-        }
-        return;
-      }
-
+      await provider.checkAndConnect();
+    } catch (e) {
       if (mounted) {
-        _showTopBanner('服务已启动', isError: false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('启动服务时发生错误: $e')),
+        );
       }
     } finally {
       if (mounted) {
@@ -179,120 +184,46 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   }
 
   Future<void> _stopService() async {
-    await context.read<ConnectionProvider>().stop();
-    if (mounted) {
-      _showTopBanner('服务已停止', isError: false);
-    }
-  }
+    if (_isStartingService) return;
 
-  void _hideNotification() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-  }
-
-  void _showTopBanner(String message, {bool isError = false}) {
-    _hideNotification();
-
-    _overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: MediaQuery.of(context).padding.top,
-        left: 0,
-        right: 0,
-        child: Material(
-          color: Colors.transparent,
-          child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isError
-                    ? const Color.fromRGBO(255, 235, 238, 1) // red 50
-                    : const Color.fromRGBO(232, 245, 233, 1), // green 50
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(26),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isError ? Icons.error : Icons.check_circle,
-                      color: isError
-                          ? const Color.fromRGBO(244, 67, 54, 1) // red 500
-                          : const Color.fromRGBO(76, 175, 80, 1), // green 500
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        message,
-                        style: TextStyle(
-                          color: isError
-                              ? const Color.fromRGBO(183, 28, 28, 1) // red 900
-                              : const Color.fromRGBO(
-                                  27, 94, 32, 1), // green 900
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 20),
-                      onPressed: _hideNotification,
-                      color: isError
-                          ? const Color.fromRGBO(229, 115, 115, 1) // red 300
-                          : const Color.fromRGBO(129, 199, 132, 1), // green 300
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    Overlay.of(context).insert(_overlayEntry!);
-
-    // 3秒后自动关闭
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _hideNotification();
-      }
+    setState(() {
+      _isStartingService = true;
     });
+
+    try {
+      final provider = context.read<ConnectionProvider>();
+      await provider.stop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('停止服务时发生错误: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isStartingService = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final provider = context.watch<ConnectionProvider>();
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text(
-          'AWAttacker',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 1,
+        title: const Text('AW Attacker'),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: theme.colorScheme.primary,
+          indicatorColor: Theme.of(context).colorScheme.primary,
+          labelColor: Theme.of(context).colorScheme.primary,
           unselectedLabelColor: Colors.grey[600],
-          indicatorColor: theme.colorScheme.primary,
           indicatorSize: TabBarIndicatorSize.label,
-          onTap: _onTabTapped,
-          splashFactory: NoSplash.splashFactory,
-          overlayColor: const WidgetStatePropertyAll<Color>(Colors.transparent),
-          labelPadding: EdgeInsets.zero,
           tabs: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -364,27 +295,23 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                           )
                         : Icon(
                             provider.isServiceRunning
-                                ? Icons.stop_circle_outlined
-                                : Icons.play_circle_outline,
+                                ? Icons.stop_outlined
+                                : Icons.play_arrow_outlined,
                             color: _hasOverlayPermission
                                 ? Colors.white
                                 : Colors.grey[400],
                           ),
                     label: Text(
-                      _isStartingService
-                          ? '正在启动...'
-                          : (provider.isServiceRunning ? '停止服务' : '启动服务'),
-                      style: TextStyle(
-                        color: _hasOverlayPermission
-                            ? Colors.white
-                            : Colors.grey[400],
-                      ),
+                      provider.isServiceRunning ? '停止服务' : '启动服务',
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: provider.isServiceRunning
-                          ? const Color.fromRGBO(244, 67, 54, 1) // red 500
-                          : theme.colorScheme.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                          ? Colors.red[400]
+                          : Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey[300],
+                      disabledForegroundColor: Colors.grey[400],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

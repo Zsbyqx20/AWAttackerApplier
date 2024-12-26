@@ -6,6 +6,7 @@ import 'dart:convert';
 import '../models/window_event.dart';
 import '../models/rule.dart';
 import '../models/overlay_style.dart';
+import '../services/overlay_service.dart';
 import 'rule_provider.dart';
 
 enum ConnectionStatus {
@@ -24,13 +25,28 @@ class ConnectionProvider extends ChangeNotifier {
   WebSocketChannel? _channel;
   Timer? _reconnectTimer;
   final RuleProvider _ruleProvider;
+  final OverlayService _overlayService;
 
-  ConnectionProvider(this._ruleProvider);
+  ConnectionProvider(this._ruleProvider) : _overlayService = OverlayService();
 
   // 状态获取器
   bool get isServiceRunning => _isServiceRunning;
   ConnectionStatus get apiStatus => _apiStatus;
   ConnectionStatus get wsStatus => _wsStatus;
+
+  void _setApiStatus(ConnectionStatus status) {
+    if (_apiStatus != status) {
+      _apiStatus = status;
+      notifyListeners();
+    }
+  }
+
+  void _setWsStatus(ConnectionStatus status) {
+    if (_wsStatus != status) {
+      _wsStatus = status;
+      notifyListeners();
+    }
+  }
 
   // 更新服务器地址
   void updateUrls(String apiUrl, String wsUrl) {
@@ -41,6 +57,16 @@ class ConnectionProvider extends ChangeNotifier {
   // 检查并连接服务器
   Future<bool> checkAndConnect() async {
     if (_isServiceRunning) return true;
+
+    // 检查悬浮窗权限
+    if (!await _overlayService.checkPermission()) {
+      debugPrint('🔒 请求悬浮窗权限...');
+      final granted = await _overlayService.requestPermission();
+      if (!granted) {
+        debugPrint('❌ 悬浮窗权限被拒绝');
+        return false;
+      }
+    }
 
     _setApiStatus(ConnectionStatus.connecting);
     _setWsStatus(ConnectionStatus.connecting);
@@ -62,9 +88,7 @@ class ConnectionProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print('Connection error: $e');
-      }
+      debugPrint('🌐 连接错误: $e');
       _setApiStatus(ConnectionStatus.error);
       _setWsStatus(ConnectionStatus.error);
       return false;
@@ -75,6 +99,7 @@ class ConnectionProvider extends ChangeNotifier {
   Future<void> stop() async {
     _isServiceRunning = false;
     await _disconnectWebSocket();
+    await _overlayService.removeAllOverlays();
     _setApiStatus(ConnectionStatus.disconnected);
     _setWsStatus(ConnectionStatus.disconnected);
     notifyListeners();
@@ -94,116 +119,95 @@ class ConnectionProvider extends ChangeNotifier {
           try {
             final data = jsonDecode(message);
             if (data['type'] == 'ping') {
-              if (kDebugMode) {
-                print('Received ping from server');
-              }
+              debugPrint('💓 收到服务器ping');
               _channel?.sink.add(jsonEncode({'type': 'pong'}));
             } else {
               _handleMessage(data);
             }
           } catch (e) {
-            if (kDebugMode) {
-              print('Error parsing message: $e');
-            }
+            debugPrint('❌ 解析消息时发生错误: $e');
           }
         },
         onError: (error) {
-          if (kDebugMode) {
-            print('WebSocket error: $error');
-          }
+          debugPrint('⚠️ WebSocket错误: $error');
           _setWsStatus(ConnectionStatus.error);
           _scheduleReconnect();
         },
         onDone: () {
-          if (kDebugMode) {
-            print('WebSocket connection closed');
-          }
+          debugPrint('🔌 WebSocket连接已关闭');
           _setWsStatus(ConnectionStatus.disconnected);
           _scheduleReconnect();
         },
       );
     } catch (e) {
-      if (kDebugMode) {
-        print('WebSocket connection error: $e');
-      }
+      debugPrint('⚠️ WebSocket连接错误: $e');
       _setWsStatus(ConnectionStatus.error);
       rethrow;
     }
   }
 
+  Future<void> _disconnectWebSocket() async {
+    _reconnectTimer?.cancel();
+    await _channel?.sink.close();
+    _channel = null;
+  }
+
+  void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+      if (_isServiceRunning && _wsStatus != ConnectionStatus.connected) {
+        _connectWebSocket();
+      }
+    });
+  }
+
   void _handleMessage(dynamic message) {
     try {
-      // 1. 检查消息类型
       final String type = message['type'] as String;
-
-      // 2. 处理不同类型的消息
       switch (type) {
         case 'WINDOW_STATE_CHANGED':
           _handleWindowStateChanged(message);
           break;
         default:
-          if (kDebugMode) {
-            print('Ignored message type: $type');
-          }
+          debugPrint('❓ 忽略未知消息类型: $type');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Error handling message: $e');
-      }
+      debugPrint('⚠️ 处理消息时发生错误: $e');
     }
   }
 
-  void _handleWindowStateChanged(dynamic message) {
+  void _handleWindowStateChanged(dynamic message) async {
     try {
-      // 1. 解析消息为WindowEvent对象
       final windowEvent = WindowEvent.fromJson(message);
-      if (kDebugMode) {
-        print(
-            'Received window event: ${windowEvent.packageName}/${windowEvent.activityName}');
-      }
+      debugPrint(
+          '🪟 收到窗口事件: ${windowEvent.packageName}/${windowEvent.activityName}');
 
-      // 2. 获取当前规则列表
-      final rules = _ruleProvider.rules;
-      if (rules.isEmpty) {
-        if (kDebugMode) {
-          print('No rules defined');
-        }
+      // 获取匹配的规则
+      final matchedRules = _ruleProvider.rules.where((rule) {
+        return rule.packageName == windowEvent.packageName &&
+            rule.activityName == windowEvent.activityName &&
+            rule.isEnabled;
+      }).toList();
+
+      if (matchedRules.isEmpty) {
+        debugPrint('❌ 没有找到匹配的规则，清理现有悬浮窗');
+        await _overlayService.removeAllOverlays();
         return;
       }
 
-      // 3. 匹配规则
-      final matchedRules = rules.where((rule) {
-        final packageMatches = rule.packageName == windowEvent.packageName;
-        final activityMatches = rule.activityName == windowEvent.activityName;
-        return packageMatches && activityMatches && rule.isEnabled;
-      }).toList();
-
-      // 4. 打印匹配结果
-      if (matchedRules.isNotEmpty) {
-        if (kDebugMode) {
-          print('Found ${matchedRules.length} matching rules:');
-          for (final rule in matchedRules) {
-            print(
-                '- ${rule.name} (${rule.overlayStyles.length} overlay styles)');
-          }
-        }
-        // 5. 发送批量查询请求
-        _sendBatchQuickSearch(matchedRules);
-      } else {
-        if (kDebugMode) {
-          print('No matching rules found');
-        }
-      }
+      debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则');
+      await _sendBatchQuickSearch(matchedRules);
     } catch (e) {
-      if (kDebugMode) {
-        print('Error handling window state changed: $e');
-      }
+      debugPrint('🪟 处理窗口状态变化时发生错误: $e');
+      // 发生错误时也清理悬浮窗
+      await _overlayService.removeAllOverlays();
     }
   }
 
-  // 发送批量UI Automator查询请求
   Future<void> _sendBatchQuickSearch(List<Rule> matchedRules) async {
     try {
+      debugPrint('📤 准备发送批量查询请求...');
+
       // 收集所有规则中的UI Automator代码和对应的样式
       final List<String> uiAutomatorCodes = [];
       final List<OverlayStyle> styles = [];
@@ -217,131 +221,79 @@ class ConnectionProvider extends ChangeNotifier {
       }
 
       if (uiAutomatorCodes.isEmpty) {
-        if (kDebugMode) {
-          print('No UI Automator codes to search');
-        }
+        debugPrint('❌ 没有找到需要查询的UI Automator代码');
         return;
-      }
-
-      // 构建请求体
-      final requestBody = {
-        'uiautomator_codes': uiAutomatorCodes,
-      };
-
-      // 发送HTTP POST请求
-      if (kDebugMode) {
-        print(
-            'Sending batch quick search request: ${uiAutomatorCodes.length} codes');
       }
 
       final response = await http.post(
         Uri.parse('$_apiUrl/batch/quick_search/uiautomator'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
+        body: jsonEncode({'uiautomator_codes': uiAutomatorCodes}),
       );
 
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        _handleBatchSearchResponse(responseData, styles);
-      } else {
-        if (kDebugMode) {
-          print('Error: HTTP ${response.statusCode}');
-          print('Response: ${response.body}');
-        }
+      debugPrint('📥 收到响应: ${response.statusCode}');
+
+      if (response.statusCode != 200) {
+        debugPrint('❌ 请求失败: ${response.statusCode}');
+        return;
       }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error sending batch quick search request: $e');
+
+      final data = jsonDecode(response.body);
+      if (data['success'] != true) {
+        debugPrint('❌ 响应表明失败: ${data['message']}');
+        return;
       }
-    }
-  }
 
-  void _handleBatchSearchResponse(
-      Map<String, dynamic> responseData, List<OverlayStyle> styles) {
-    try {
-      final bool success = responseData['success'] as bool;
-      final String message = responseData['message'] as String;
-      final List<dynamic> results = responseData['results'] as List<dynamic>;
+      final results = data['results'] as List;
+      debugPrint('🎯 处理查询结果...');
 
-      if (kDebugMode) {
-        print('\nBatch quick search response:');
-        print('Success: $success');
-        print('Message: $message');
-        print('Results:');
-        for (var i = 0; i < results.length; i++) {
-          final result = results[i];
-          final style = styles[i];
-          print('\nElement ${i + 1}:');
-          print('- Success: ${result['success']}');
-          print('- Message: ${result['message']}');
-          if (result['success']) {
-            final coordinates = result['coordinates'];
-            final size = result['size'];
-            // 计算最终位置和大小
-            final finalX = (coordinates['x'] as int) + style.x;
-            final finalY = (coordinates['y'] as int) + style.y;
-            final finalWidth = (size['width'] as int) + style.width;
-            final finalHeight = (size['height'] as int) + style.height;
+      // 移除旧的悬浮窗
+      await _overlayService.removeAllOverlays();
 
-            print(
-                '- Original Position: (${coordinates['x']}, ${coordinates['y']})');
-            print('- Original Size: ${size['width']}x${size['height']}');
-            print('- Offset: (${style.x}, ${style.y})');
-            print('- Size Adjustment: ${style.width}x${style.height}');
-            print('- Final Position: ($finalX, $finalY)');
-            print('- Final Size: $finalWidth x $finalHeight');
-            print('- Visible: ${result['visible']}');
+      // 创建新的悬浮窗
+      for (var i = 0; i < results.length; i++) {
+        final result = results[i];
+        final style = styles[i];
+
+        debugPrint('🎯 元素 ${i + 1}');
+        if (result['success'] == true && result['visible'] == true) {
+          final coordinates = result['coordinates'];
+          final size = result['size'];
+
+          // 计算最终位置和大小
+          final finalX = (coordinates['x'] as int) + style.x;
+          final finalY = (coordinates['y'] as int) + style.y;
+          final finalWidth = (size['width'] as int) + style.width;
+          final finalHeight = (size['height'] as int) + style.height;
+
+          debugPrint('- 原始位置: (${coordinates['x']}, ${coordinates['y']})');
+          debugPrint('- 原始大小: ${size['width']}x${size['height']}');
+          debugPrint('- 偏移量: (${style.x}, ${style.y})');
+          debugPrint('- 大小调整: ${style.width}x${style.height}');
+          debugPrint('- 最终位置: ($finalX, $finalY)');
+          debugPrint('- 最终大小: $finalWidth x $finalHeight');
+          final finalStyle = style.copyWith(
+            x: finalX,
+            y: finalY,
+            width: finalWidth,
+            height: finalHeight,
+          );
+
+          debugPrint('🎯 创建悬浮窗...');
+          final overlayResult = await _overlayService.createOverlay(
+            'overlay_$i',
+            finalStyle,
+          );
+
+          if (overlayResult.success) {
+            debugPrint('✅ 悬浮窗创建成功');
+          } else {
+            debugPrint('❌ 悬浮窗创建失败: ${overlayResult.error}');
           }
         }
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Error handling batch search response: $e');
-      }
+      debugPrint('⚠️ 处理批量查询时发生错误: $e');
     }
-  }
-
-  // 断开 WebSocket 连接
-  Future<void> _disconnectWebSocket() async {
-    _stopReconnectTimer();
-    await _channel?.sink.close();
-    _channel = null;
-  }
-
-  // 安排重连
-  void _scheduleReconnect() {
-    if (!_isServiceRunning) return;
-
-    _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 5), () {
-      if (_isServiceRunning) {
-        _connectWebSocket();
-      }
-    });
-  }
-
-  // 停止重连定时器
-  void _stopReconnectTimer() {
-    _reconnectTimer?.cancel();
-    _reconnectTimer = null;
-  }
-
-  // 更新 API 状态
-  void _setApiStatus(ConnectionStatus status) {
-    _apiStatus = status;
-    notifyListeners();
-  }
-
-  // 更新 WebSocket 状态
-  void _setWsStatus(ConnectionStatus status) {
-    _wsStatus = status;
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _stopReconnectTimer();
-    _disconnectWebSocket();
-    super.dispose();
   }
 }

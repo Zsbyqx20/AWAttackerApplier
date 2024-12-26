@@ -132,6 +132,7 @@ class _RuleEditPageState extends State<RuleEditPage>
   }
 
   void _updateBackgroundColor(Color color) {
+    debugPrint('Updating background color: ${color.toString()}');
     setState(() {
       _overlayStyles[_currentTabIndex] =
           _currentStyle.copyWith(backgroundColor: color);
@@ -139,6 +140,7 @@ class _RuleEditPageState extends State<RuleEditPage>
   }
 
   void _updateTextColor(Color color) {
+    debugPrint('Updating text color: ${color.toString()}');
     setState(() {
       _overlayStyles[_currentTabIndex] =
           _currentStyle.copyWith(textColor: color);

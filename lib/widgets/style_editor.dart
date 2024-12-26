@@ -96,7 +96,10 @@ class StyleEditor extends StatelessWidget {
                 ColorPickerField(
                   label: '',
                   color: style.backgroundColor,
-                  onColorChanged: onBackgroundColorChanged,
+                  onColorChanged: (color) {
+                    debugPrint('Background color changed: ${color.toString()}');
+                    onBackgroundColorChanged(color);
+                  },
                 ),
               ),
             ),
@@ -107,7 +110,10 @@ class StyleEditor extends StatelessWidget {
                 ColorPickerField(
                   label: '',
                   color: style.textColor,
-                  onColorChanged: onTextColorChanged,
+                  onColorChanged: (color) {
+                    debugPrint('Text color changed: ${color.toString()}');
+                    onTextColorChanged(color);
+                  },
                 ),
               ),
             ),

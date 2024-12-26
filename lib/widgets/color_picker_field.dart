@@ -49,6 +49,7 @@ class ColorPickerField extends StatelessWidget {
     final String currentHex = '${color.red.toRadixString(16).padLeft(2, '0')}'
         '${color.green.toRadixString(16).padLeft(2, '0')}'
         '${color.blue.toRadixString(16).padLeft(2, '0')}';
+    debugPrint('Current color: ${color.toString()} (hex: #$currentHex)');
     final TextEditingController hexController =
         TextEditingController(text: currentHex);
     Color previewColor = color;
@@ -111,6 +112,8 @@ class ColorPickerField extends StatelessWidget {
                   if (value.length == 6) {
                     try {
                       final newColor = Color(int.parse('FF$value', radix: 16));
+                      debugPrint(
+                          'New color from hex: ${newColor.toString()} (hex: #$value)');
                       setState(() {
                         previewColor = newColor;
                       });
@@ -169,6 +172,7 @@ class ColorPickerField extends StatelessWidget {
 
     if (newHex != null) {
       final newColor = Color(int.parse('FF$newHex', radix: 16));
+      debugPrint('Selected color: ${newColor.toString()} (hex: #$newHex)');
       onColorChanged(newColor);
     }
   }
