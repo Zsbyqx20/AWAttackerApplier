@@ -1,18 +1,20 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/rule.dart';
 import '../models/window_event.dart';
 import 'connection_service.dart';
+import 'storage_service.dart';
 
 class RuleMatchingService {
   // 单例实现
   static final RuleMatchingService _instance = RuleMatchingService._internal();
   factory RuleMatchingService() => _instance;
-  RuleMatchingService._internal();
+  RuleMatchingService._internal() {
+    _initializeService();
+  }
 
-  final ConnectionService _connectionService = ConnectionService();
+  late final ConnectionService _connectionService;
+  final StorageService _storageService = StorageService();
   StreamSubscription? _windowEventSubscription;
   StreamSubscription? _serviceStatusSubscription;
 
@@ -25,22 +27,12 @@ class RuleMatchingService {
   Stream<List<Rule>> get rulesStream => _rulesController.stream;
   List<Rule> get rules => List.unmodifiable(_rules);
 
-  // 存储键
-  static const String _rulesStorageKey = 'rules';
+  void _initializeService() {
+    _connectionService = ConnectionService();
+    _setupConnectionListeners();
+  }
 
-  /// 启动服务
-  Future<void> start() async {
-    if (_isInitialized) return;
-    _isInitialized = true;
-
-    if (kDebugMode) {
-      print('RuleMatchingService: Starting service');
-    }
-
-    // 加载规则
-    await _loadRules();
-
-    // 监听连接服务状态
+  void _setupConnectionListeners() {
     _serviceStatusSubscription =
         _connectionService.serviceStatus.listen((running) {
       if (running) {
@@ -55,6 +47,19 @@ class RuleMatchingService {
         _stopWindowEventListener();
       }
     });
+  }
+
+  /// 启动服务
+  Future<void> start() async {
+    if (_isInitialized) return;
+    _isInitialized = true;
+
+    if (kDebugMode) {
+      print('RuleMatchingService: Starting service');
+    }
+
+    // 加载规则
+    await _loadRules();
 
     // 如果连接服务已经在运行，立即启动监听
     if (_connectionService.isServiceRunning) {
@@ -62,32 +67,18 @@ class RuleMatchingService {
     }
   }
 
-  /// 从本地存储加载规则
+  /// 从存储服务加载规则
   Future<void> _loadRules() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final rulesJson = prefs.getString(_rulesStorageKey);
+      final loadedRules = await _storageService.loadRules();
+      _rules.clear();
+      _rules.addAll(loadedRules);
+      _rulesController.add(_rules);
 
-      if (rulesJson != null) {
-        final List<dynamic> rulesList = json.decode(rulesJson);
-        final loadedRules = rulesList
-            .map((ruleJson) => Rule.fromJson(ruleJson as Map<String, dynamic>))
-            .toList();
-
-        _rules.clear();
-        _rules.addAll(loadedRules);
-        _rulesController.add(_rules);
-
-        if (kDebugMode) {
-          print(
-              'RuleMatchingService: Loaded ${_rules.length} rules from storage');
-          for (final rule in _rules) {
-            print('  - Rule: ${rule.name} (enabled: ${rule.isEnabled})');
-          }
-        }
-      } else {
-        if (kDebugMode) {
-          print('RuleMatchingService: No rules found in storage');
+      if (kDebugMode) {
+        print('RuleMatchingService: Loaded ${_rules.length} rules');
+        for (final rule in _rules) {
+          print('  - Rule: ${rule.name} (enabled: ${rule.isEnabled})');
         }
       }
     } catch (e) {
@@ -97,16 +88,12 @@ class RuleMatchingService {
     }
   }
 
-  /// 保存规则到本地存储
+  /// 保存规则到存储服务
   Future<void> _saveRules() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final rulesJson =
-          json.encode(_rules.map((rule) => rule.toJson()).toList());
-      await prefs.setString(_rulesStorageKey, rulesJson);
-
+      await _storageService.saveRules(_rules);
       if (kDebugMode) {
-        print('RuleMatchingService: Saved ${_rules.length} rules to storage');
+        print('RuleMatchingService: Saved ${_rules.length} rules');
       }
     } catch (e) {
       if (kDebugMode) {

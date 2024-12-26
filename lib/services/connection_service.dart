@@ -5,7 +5,6 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import 'package:flutter/foundation.dart';
 import '../models/window_event.dart';
-import 'rule_matching_service.dart';
 
 /// 服务器连接状态
 enum ConnectionStatus { connected, disconnected, connecting, error }
@@ -48,8 +47,6 @@ class ConnectionService {
 
   final _serviceStatusController = StreamController<bool>.broadcast();
   Stream<bool> get serviceStatus => _serviceStatusController.stream;
-
-  final RuleMatchingService _ruleMatchingService = RuleMatchingService();
 
   /// 更新服务器地址
   void updateUrls(String apiUrl, String wsUrl) {
@@ -227,9 +224,6 @@ class ConnectionService {
     _isServiceRunning = true;
     _serviceStatusController.add(_isServiceRunning);
 
-    // 启动规则匹配服务
-    await _ruleMatchingService.start();
-
     // 重新连接
     await reconnect();
   }
@@ -243,9 +237,6 @@ class ConnectionService {
     _serviceStatusController.add(_isServiceRunning);
     _pingTimer?.cancel();
     _reconnectTimer?.cancel();
-
-    // 停止规则匹配服务
-    _ruleMatchingService.stop();
 
     if (_channel != null) {
       await _channel!.sink.close(status.goingAway);

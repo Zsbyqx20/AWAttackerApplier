@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:study_flutter/constants/storage_keys.dart';
-import 'package:study_flutter/pages/rule_list_page.dart';
-import 'package:study_flutter/services/permission_service.dart';
-import 'package:study_flutter/services/storage_service.dart';
-import 'package:study_flutter/widgets/permission_card.dart';
-import 'package:study_flutter/widgets/server_config_card.dart';
-import 'package:study_flutter/widgets/server_status_card.dart';
-import 'package:study_flutter/services/connection_service.dart';
+import '../constants/storage_keys.dart';
+import '../pages/rule_list_page.dart';
+import '../services/permission_service.dart';
+import '../services/storage_service.dart';
+import '../widgets/permission_card.dart';
+import '../widgets/server_config_card.dart';
+import '../widgets/server_status_card.dart';
+import '../services/connection_service.dart';
+import '../services/rule_matching_service.dart';
 
 class ServerConfigPage extends StatefulWidget {
   const ServerConfigPage({super.key});
@@ -19,6 +20,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   final TextEditingController _apiController = TextEditingController();
   final TextEditingController _wsController = TextEditingController();
+  final StorageService _storageService = StorageService();
 
   bool _hasOverlayPermission = false;
   bool _isCheckingPermission = false;
@@ -33,9 +35,18 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: 2, vsync: this);
-    _loadSavedUrls();
-    _checkOverlayPermission();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    await _storageService.init();
+    await _loadSavedUrls();
+    await _checkOverlayPermission();
     _listenToServiceStatus();
+
+    // 启动规则匹配服务
+    final ruleMatchingService = RuleMatchingService();
+    await ruleMatchingService.start();
   }
 
   @override
@@ -70,15 +81,17 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   }
 
   Future<void> _loadSavedUrls() async {
-    final urls = await StorageService.loadUrls();
-    setState(() {
-      _apiController.text = urls[StorageKeys.apiUrlKey]!;
-      _wsController.text = urls[StorageKeys.wsUrlKey]!;
-    });
+    final urls = await _storageService.loadUrls();
+    if (mounted) {
+      setState(() {
+        _apiController.text = urls[StorageKeys.apiUrlKey]!;
+        _wsController.text = urls[StorageKeys.wsUrlKey]!;
+      });
+    }
   }
 
   Future<void> _saveUrls() async {
-    await StorageService.saveUrls(
+    await _storageService.saveUrls(
       apiUrl: _apiController.text,
       wsUrl: _wsController.text,
     );
@@ -228,7 +241,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withAlpha(26),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -300,7 +313,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
           indicatorSize: TabBarIndicatorSize.label,
           onTap: _onTabTapped,
           splashFactory: NoSplash.splashFactory,
-          overlayColor: MaterialStateProperty.all(Colors.transparent),
+          overlayColor: const WidgetStatePropertyAll<Color>(Colors.transparent),
           labelPadding: EdgeInsets.zero,
           tabs: [
             Container(

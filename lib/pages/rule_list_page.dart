@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:study_flutter/models/rule.dart';
-import 'package:study_flutter/pages/rule_edit_page.dart';
-import 'package:study_flutter/storage/rule_storage.dart';
+import '../models/rule.dart';
+import '../pages/rule_edit_page.dart';
+import '../services/storage_service.dart';
 
 class RuleListPage extends StatefulWidget {
   const RuleListPage({super.key});
@@ -12,6 +12,7 @@ class RuleListPage extends StatefulWidget {
 
 class _RuleListPageState extends State<RuleListPage> {
   final List<Rule> _rules = [];
+  final StorageService _storageService = StorageService();
 
   @override
   void initState() {
@@ -20,7 +21,7 @@ class _RuleListPageState extends State<RuleListPage> {
   }
 
   Future<void> _loadRules() async {
-    final rules = await RuleStorage.loadRules();
+    final rules = await _storageService.loadRules();
     setState(() {
       _rules.clear();
       _rules.addAll(rules);
@@ -28,7 +29,7 @@ class _RuleListPageState extends State<RuleListPage> {
   }
 
   Future<void> _saveRules() async {
-    await RuleStorage.saveRules(_rules);
+    await _storageService.saveRules(_rules);
   }
 
   void _editRule(BuildContext context, Rule rule) async {
