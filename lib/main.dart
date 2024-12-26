@@ -5,6 +5,7 @@ import 'providers/rule_provider.dart';
 import 'providers/connection_provider.dart';
 import 'repositories/rule_repository.dart';
 import 'pages/server_config_page.dart';
+import 'services/background_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +14,9 @@ void main() async {
   final ruleProvider = RuleProvider(ruleRepository);
   final connectionProvider = ConnectionProvider();
   await ruleProvider.loadRules();
+
+  // 初始化后台服务
+  await BackgroundService.initializeService();
 
   runApp(
     MultiProvider(

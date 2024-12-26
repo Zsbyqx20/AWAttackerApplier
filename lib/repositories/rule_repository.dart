@@ -10,16 +10,31 @@ class RuleRepository {
   RuleRepository(this._prefs);
 
   Future<List<Rule>> loadRules() async {
-    final String? rulesJson = _prefs.getString(_storageKey);
-    if (rulesJson == null) return [];
-
     try {
+      final String? rulesJson = _prefs.getString(_storageKey);
+      if (rulesJson == null) return [];
+
       final List<dynamic> decoded = jsonDecode(rulesJson);
-      return decoded.map((json) => Rule.fromJson(json)).toList();
+      if (decoded.isEmpty) return [];
+
+      // 验证解码后的数据是否为有效的规则列表
+      if (decoded.any((item) => item is! Map<String, dynamic>)) {
+        if (kDebugMode) {
+          debugPrint('Invalid rule data format, clearing storage');
+        }
+        await _prefs.remove(_storageKey);
+        return [];
+      }
+
+      return decoded
+          .map((json) => Rule.fromJson(json as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error loading rules: $e');
       }
+      // 清除无效的数据
+      await _prefs.remove(_storageKey);
       return [];
     }
   }
