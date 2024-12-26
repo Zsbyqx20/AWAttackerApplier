@@ -397,14 +397,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                         const SizedBox(height: 16),
                         _buildColorInput(
                           color: _currentStyle.backgroundColor,
-                          onColorChanged: (color) {
-                            setState(() {
-                              _currentStyle = _currentStyle.copyWith(
-                                backgroundColor: color,
-                              );
-                              _overlayStyles[_currentTabIndex] = _currentStyle;
-                            });
-                          },
+                          onColorChanged: _updateBackgroundColor,
                           hintText: '背景颜色',
                         ),
                         const SizedBox(height: 24),
@@ -474,15 +467,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                             Expanded(
                               child: _buildColorInput(
                                 color: _currentStyle.textColor,
-                                onColorChanged: (color) {
-                                  setState(() {
-                                    _currentStyle = _currentStyle.copyWith(
-                                      textColor: color,
-                                    );
-                                    _overlayStyles[_currentTabIndex] =
-                                        _currentStyle;
-                                  });
-                                },
+                                onColorChanged: _updateTextColor,
                                 hintText: '文字颜色',
                               ),
                             ),
@@ -726,6 +711,11 @@ class _RuleEditPageState extends State<RuleEditPage>
     required Function(Color) onColorChanged,
     required String hintText,
   }) {
+    // 构建六位十六进制颜色字符串（不包含透明度）
+    String colorHex = color.r.toInt().toRadixString(16).padLeft(2, '0') +
+        color.g.toInt().toRadixString(16).padLeft(2, '0') +
+        color.b.toInt().toRadixString(16).padLeft(2, '0');
+
     return Row(
       children: [
         Container(
@@ -740,8 +730,7 @@ class _RuleEditPageState extends State<RuleEditPage>
         ),
         Expanded(
           child: TextFormField(
-            initialValue:
-                color.value.toRadixString(16).toUpperCase().substring(2),
+            initialValue: colorHex.toUpperCase(),
             onChanged: (value) {
               if (value.length == 6) {
                 try {
@@ -897,6 +886,30 @@ class _RuleEditPageState extends State<RuleEditPage>
         ),
       );
       _overlayStyles[_currentTabIndex] = _currentStyle;
+    });
+  }
+
+  void _updateBackgroundColor(Color color) {
+    setState(() {
+      _currentStyle = _currentStyle.copyWith(
+          backgroundColor: Color.fromARGB(
+        color.a.toInt(),
+        color.r.toInt(),
+        color.g.toInt(),
+        color.b.toInt(),
+      ));
+    });
+  }
+
+  void _updateTextColor(Color color) {
+    setState(() {
+      _currentStyle = _currentStyle.copyWith(
+          textColor: Color.fromARGB(
+        color.a.toInt(),
+        color.r.toInt(),
+        color.g.toInt(),
+        color.b.toInt(),
+      ));
     });
   }
 }

@@ -119,28 +119,31 @@ class _RuleListPageState extends State<RuleListPage> {
                         icon: const Icon(Icons.add),
                         label: const Text('添加规则'),
                         style: ButtonStyle(
-                          backgroundColor: MaterialStateProperty.all(
+                          backgroundColor: WidgetStatePropertyAll<Color>(
                             Theme.of(context).colorScheme.primary,
                           ),
                           foregroundColor:
-                              MaterialStateProperty.all(Colors.white),
-                          elevation: MaterialStateProperty.all(0),
-                          padding: MaterialStateProperty.all(
-                            const EdgeInsets.symmetric(vertical: 12),
+                              const WidgetStatePropertyAll<Color>(Colors.white),
+                          elevation: const WidgetStatePropertyAll<double>(0),
+                          padding:
+                              const WidgetStatePropertyAll<EdgeInsetsGeometry>(
+                            EdgeInsets.symmetric(vertical: 12),
                           ),
-                          shape: MaterialStateProperty.all(
+                          shape: const WidgetStatePropertyAll<OutlinedBorder>(
                             RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(8)),
                             ),
                           ),
-                          overlayColor:
-                              MaterialStateProperty.resolveWith<Color?>(
-                            (Set<MaterialState> states) {
-                              if (states.contains(MaterialState.pressed)) {
-                                return Colors.white.withOpacity(0.2);
+                          overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                            (Set<WidgetState> states) {
+                              if (states.contains(WidgetState.pressed)) {
+                                return Colors.white
+                                    .withAlpha(51); // 0.2 * 255 ≈ 51
                               }
-                              if (states.contains(MaterialState.hovered)) {
-                                return Colors.white.withOpacity(0.1);
+                              if (states.contains(WidgetState.hovered)) {
+                                return Colors.white
+                                    .withAlpha(26); // 0.1 * 255 ≈ 26
                               }
                               return null;
                             },

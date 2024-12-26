@@ -62,10 +62,20 @@ class OverlayStyle {
         'y': y,
         'width': width,
         'height': height,
-        'backgroundColor': backgroundColor.value,
+        'backgroundColor': {
+          'r': backgroundColor.r,
+          'g': backgroundColor.g,
+          'b': backgroundColor.b,
+          'a': backgroundColor.a,
+        },
         'text': text,
         'fontSize': fontSize,
-        'textColor': textColor.value,
+        'textColor': {
+          'r': textColor.r,
+          'g': textColor.g,
+          'b': textColor.b,
+          'a': textColor.a,
+        },
         'padding': {
           'top': padding.top,
           'right': padding.right,
@@ -84,10 +94,24 @@ class OverlayStyle {
         y: json['y'] as double,
         width: json['width'] as double,
         height: json['height'] as double,
-        backgroundColor: Color(json['backgroundColor'] as int),
+        backgroundColor: json['backgroundColor'] is Map
+            ? Color.fromARGB(
+                json['backgroundColor']['a'] as int,
+                json['backgroundColor']['r'] as int,
+                json['backgroundColor']['g'] as int,
+                json['backgroundColor']['b'] as int,
+              )
+            : Color(json['backgroundColor'] as int),
         text: json['text'] as String,
         fontSize: json['fontSize'] as double,
-        textColor: Color(json['textColor'] as int),
+        textColor: json['textColor'] is Map
+            ? Color.fromARGB(
+                json['textColor']['a'] as int,
+                json['textColor']['r'] as int,
+                json['textColor']['g'] as int,
+                json['textColor']['b'] as int,
+              )
+            : Color(json['textColor'] as int),
         padding: json['padding'] != null
             ? EdgeInsets.fromLTRB(
                 json['padding']['left'] as double,
