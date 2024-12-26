@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:convert';
+import '../models/window_event.dart';
+import '../models/rule.dart';
+import 'rule_provider.dart';
 
 enum ConnectionStatus {
   connected,
@@ -19,6 +22,9 @@ class ConnectionProvider extends ChangeNotifier {
   ConnectionStatus _wsStatus = ConnectionStatus.disconnected;
   WebSocketChannel? _channel;
   Timer? _reconnectTimer;
+  final RuleProvider _ruleProvider;
+
+  ConnectionProvider(this._ruleProvider);
 
   // 状态获取器
   bool get isServiceRunning => _isServiceRunning;
@@ -125,9 +131,157 @@ class ConnectionProvider extends ChangeNotifier {
   }
 
   void _handleMessage(dynamic message) {
-    // TODO: 处理其他类型的消息
-    if (kDebugMode) {
-      print('Received message: $message');
+    try {
+      // 1. 检查消息类型
+      final String type = message['type'] as String;
+
+      // 2. 处理不同类型的消息
+      switch (type) {
+        case 'WINDOW_STATE_CHANGED':
+          _handleWindowStateChanged(message);
+          break;
+        default:
+          if (kDebugMode) {
+            print('Ignored message type: $type');
+          }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error handling message: $e');
+      }
+    }
+  }
+
+  void _handleWindowStateChanged(dynamic message) {
+    try {
+      // 1. 解析消息为WindowEvent对象
+      final windowEvent = WindowEvent.fromJson(message);
+      if (kDebugMode) {
+        print(
+            'Received window event: ${windowEvent.packageName}/${windowEvent.activityName}');
+      }
+
+      // 2. 获取当前规则列表
+      final rules = _ruleProvider.rules;
+      if (rules.isEmpty) {
+        if (kDebugMode) {
+          print('No rules defined');
+        }
+        return;
+      }
+
+      // 3. 匹配规则
+      final matchedRules = rules.where((rule) {
+        final packageMatches = rule.packageName == windowEvent.packageName;
+        final activityMatches = rule.activityName == windowEvent.activityName;
+        return packageMatches && activityMatches && rule.isEnabled;
+      }).toList();
+
+      // 4. 打印匹配结果
+      if (matchedRules.isNotEmpty) {
+        if (kDebugMode) {
+          print('Found ${matchedRules.length} matching rules:');
+          for (final rule in matchedRules) {
+            print(
+                '- ${rule.name} (${rule.overlayStyles.length} overlay styles)');
+          }
+        }
+        // 5. 发送批量查询请求
+        _sendBatchQuickSearch(matchedRules);
+      } else {
+        if (kDebugMode) {
+          print('No matching rules found');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error handling window state changed: $e');
+      }
+    }
+  }
+
+  // 发送批量UI Automator查询请求
+  Future<void> _sendBatchQuickSearch(List<Rule> matchedRules) async {
+    try {
+      // 收集所有规则中的UI Automator代码
+      final List<String> uiAutomatorCodes = [];
+      for (final rule in matchedRules) {
+        for (final style in rule.overlayStyles) {
+          if (style.uiAutomatorCode.isNotEmpty) {
+            uiAutomatorCodes.add(style.uiAutomatorCode);
+          }
+        }
+      }
+
+      if (uiAutomatorCodes.isEmpty) {
+        if (kDebugMode) {
+          print('No UI Automator codes to search');
+        }
+        return;
+      }
+
+      // 构建请求体
+      final requestBody = {
+        'uiautomator_codes': uiAutomatorCodes,
+      };
+
+      // 发送HTTP POST请求
+      if (kDebugMode) {
+        print(
+            'Sending batch quick search request: ${uiAutomatorCodes.length} codes');
+      }
+
+      final response = await http.post(
+        Uri.parse('$_apiUrl/batch/quick_search/uiautomator'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        _handleBatchSearchResponse(responseData);
+      } else {
+        if (kDebugMode) {
+          print('Error: HTTP ${response.statusCode}');
+          print('Response: ${response.body}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error sending batch quick search request: $e');
+      }
+    }
+  }
+
+  void _handleBatchSearchResponse(Map<String, dynamic> responseData) {
+    try {
+      final bool success = responseData['success'] as bool;
+      final String message = responseData['message'] as String;
+      final List<dynamic> results = responseData['results'] as List<dynamic>;
+
+      if (kDebugMode) {
+        print('\nBatch quick search response:');
+        print('Success: $success');
+        print('Message: $message');
+        print('Results:');
+        for (var i = 0; i < results.length; i++) {
+          final result = results[i];
+          print('\nElement ${i + 1}:');
+          print('- Success: ${result['success']}');
+          print('- Message: ${result['message']}');
+          if (result['success']) {
+            final coordinates = result['coordinates'];
+            final size = result['size'];
+            print('- Position: (${coordinates['x']}, ${coordinates['y']})');
+            print('- Size: ${size['width']}x${size['height']}');
+            print('- Visible: ${result['visible']}');
+          }
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error handling batch search response: $e');
+      }
     }
   }
 

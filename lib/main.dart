@@ -12,7 +12,7 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final ruleRepository = RuleRepository(prefs);
   final ruleProvider = RuleProvider(ruleRepository);
-  final connectionProvider = ConnectionProvider();
+  final connectionProvider = ConnectionProvider(ruleProvider);
   await ruleProvider.loadRules();
 
   // 初始化后台服务
