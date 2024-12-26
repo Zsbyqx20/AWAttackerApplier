@@ -5,6 +5,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:convert';
 import '../models/window_event.dart';
 import '../models/rule.dart';
+import '../models/overlay_style.dart';
 import 'rule_provider.dart';
 
 enum ConnectionStatus {
@@ -203,12 +204,14 @@ class ConnectionProvider extends ChangeNotifier {
   // 发送批量UI Automator查询请求
   Future<void> _sendBatchQuickSearch(List<Rule> matchedRules) async {
     try {
-      // 收集所有规则中的UI Automator代码
+      // 收集所有规则中的UI Automator代码和对应的样式
       final List<String> uiAutomatorCodes = [];
+      final List<OverlayStyle> styles = [];
       for (final rule in matchedRules) {
         for (final style in rule.overlayStyles) {
           if (style.uiAutomatorCode.isNotEmpty) {
             uiAutomatorCodes.add(style.uiAutomatorCode);
+            styles.add(style);
           }
         }
       }
@@ -239,7 +242,7 @@ class ConnectionProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        _handleBatchSearchResponse(responseData);
+        _handleBatchSearchResponse(responseData, styles);
       } else {
         if (kDebugMode) {
           print('Error: HTTP ${response.statusCode}');
@@ -253,7 +256,8 @@ class ConnectionProvider extends ChangeNotifier {
     }
   }
 
-  void _handleBatchSearchResponse(Map<String, dynamic> responseData) {
+  void _handleBatchSearchResponse(
+      Map<String, dynamic> responseData, List<OverlayStyle> styles) {
     try {
       final bool success = responseData['success'] as bool;
       final String message = responseData['message'] as String;
@@ -266,14 +270,26 @@ class ConnectionProvider extends ChangeNotifier {
         print('Results:');
         for (var i = 0; i < results.length; i++) {
           final result = results[i];
+          final style = styles[i];
           print('\nElement ${i + 1}:');
           print('- Success: ${result['success']}');
           print('- Message: ${result['message']}');
           if (result['success']) {
             final coordinates = result['coordinates'];
             final size = result['size'];
-            print('- Position: (${coordinates['x']}, ${coordinates['y']})');
-            print('- Size: ${size['width']}x${size['height']}');
+            // 计算最终位置和大小
+            final finalX = (coordinates['x'] as int) + style.x;
+            final finalY = (coordinates['y'] as int) + style.y;
+            final finalWidth = (size['width'] as int) + style.width;
+            final finalHeight = (size['height'] as int) + style.height;
+
+            print(
+                '- Original Position: (${coordinates['x']}, ${coordinates['y']})');
+            print('- Original Size: ${size['width']}x${size['height']}');
+            print('- Offset: (${style.x}, ${style.y})');
+            print('- Size Adjustment: ${style.width}x${style.height}');
+            print('- Final Position: ($finalX, $finalY)');
+            print('- Final Size: $finalWidth x $finalHeight');
             print('- Visible: ${result['visible']}');
           }
         }
