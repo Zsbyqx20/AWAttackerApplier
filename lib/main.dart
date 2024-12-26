@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:study_flutter/pages/server_config_page.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'providers/rule_provider.dart';
+import 'providers/connection_provider.dart';
+import 'repositories/rule_repository.dart';
+import 'pages/server_config_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final ruleRepository = RuleRepository(prefs);
+  final ruleProvider = RuleProvider(ruleRepository);
+  final connectionProvider = ConnectionProvider();
+  await ruleProvider.loadRules();
 
-  // 设置首选的渲染引擎
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: ruleProvider),
+        ChangeNotifierProvider.value(value: connectionProvider),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -22,7 +33,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'AWAttacker',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
       home: const ServerConfigPage(),

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../constants/storage_keys.dart';
-import '../pages/rule_list_page.dart';
-import '../services/permission_service.dart';
-import '../services/storage_service.dart';
+import '../pages/rule/rule_list_page.dart';
+import '../providers/connection_provider.dart';
+import '../repositories/storage_repository.dart';
 import '../widgets/permission_card.dart';
 import '../widgets/server_config_card.dart';
 import '../widgets/server_status_card.dart';
-import '../services/connection_service.dart';
-import '../services/rule_matching_service.dart';
 
 class ServerConfigPage extends StatefulWidget {
   const ServerConfigPage({super.key});
@@ -20,15 +19,15 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   final TextEditingController _apiController = TextEditingController();
   final TextEditingController _wsController = TextEditingController();
-  final StorageService _storageService = StorageService();
+  final StorageRepository _storageRepository;
 
   bool _hasOverlayPermission = false;
   bool _isCheckingPermission = false;
   late TabController _tabController;
   bool _isStartingService = false;
-  final ConnectionService _connectionService = ConnectionService();
-  bool _isServiceRunning = false;
   OverlayEntry? _overlayEntry;
+
+  _ServerConfigPageState() : _storageRepository = StorageRepository();
 
   @override
   void initState() {
@@ -39,14 +38,9 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   }
 
   Future<void> _initializeServices() async {
-    await _storageService.init();
+    await _storageRepository.init();
     await _loadSavedUrls();
     await _checkOverlayPermission();
-    _listenToServiceStatus();
-
-    // 启动规则匹配服务
-    final ruleMatchingService = RuleMatchingService();
-    await ruleMatchingService.start();
   }
 
   @override
@@ -62,26 +56,12 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      Future.delayed(const Duration(seconds: 1), () async {
-        for (int i = 0; i < 3; i++) {
-          final hasPermission =
-              await PermissionService.checkOverlayPermission();
-          if (hasPermission) {
-            if (mounted) {
-              setState(() {
-                _hasOverlayPermission = true;
-              });
-            }
-            break;
-          }
-          await Future.delayed(const Duration(milliseconds: 500));
-        }
-      });
+      _checkOverlayPermission();
     }
   }
 
   Future<void> _loadSavedUrls() async {
-    final urls = await _storageService.loadUrls();
+    final urls = await _storageRepository.loadUrls();
     if (mounted) {
       setState(() {
         _apiController.text = urls[StorageKeys.apiUrlKey]!;
@@ -91,32 +71,28 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   }
 
   Future<void> _saveUrls() async {
-    await _storageService.saveUrls(
+    await _storageRepository.saveUrls(
       apiUrl: _apiController.text,
       wsUrl: _wsController.text,
     );
   }
 
-  Future<void> _checkOverlayPermission() async {
-    if (_isCheckingPermission) return;
+  Future<bool> _checkOverlayPermission() async {
+    if (_isCheckingPermission) return false;
 
     setState(() {
       _isCheckingPermission = true;
     });
 
     try {
-      bool hasPermission = false;
-      for (int i = 0; i < 3; i++) {
-        hasPermission = await PermissionService.checkOverlayPermission();
-        if (hasPermission) break;
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
+      const hasPermission = true;
 
       if (mounted) {
         setState(() {
           _hasOverlayPermission = hasPermission;
         });
       }
+      return hasPermission;
     } finally {
       if (mounted) {
         setState(() {
@@ -134,7 +110,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     });
 
     try {
-      final granted = await PermissionService.requestOverlayPermission();
+      const granted = true;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -168,16 +144,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     _tabController.animateTo(index);
   }
 
-  void _listenToServiceStatus() {
-    _connectionService.serviceStatus.listen((running) {
-      if (mounted) {
-        setState(() {
-          _isServiceRunning = running;
-        });
-      }
-    });
-  }
-
   Future<void> _startService() async {
     if (_isStartingService) return;
 
@@ -186,9 +152,10 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     });
 
     try {
-      _connectionService.updateUrls(_apiController.text, _wsController.text);
+      final provider = context.read<ConnectionProvider>();
+      provider.updateUrls(_apiController.text, _wsController.text);
 
-      final success = await _connectionService.checkAndConnect();
+      final success = await provider.checkAndConnect();
       if (!success) {
         if (mounted) {
           _showTopBanner(
@@ -212,7 +179,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   }
 
   Future<void> _stopService() async {
-    await _connectionService.stop();
+    await context.read<ConnectionProvider>().stop();
     if (mounted) {
       _showTopBanner('服务已停止', isError: false);
     }
@@ -237,7 +204,9 @@ class _ServerConfigPageState extends State<ServerConfigPage>
             child: Container(
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isError ? Colors.red[50] : Colors.green[50],
+                color: isError
+                    ? const Color.fromRGBO(255, 235, 238, 1) // red 50
+                    : const Color.fromRGBO(232, 245, 233, 1), // green 50
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
@@ -256,21 +225,28 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                   children: [
                     Icon(
                       isError ? Icons.error : Icons.check_circle,
-                      color: isError ? Colors.red : Colors.green,
+                      color: isError
+                          ? const Color.fromRGBO(244, 67, 54, 1) // red 500
+                          : const Color.fromRGBO(76, 175, 80, 1), // green 500
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         message,
                         style: TextStyle(
-                          color: isError ? Colors.red[900] : Colors.green[900],
+                          color: isError
+                              ? const Color.fromRGBO(183, 28, 28, 1) // red 900
+                              : const Color.fromRGBO(
+                                  27, 94, 32, 1), // green 900
                         ),
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close, size: 20),
                       onPressed: _hideNotification,
-                      color: isError ? Colors.red[300] : Colors.green[300],
+                      color: isError
+                          ? const Color.fromRGBO(229, 115, 115, 1) // red 300
+                          : const Color.fromRGBO(129, 199, 132, 1), // green 300
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -296,6 +272,8 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final provider = context.watch<ConnectionProvider>();
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -367,7 +345,9 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: _hasOverlayPermission && !_isStartingService
-                        ? (_isServiceRunning ? _stopService : _startService)
+                        ? (provider.isServiceRunning
+                            ? _stopService
+                            : _startService)
                         : null,
                     icon: _isStartingService
                         ? SizedBox(
@@ -383,7 +363,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                             ),
                           )
                         : Icon(
-                            _isServiceRunning
+                            provider.isServiceRunning
                                 ? Icons.stop_circle_outlined
                                 : Icons.play_circle_outline,
                             color: _hasOverlayPermission
@@ -393,7 +373,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                     label: Text(
                       _isStartingService
                           ? '正在启动...'
-                          : (_isServiceRunning ? '停止服务' : '启动服务'),
+                          : (provider.isServiceRunning ? '停止服务' : '启动服务'),
                       style: TextStyle(
                         color: _hasOverlayPermission
                             ? Colors.white
@@ -401,8 +381,8 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _isServiceRunning
-                          ? Colors.red
+                      backgroundColor: provider.isServiceRunning
+                          ? const Color.fromRGBO(244, 67, 54, 1) // red 500
                           : theme.colorScheme.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:study_flutter/services/connection_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/connection_provider.dart';
 
 class ServerStatusCard extends StatelessWidget {
   const ServerStatusCard({super.key});
@@ -33,7 +34,6 @@ class ServerStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final connectionService = ConnectionService();
 
     return Card(
       elevation: 1,
@@ -44,11 +44,9 @@ class ServerStatusCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          StreamBuilder<ConnectionStatus>(
-            stream: connectionService.apiStatus,
-            initialData: connectionService.currentApiStatus,
-            builder: (context, snapshot) {
-              final status = snapshot.data ?? ConnectionStatus.disconnected;
+          Consumer<ConnectionProvider>(
+            builder: (context, provider, child) {
+              final status = provider.apiStatus;
               return ListTile(
                 leading: Icon(Icons.api, color: theme.colorScheme.primary),
                 title: const Text('API 服务器'),
@@ -78,11 +76,9 @@ class ServerStatusCard extends StatelessWidget {
             },
           ),
           Divider(color: Colors.grey[200]),
-          StreamBuilder<ConnectionStatus>(
-            stream: connectionService.wsStatus,
-            initialData: connectionService.currentWsStatus,
-            builder: (context, snapshot) {
-              final status = snapshot.data ?? ConnectionStatus.disconnected;
+          Consumer<ConnectionProvider>(
+            builder: (context, provider, child) {
+              final status = provider.wsStatus;
               return ListTile(
                 leading:
                     Icon(Icons.swap_calls, color: theme.colorScheme.primary),
