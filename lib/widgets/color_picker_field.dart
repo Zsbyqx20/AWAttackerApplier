@@ -28,38 +28,27 @@ class ColorPickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-        const SizedBox(height: 4),
-        InkWell(
-          onTap: () => _showColorPicker(context),
+    return InkWell(
+      onTap: () => _showColorPicker(context),
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        height: 36,
+        decoration: BoxDecoration(
+          color: color,
           borderRadius: BorderRadius.circular(6),
-          child: Container(
-            height: 32,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
+          border: Border.all(
+            color: Colors.grey[300]!,
+            width: 1,
           ),
         ),
-      ],
+      ),
     );
   }
 
   Future<void> _showColorPicker(BuildContext context) async {
-    final String currentHex =
-        '${color.r.toInt().toRadixString(16).padLeft(2, '0')}'
-        '${color.g.toInt().toRadixString(16).padLeft(2, '0')}'
-        '${color.b.toInt().toRadixString(16).padLeft(2, '0')}';
+    final String currentHex = '${color.red.toRadixString(16).padLeft(2, '0')}'
+        '${color.green.toRadixString(16).padLeft(2, '0')}'
+        '${color.blue.toRadixString(16).padLeft(2, '0')}';
     final TextEditingController hexController =
         TextEditingController(text: currentHex);
     Color previewColor = color;
@@ -69,7 +58,7 @@ class ColorPickerField extends StatelessWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(
-            label,
+            label.isNotEmpty ? label : '选择颜色',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 16,

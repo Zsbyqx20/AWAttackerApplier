@@ -152,6 +152,68 @@ class _RuleEditPageState extends State<RuleEditPage>
     });
   }
 
+  void _updateHorizontalAlign(TextAlign align) {
+    setState(() {
+      _overlayStyles[_currentTabIndex] =
+          _currentStyle.copyWith(horizontalAlign: align);
+    });
+  }
+
+  void _updateVerticalAlign(TextAlign align) {
+    setState(() {
+      _overlayStyles[_currentTabIndex] =
+          _currentStyle.copyWith(verticalAlign: align);
+    });
+  }
+
+  void _updatePadding(String value) {
+    final parts = value.split(':');
+    if (parts.length != 2) return;
+
+    final field = parts[0];
+    final doubleValue = double.tryParse(parts[1]);
+    if (doubleValue == null) return;
+
+    setState(() {
+      final currentPadding = _currentStyle.padding;
+      EdgeInsets newPadding;
+      switch (field) {
+        case 'left':
+          newPadding = EdgeInsets.fromLTRB(
+            doubleValue,
+            currentPadding.top,
+            currentPadding.right,
+            currentPadding.bottom,
+          );
+        case 'top':
+          newPadding = EdgeInsets.fromLTRB(
+            currentPadding.left,
+            doubleValue,
+            currentPadding.right,
+            currentPadding.bottom,
+          );
+        case 'right':
+          newPadding = EdgeInsets.fromLTRB(
+            currentPadding.left,
+            currentPadding.top,
+            doubleValue,
+            currentPadding.bottom,
+          );
+        case 'bottom':
+          newPadding = EdgeInsets.fromLTRB(
+            currentPadding.left,
+            currentPadding.top,
+            currentPadding.right,
+            doubleValue,
+          );
+        default:
+          return;
+      }
+      _overlayStyles[_currentTabIndex] =
+          _currentStyle.copyWith(padding: newPadding);
+    });
+  }
+
   void _saveRule() {
     final rule = Rule(
       id: widget.rule?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
@@ -217,21 +279,21 @@ class _RuleEditPageState extends State<RuleEditPage>
                     label: '规则名称',
                     hint: '请输入规则名称',
                     controller: _nameController,
-                    icon: Icons.edit_outlined,
+                    onChanged: (value) => setState(() {}),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   TextInputField(
                     label: '包名',
-                    hint: '请输入应用包名',
+                    hint: '请输入包名',
                     controller: _packageNameController,
-                    icon: Icons.android_outlined,
+                    onChanged: (value) => setState(() {}),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   TextInputField(
-                    label: '活动名称',
-                    hint: '请输入活动名称',
+                    label: '活动名',
+                    hint: '请输入活动名',
                     controller: _activityNameController,
-                    icon: Icons.apps_outlined,
+                    onChanged: (value) => setState(() {}),
                   ),
                 ],
               ),
@@ -327,7 +389,10 @@ class _RuleEditPageState extends State<RuleEditPage>
                     onPositionChanged: _updatePosition,
                     onBackgroundColorChanged: _updateBackgroundColor,
                     onTextColorChanged: _updateTextColor,
+                    onHorizontalAlignChanged: _updateHorizontalAlign,
+                    onVerticalAlignChanged: _updateVerticalAlign,
                     onUiAutomatorCodeChanged: _updateUiAutomatorCode,
+                    onPaddingChanged: _updatePadding,
                   ),
                 ],
               ),
