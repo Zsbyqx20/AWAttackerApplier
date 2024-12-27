@@ -12,24 +12,24 @@ class OverlayException implements Exception {
   const OverlayException(this.code, this.message, [this.details]);
 
   /// 预定义错误代码：权限错误
-  static const String PERMISSION_DENIED = 'PERMISSION_DENIED';
+  static const String permissionDeniedCode = 'PERMISSION_DENIED';
 
   /// 预定义错误代码：悬浮窗不存在
-  static const String OVERLAY_NOT_FOUND = 'OVERLAY_NOT_FOUND';
+  static const String overlayNotFoundCode = 'OVERLAY_NOT_FOUND';
 
   /// 预定义错误代码：创建失败
-  static const String CREATE_FAILED = 'CREATE_FAILED';
+  static const String createFailedCode = 'CREATE_FAILED';
 
   /// 预定义错误代码：更新失败
-  static const String UPDATE_FAILED = 'UPDATE_FAILED';
+  static const String updateFailedCode = 'UPDATE_FAILED';
 
   /// 预定义错误代码：移除失败
-  static const String REMOVE_FAILED = 'REMOVE_FAILED';
+  static const String removeFailedCode = 'REMOVE_FAILED';
 
   /// 创建权限错误异常
   factory OverlayException.permissionDenied([String? details]) {
     return OverlayException(
-      PERMISSION_DENIED,
+      permissionDeniedCode,
       '悬浮窗权限未授予',
       details,
     );
@@ -38,7 +38,7 @@ class OverlayException implements Exception {
   /// 创建悬浮窗不存在异常
   factory OverlayException.overlayNotFound(String id) {
     return OverlayException(
-      OVERLAY_NOT_FOUND,
+      overlayNotFoundCode,
       '悬浮窗不存在: $id',
     );
   }
@@ -46,7 +46,7 @@ class OverlayException implements Exception {
   /// 创建悬浮窗创建失败异常
   factory OverlayException.createFailed(String message, [dynamic details]) {
     return OverlayException(
-      CREATE_FAILED,
+      createFailedCode,
       '创建悬浮窗失败: $message',
       details,
     );
@@ -55,7 +55,7 @@ class OverlayException implements Exception {
   /// 创建悬浮窗更新失败异常
   factory OverlayException.updateFailed(String message, [dynamic details]) {
     return OverlayException(
-      UPDATE_FAILED,
+      updateFailedCode,
       '更新悬浮窗失败: $message',
       details,
     );
@@ -64,7 +64,7 @@ class OverlayException implements Exception {
   /// 创建悬浮窗移除失败异常
   factory OverlayException.removeFailed(String message, [dynamic details]) {
     return OverlayException(
-      REMOVE_FAILED,
+      removeFailedCode,
       '移除悬浮窗失败: $message',
       details,
     );

@@ -19,9 +19,9 @@ class OverlayWindow extends StatelessWidget {
         height: style.height,
         decoration: BoxDecoration(
           color: Color.fromRGBO(
-            style.backgroundColor.r.toInt(),
-            style.backgroundColor.g.toInt(),
-            style.backgroundColor.b.toInt(),
+            (style.backgroundColor.r * 255).toInt(),
+            (style.backgroundColor.g * 255).toInt(),
+            (style.backgroundColor.b * 255).toInt(),
             0.8,
           ),
           borderRadius: BorderRadius.circular(8),

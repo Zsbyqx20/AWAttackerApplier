@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../../models/overlay_style.dart';
 import '../../models/overlay_result.dart';
 import '../../exceptions/overlay_exception.dart';

@@ -5,8 +5,14 @@ import '../models/overlay_style.dart';
 class OverlayConverter {
   /// 将OverlayStyle转换为原生平台可用的格式
   static Map<String, dynamic> styleToNative(OverlayStyle style) {
-    final backgroundColor = style.backgroundColor.value;
-    final textColor = style.textColor.value;
+    final backgroundColor = ((style.backgroundColor.r * 255).toInt() << 16) |
+        ((style.backgroundColor.g * 255).toInt() << 8) |
+        (style.backgroundColor.b * 255).toInt() |
+        (0xFF << 24);
+    final textColor = ((style.textColor.r * 255).toInt() << 16) |
+        ((style.textColor.g * 255).toInt() << 8) |
+        (style.textColor.b * 255).toInt() |
+        (0xFF << 24);
 
     debugPrint(
         'Sending backgroundColor: 0x${backgroundColor.toRadixString(16)}');

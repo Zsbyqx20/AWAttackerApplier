@@ -118,14 +118,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "5.1.2"
-  flutter_colorpicker:
-    dependency: "direct main"
-    description:
-      name: flutter_colorpicker
-      sha256: "969de5f6f9e2a570ac660fb7b501551451ea2a1ab9e2097e89475f60e07816ea"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "1.1.0"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -134,14 +126,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "5.0.0"
-  flutter_overlay_window:
-    dependency: "direct main"
-    description:
-      name: flutter_overlay_window
-      sha256: "87a8ed7c47104a9ac1352d081e85304934b3f06ae28507097e49dd5f892e208d"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.4.5"
   flutter_test:
     dependency: "direct dev"
     description: flutter

@@ -28,7 +28,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   bool _isCheckingPermission = false;
   late TabController _tabController;
   bool _isStartingService = false;
-  OverlayEntry? _overlayEntry;
 
   _ServerConfigPageState() : _storageRepository = StorageRepository();
 

@@ -33,8 +33,6 @@ dependencies:
   shared_preferences: ^2.2.2
   http: ^1.1.0
   web_socket_channel: ^2.4.0
-  flutter_overlay_window: ^0.4.5
-  flutter_colorpicker: ^1.0.3
   provider: ^6.1.1
   flutter_background_service: ^5.0.5
   flutter_background_service_android: ^6.2.2

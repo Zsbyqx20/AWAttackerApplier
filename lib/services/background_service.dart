@@ -56,8 +56,6 @@ class BackgroundService {
       );
     }
 
-    // TODO: 在这里添加 WebSocket 连接逻辑
-
     if (kDebugMode) {
       print('Background service started');
     }

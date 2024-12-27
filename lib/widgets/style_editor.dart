@@ -250,7 +250,7 @@ class StyleEditor extends StatelessWidget {
                       style: ButtonStyle(
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
-                        shape: MaterialStateProperty.all(
+                        shape: WidgetStateProperty.all(
                           RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -298,7 +298,7 @@ class StyleEditor extends StatelessWidget {
                       style: ButtonStyle(
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
-                        shape: MaterialStateProperty.all(
+                        shape: WidgetStateProperty.all(
                           RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -395,29 +395,5 @@ class StyleEditor extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  TextAlign _getHorizontalAlign(TextAlign align) {
-    switch (align) {
-      case TextAlign.left:
-      case TextAlign.start:
-        return TextAlign.left;
-      case TextAlign.right:
-      case TextAlign.end:
-        return TextAlign.right;
-      default:
-        return TextAlign.center;
-    }
-  }
-
-  TextAlign _getVerticalAlign(TextAlign align) {
-    switch (align) {
-      case TextAlign.start:
-        return TextAlign.start;
-      case TextAlign.end:
-        return TextAlign.end;
-      default:
-        return TextAlign.center;
-    }
   }
 }

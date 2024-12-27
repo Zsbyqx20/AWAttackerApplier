@@ -46,9 +46,10 @@ class ColorPickerField extends StatelessWidget {
   }
 
   Future<void> _showColorPicker(BuildContext context) async {
-    final String currentHex = '${color.red.toRadixString(16).padLeft(2, '0')}'
-        '${color.green.toRadixString(16).padLeft(2, '0')}'
-        '${color.blue.toRadixString(16).padLeft(2, '0')}';
+    final String currentHex =
+        '${(color.r * 255).toInt().toRadixString(16).padLeft(2, '0')}'
+        '${(color.g * 255).toInt().toRadixString(16).padLeft(2, '0')}'
+        '${(color.b * 255).toInt().toRadixString(16).padLeft(2, '0')}';
     debugPrint('Current color: ${color.toString()} (hex: #$currentHex)');
     final TextEditingController hexController =
         TextEditingController(text: currentHex);
@@ -141,7 +142,7 @@ class ColorPickerField extends StatelessWidget {
                 final hex = hexController.text;
                 if (hex.length == 6) {
                   try {
-                    final newColor = Color(int.parse('FF$hex', radix: 16));
+                    Color(int.parse('FF$hex', radix: 16));
                     Navigator.of(context).pop(hex);
                   } catch (e) {
                     // 忽略无效的颜色值

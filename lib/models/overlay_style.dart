@@ -84,10 +84,8 @@ class OverlayStyle {
   }
 
   Map<String, dynamic> toJson() {
-    debugPrint(
-        'Converting backgroundColor: ${backgroundColor.value} (${backgroundColor.toString()})');
-    debugPrint(
-        'Converting textColor: ${textColor.value} (${textColor.toString()})');
+    debugPrint('Converting backgroundColor: ${backgroundColor.toString()}');
+    debugPrint('Converting textColor: ${textColor.toString()}');
     return {
       'x': x,
       'y': y,
@@ -95,8 +93,14 @@ class OverlayStyle {
       'height': height,
       'text': text,
       'fontSize': fontSize,
-      'backgroundColor': backgroundColor.value,
-      'textColor': textColor.value,
+      'backgroundColor': (backgroundColor.r * 255).toInt() << 16 |
+          (backgroundColor.g * 255).toInt() << 8 |
+          (backgroundColor.b * 255).toInt() |
+          (0xFF << 24),
+      'textColor': (textColor.r * 255).toInt() << 16 |
+          (textColor.g * 255).toInt() << 8 |
+          (textColor.b * 255).toInt() |
+          (0xFF << 24),
       'horizontalAlign': horizontalAlign.index,
       'verticalAlign': verticalAlign.index,
       'uiAutomatorCode': uiAutomatorCode,
@@ -118,8 +122,10 @@ class OverlayStyle {
       height: json['height']?.toDouble() ?? 0,
       text: json['text'] ?? '',
       fontSize: json['fontSize']?.toDouble() ?? 14,
-      backgroundColor: Color(json['backgroundColor'] ?? Colors.white.value),
-      textColor: Color(json['textColor'] ?? Colors.black.value),
+      backgroundColor: Color(json['backgroundColor'] ??
+          ((0xFF << 24) | (0xFF << 16) | (0xFF << 8) | 0xFF)),
+      textColor:
+          Color(json['textColor'] ?? ((0xFF << 24) | (0 << 16) | (0 << 8) | 0)),
       horizontalAlign:
           TextAlign.values[json['horizontalAlign'] ?? TextAlign.left.index],
       verticalAlign:
