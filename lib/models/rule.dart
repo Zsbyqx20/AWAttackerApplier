@@ -7,6 +7,7 @@ class Rule {
   final String activityName;
   final bool isEnabled;
   final List<OverlayStyle> overlayStyles;
+  final List<String> tags;
 
   Rule({
     required this.id,
@@ -15,7 +16,8 @@ class Rule {
     required this.activityName,
     required this.isEnabled,
     required this.overlayStyles,
-  });
+    List<String>? tags,
+  }) : tags = tags ?? [];
 
   Rule copyWith({
     String? id,
@@ -24,6 +26,7 @@ class Rule {
     String? activityName,
     bool? isEnabled,
     List<OverlayStyle>? overlayStyles,
+    List<String>? tags,
   }) {
     return Rule(
       id: id ?? this.id,
@@ -32,6 +35,7 @@ class Rule {
       activityName: activityName ?? this.activityName,
       isEnabled: isEnabled ?? this.isEnabled,
       overlayStyles: overlayStyles ?? this.overlayStyles,
+      tags: tags ?? this.tags,
     );
   }
 
@@ -43,6 +47,7 @@ class Rule {
       'activityName': activityName,
       'isEnabled': isEnabled,
       'overlayStyles': overlayStyles.map((style) => style.toJson()).toList(),
+      'tags': tags,
     };
   }
 
@@ -56,6 +61,7 @@ class Rule {
       overlayStyles: (json['overlayStyles'] as List)
           .map((style) => OverlayStyle.fromJson(style as Map<String, dynamic>))
           .toList(),
+      tags: (json['tags'] as List?)?.map((e) => e as String).toList() ?? [],
     );
   }
 }

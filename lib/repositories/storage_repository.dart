@@ -1,23 +1,21 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/storage_keys.dart';
+import 'dart:convert';
 
 class StorageRepository {
-  late final SharedPreferences _prefs;
-  bool _initialized = false;
+  SharedPreferences? _prefs;
 
   Future<void> init() async {
-    if (_initialized) return;
     _prefs = await SharedPreferences.getInstance();
-    _initialized = true;
   }
 
   Future<Map<String, String>> loadUrls() async {
-    if (!_initialized) await init();
+    if (_prefs == null) throw Exception('Storage not initialized');
     return {
       StorageKeys.apiUrlKey:
-          _prefs.getString(StorageKeys.apiUrlKey) ?? 'http://10.0.2.2:8000',
+          _prefs!.getString(StorageKeys.apiUrlKey) ?? 'http://10.0.2.2:8000',
       StorageKeys.wsUrlKey:
-          _prefs.getString(StorageKeys.wsUrlKey) ?? 'ws://10.0.2.2:8000/ws',
+          _prefs!.getString(StorageKeys.wsUrlKey) ?? 'ws://10.0.2.2:8000/ws',
     };
   }
 
@@ -25,8 +23,29 @@ class StorageRepository {
     required String apiUrl,
     required String wsUrl,
   }) async {
-    if (!_initialized) await init();
-    await _prefs.setString(StorageKeys.apiUrlKey, apiUrl);
-    await _prefs.setString(StorageKeys.wsUrlKey, wsUrl);
+    if (_prefs == null) throw Exception('Storage not initialized');
+    await _prefs!.setString(StorageKeys.apiUrlKey, apiUrl);
+    await _prefs!.setString(StorageKeys.wsUrlKey, wsUrl);
+  }
+
+  Future<Set<String>> loadActiveTags() async {
+    if (_prefs == null) throw Exception('Storage not initialized');
+
+    final json = _prefs!.getString(StorageKeys.activeTagsKey);
+    if (json == null) return {};
+
+    try {
+      final List<dynamic> list = jsonDecode(json);
+      return list.map((e) => e as String).toSet();
+    } catch (e) {
+      return {};
+    }
+  }
+
+  Future<void> saveActiveTags(Set<String> tags) async {
+    if (_prefs == null) throw Exception('Storage not initialized');
+
+    final json = jsonEncode(tags.toList());
+    await _prefs!.setString(StorageKeys.activeTagsKey, json);
   }
 }

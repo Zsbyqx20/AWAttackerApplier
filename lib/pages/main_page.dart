@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'server_config_page.dart';
 import 'rule/rule_list_page.dart';
+import 'tag/tag_list_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -17,7 +18,7 @@ class _MainPageState extends State<MainPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_handleTabChange);
   }
 
@@ -74,6 +75,15 @@ class _MainPageState extends State<MainPage>
                 height: 60,
               ),
             ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Tab(
+                icon: Icon(Icons.sell_outlined,
+                    color: !_hasOverlayPermission ? Colors.grey[400] : null),
+                text: '标签',
+                height: 60,
+              ),
+            ),
           ],
         ),
       ),
@@ -87,6 +97,7 @@ class _MainPageState extends State<MainPage>
             onPermissionChanged: updateOverlayPermission,
           ),
           const RuleListPage(),
+          const TagListPage(),
         ],
       ),
     );

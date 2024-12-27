@@ -15,4 +15,7 @@ class StorageKeys {
   // Cache Keys
   static const String ruleCacheKey = 'cache.rules';
   static const String serverCacheKey = 'cache.server';
+
+  // Active Tags Key
+  static const String activeTagsKey = 'active_tags';
 }

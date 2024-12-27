@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/overlay_style.dart';
 import '../../models/rule.dart';
+import '../../providers/rule_provider.dart';
 import '../../widgets/text_input_field.dart';
 import '../../widgets/style_editor.dart';
+import '../../widgets/tag_chips.dart';
 
 class RuleEditPage extends StatefulWidget {
   final Rule? rule;
@@ -23,6 +26,7 @@ class _RuleEditPageState extends State<RuleEditPage>
   late TabController _tabController;
 
   List<OverlayStyle> _overlayStyles = [];
+  List<String> _tags = [];
   int _currentTabIndex = 0;
 
   OverlayStyle get _currentStyle => _overlayStyles[_currentTabIndex];
@@ -55,6 +59,7 @@ class _RuleEditPageState extends State<RuleEditPage>
 
     if (widget.rule != null) {
       _overlayStyles = List.from(widget.rule!.overlayStyles);
+      _tags = List.from(widget.rule!.tags);
     } else {
       _overlayStyles = [OverlayStyle.defaultStyle()];
     }
@@ -216,6 +221,12 @@ class _RuleEditPageState extends State<RuleEditPage>
     });
   }
 
+  void _updateTags(List<String> newTags) {
+    setState(() {
+      _tags = newTags;
+    });
+  }
+
   void _saveRule() {
     final rule = Rule(
       id: widget.rule?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
@@ -224,6 +235,7 @@ class _RuleEditPageState extends State<RuleEditPage>
       activityName: _activityNameController.text,
       isEnabled: widget.rule?.isEnabled ?? false,
       overlayStyles: _overlayStyles,
+      tags: _tags,
     );
 
     Navigator.of(context).pop(rule);
@@ -243,6 +255,7 @@ class _RuleEditPageState extends State<RuleEditPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final ruleProvider = context.watch<RuleProvider>();
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -296,6 +309,27 @@ class _RuleEditPageState extends State<RuleEditPage>
                     hint: '请输入活动名',
                     controller: _activityNameController,
                     onChanged: (value) => setState(() {}),
+                  ),
+                  const SizedBox(height: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '标签',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TagChipsInput(
+                        tags: _tags,
+                        suggestions: ruleProvider.allTags.toList(),
+                        onChanged: _updateTags,
+                        maxTags: 10,
+                      ),
+                    ],
                   ),
                 ],
               ),

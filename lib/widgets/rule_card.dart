@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/rule.dart';
 import '../providers/rule_provider.dart';
 import 'confirm_dialog.dart';
+import 'tag_chips.dart';
 
 class RuleCard extends StatelessWidget {
   final Rule rule;
@@ -17,6 +18,7 @@ class RuleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final provider = context.watch<RuleProvider>();
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -232,6 +234,15 @@ class RuleCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (rule.tags.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                TagChipsRow(
+                  tags: rule.tags,
+                  showActiveState: true,
+                  activeTags: provider.activeTags,
+                  onTagTap: (tag) => provider.toggleTagActivation(tag),
+                ),
+              ],
             ],
           ),
         ),
