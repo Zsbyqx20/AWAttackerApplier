@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../constants/storage_keys.dart';
-import '../pages/rule/rule_list_page.dart';
 import '../providers/connection_provider.dart';
 import '../repositories/storage_repository.dart';
 import '../services/overlay_service.dart';
@@ -11,14 +10,19 @@ import '../widgets/server_config_card.dart';
 import '../widgets/server_status_card.dart';
 
 class ServerConfigPage extends StatefulWidget {
-  const ServerConfigPage({super.key});
+  final Function(bool) onPermissionChanged;
+
+  const ServerConfigPage({
+    super.key,
+    required this.onPermissionChanged,
+  });
 
   @override
   State<ServerConfigPage> createState() => _ServerConfigPageState();
 }
 
 class _ServerConfigPageState extends State<ServerConfigPage>
-    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+    with WidgetsBindingObserver {
   final TextEditingController _apiController = TextEditingController();
   final TextEditingController _wsController = TextEditingController();
   final StorageRepository _storageRepository;
@@ -26,7 +30,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
 
   bool _hasOverlayPermission = false;
   bool _isCheckingPermission = false;
-  late TabController _tabController;
   bool _isStartingService = false;
 
   _ServerConfigPageState() : _storageRepository = StorageRepository();
@@ -34,8 +37,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(_handleTabChange);
     WidgetsBinding.instance.addObserver(this);
     _loadUrls();
     _checkOverlayPermission();
@@ -50,6 +51,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
           setState(() {
             _hasOverlayPermission = hasPermission;
           });
+          widget.onPermissionChanged(hasPermission);
         }
       }
     });
@@ -57,7 +59,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _apiController.dispose();
     _wsController.dispose();
     WidgetsBinding.instance.removeObserver(this);
@@ -102,6 +103,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
         setState(() {
           _hasOverlayPermission = hasPermission;
         });
+        widget.onPermissionChanged(hasPermission);
       }
       return hasPermission;
     } finally {
@@ -126,6 +128,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
         setState(() {
           _hasOverlayPermission = granted;
         });
+        widget.onPermissionChanged(granted);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(granted ? '权限已授予' : '权限请求被拒绝'),
@@ -144,15 +147,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
           _isCheckingPermission = false;
         });
       }
-    }
-  }
-
-  void _handleTabChange() {
-    if (!_hasOverlayPermission && _tabController.index > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先授予悬浮窗权限')),
-      );
-      _tabController.animateTo(0);
     }
   }
 
@@ -211,118 +205,71 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   Widget build(BuildContext context) {
     final provider = context.watch<ConnectionProvider>();
 
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        title: const Text('AW Attacker'),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Theme.of(context).colorScheme.primary,
-          labelColor: Theme.of(context).colorScheme.primary,
-          unselectedLabelColor: Colors.grey[600],
-          indicatorSize: TabBarIndicatorSize.label,
-          tabs: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: const Tab(
-                icon: Icon(Icons.settings_outlined),
-                text: '配置',
-                height: 60,
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Tab(
-                icon: Icon(Icons.rule_folder_outlined,
-                    color: !_hasOverlayPermission ? Colors.grey[400] : null),
-                text: '规则',
-                height: 60,
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        physics: !_hasOverlayPermission
-            ? const NeverScrollableScrollPhysics()
-            : null,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 配置页面
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PermissionCard(
-                  hasPermission: _hasOverlayPermission,
-                  onRequestPermission: _requestOverlayPermission,
-                ),
-                const SizedBox(height: 12),
-                ServerConfigCard(
-                  apiController: _apiController,
-                  wsController: _wsController,
-                  enabled: _hasOverlayPermission,
-                  onApiChanged: (_) => _saveUrls(),
-                  onWsChanged: (_) => _saveUrls(),
-                ),
-                const SizedBox(height: 12),
-                const ServerStatusCard(),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _hasOverlayPermission && !_isStartingService
-                        ? (provider.isServiceRunning
-                            ? _stopService
-                            : _startService)
-                        : null,
-                    icon: _isStartingService
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                _hasOverlayPermission
-                                    ? Colors.white
-                                    : Colors.grey[400]!,
-                              ),
-                            ),
-                          )
-                        : Icon(
-                            provider.isServiceRunning
-                                ? Icons.stop_outlined
-                                : Icons.play_arrow_outlined,
-                            color: _hasOverlayPermission
-                                ? Colors.white
-                                : Colors.grey[400],
-                          ),
-                    label: Text(
-                      provider.isServiceRunning ? '停止服务' : '启动服务',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: provider.isServiceRunning
-                          ? Colors.red[400]
-                          : Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey[300],
-                      disabledForegroundColor: Colors.grey[400],
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+          PermissionCard(
+            hasPermission: _hasOverlayPermission,
+            onRequestPermission: _requestOverlayPermission,
+          ),
+          const SizedBox(height: 12),
+          ServerConfigCard(
+            apiController: _apiController,
+            wsController: _wsController,
+            enabled: _hasOverlayPermission,
+            onApiChanged: (_) => _saveUrls(),
+            onWsChanged: (_) => _saveUrls(),
+          ),
+          const SizedBox(height: 12),
+          const ServerStatusCard(),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _hasOverlayPermission && !_isStartingService
+                  ? (provider.isServiceRunning ? _stopService : _startService)
+                  : null,
+              icon: _isStartingService
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          _hasOverlayPermission
+                              ? Colors.white
+                              : Colors.grey[400]!,
+                        ),
                       ),
-                      elevation: 0,
+                    )
+                  : Icon(
+                      provider.isServiceRunning
+                          ? Icons.stop_outlined
+                          : Icons.play_arrow_outlined,
+                      color: _hasOverlayPermission
+                          ? Colors.white
+                          : Colors.grey[400],
                     ),
-                  ),
+              label: Text(
+                provider.isServiceRunning ? '停止服务' : '启动服务',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: provider.isServiceRunning
+                    ? Colors.red[400]
+                    : Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey[300],
+                disabledForegroundColor: Colors.grey[400],
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
+                elevation: 0,
+              ),
             ),
           ),
-          // 规则页面
-          const RuleListPage(),
         ],
       ),
     );

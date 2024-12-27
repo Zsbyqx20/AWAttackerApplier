@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/rule_provider.dart';
 import 'providers/connection_provider.dart';
 import 'repositories/rule_repository.dart';
-import 'pages/server_config_page.dart';
+import 'pages/main_page.dart';
 import 'services/background_service.dart';
 
 void main() async {
@@ -40,7 +40,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const ServerConfigPage(),
+      home: const MainPage(),
     );
   }
 }
