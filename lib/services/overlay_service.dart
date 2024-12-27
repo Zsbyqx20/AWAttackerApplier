@@ -12,9 +12,24 @@ class OverlayService implements IOverlayService {
   factory OverlayService() => _instance;
 
   late final IOverlayService _nativeService;
+  bool _isServiceRunning = false;
 
   OverlayService._internal() {
     _nativeService = NativeOverlayService();
+  }
+
+  /// 获取服务运行状态
+  bool get isServiceRunning => _isServiceRunning;
+
+  /// 启动服务
+  void start() {
+    _isServiceRunning = true;
+  }
+
+  /// 停止服务
+  void stop() {
+    _isServiceRunning = false;
+    removeAllOverlays();
   }
 
   @override
@@ -39,6 +54,11 @@ class OverlayService implements IOverlayService {
 
   @override
   Future<OverlayResult> createOverlay(String id, OverlayStyle style) async {
+    if (!_isServiceRunning) {
+      debugPrint('🚫 服务未运行，无法创建悬浮窗');
+      return OverlayResult.failure('服务未运行');
+    }
+
     try {
       // 验证样式
       if (!style.isValid()) {
@@ -58,6 +78,11 @@ class OverlayService implements IOverlayService {
 
   @override
   Future<OverlayResult> updateOverlay(String id, OverlayStyle style) async {
+    if (!_isServiceRunning) {
+      debugPrint('🚫 服务未运行，无法更新悬浮窗');
+      return OverlayResult.failure('服务未运行');
+    }
+
     try {
       // 验证样式
       if (!style.isValid()) {
@@ -77,6 +102,11 @@ class OverlayService implements IOverlayService {
 
   @override
   Future<bool> removeOverlay(String id) async {
+    if (!_isServiceRunning) {
+      debugPrint('🚫 服务未运行，无法移除悬浮窗');
+      return false;
+    }
+
     try {
       return await _nativeService.removeOverlay(id);
     } catch (e) {
@@ -87,6 +117,11 @@ class OverlayService implements IOverlayService {
 
   @override
   Future<void> removeAllOverlays() async {
+    if (!_isServiceRunning) {
+      debugPrint('🚫 服务未运行，无法移除悬浮窗');
+      return;
+    }
+
     try {
       await _nativeService.removeAllOverlays();
     } catch (e) {
@@ -96,11 +131,17 @@ class OverlayService implements IOverlayService {
 
   @override
   List<String> getActiveOverlayIds() {
+    if (!_isServiceRunning) {
+      return [];
+    }
     return _nativeService.getActiveOverlayIds();
   }
 
   @override
   bool hasOverlay(String id) {
+    if (!_isServiceRunning) {
+      return false;
+    }
     return _nativeService.hasOverlay(id);
   }
 }

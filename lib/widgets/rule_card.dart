@@ -144,21 +144,17 @@ class RuleCard extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        onPressed: () {
-                          showDialog(
+                        onPressed: () async {
+                          final confirmed = await ConfirmDialog.show(
                             context: context,
-                            builder: (context) => ConfirmDialog(
-                              title: '删除规则',
-                              content: '确定要删除规则"${rule.name}"吗？\n删除后将无法恢复。',
-                              confirmText: '删除',
-                              icon: Icons.delete_outline,
-                              onConfirm: () {
-                                context
-                                    .read<RuleProvider>()
-                                    .deleteRule(rule.id);
-                              },
-                            ),
+                            title: '删除规则',
+                            content: '确定要删除规则"${rule.name}"吗？\n删除后将无法恢复。',
+                            confirmText: '删除',
+                            icon: Icons.delete_outline,
                           );
+                          if (confirmed == true) {
+                            context.read<RuleProvider>().deleteRule(rule.id);
+                          }
                         },
                         icon: Icon(
                           Icons.delete_outline,

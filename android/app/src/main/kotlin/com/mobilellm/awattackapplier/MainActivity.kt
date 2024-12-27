@@ -1,4 +1,4 @@
-package com.example.awattacker
+package com.mobilellm.awattackapplier
 
 import android.content.Intent
 import android.net.Uri
@@ -13,7 +13,7 @@ class MainActivity: FlutterActivity() {
     companion object {
         private const val TAG = "MainActivity"
         private const val OVERLAY_PERMISSION_REQUEST_CODE = 1
-        private const val CHANNEL = "com.example.awattacker/overlay_service"
+        private const val CHANNEL = "com.mobilellm.awattackapplier/overlay_service"
     }
 
     private var pendingResult: MethodChannel.Result? = null

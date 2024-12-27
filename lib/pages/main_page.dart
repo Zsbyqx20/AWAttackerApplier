@@ -50,7 +50,7 @@ class _MainPageState extends State<MainPage>
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
-        title: const Text('AW Attacker'),
+        title: const Text('AW Attack Applier'),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Theme.of(context).colorScheme.primary,

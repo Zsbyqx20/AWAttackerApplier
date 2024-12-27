@@ -85,6 +85,7 @@ class ConnectionProvider extends ChangeNotifier {
       await _connectWebSocket();
 
       _isServiceRunning = true;
+      _overlayService.start(); // 启动悬浮窗服务
       notifyListeners();
       return true;
     } catch (e) {
@@ -99,7 +100,7 @@ class ConnectionProvider extends ChangeNotifier {
   Future<void> stop() async {
     _isServiceRunning = false;
     await _disconnectWebSocket();
-    await _overlayService.removeAllOverlays();
+    _overlayService.stop(); // 停止悬浮窗服务
     _setApiStatus(ConnectionStatus.disconnected);
     _setWsStatus(ConnectionStatus.disconnected);
     notifyListeners();
@@ -162,6 +163,11 @@ class ConnectionProvider extends ChangeNotifier {
   }
 
   void _handleMessage(dynamic message) {
+    // 如果服务未运行，不处理任何消息
+    if (!_isServiceRunning) {
+      return;
+    }
+
     try {
       final String type = message['type'] as String;
       switch (type) {
@@ -177,6 +183,11 @@ class ConnectionProvider extends ChangeNotifier {
   }
 
   void _handleWindowStateChanged(dynamic message) async {
+    // 如果服务未运行，不处理窗口状态变化
+    if (!_isServiceRunning) {
+      return;
+    }
+
     try {
       final windowEvent = WindowEvent.fromJson(message);
       debugPrint(
@@ -205,6 +216,11 @@ class ConnectionProvider extends ChangeNotifier {
   }
 
   Future<void> _sendBatchQuickSearch(List<Rule> matchedRules) async {
+    // 如果服务未运行，不执行批量查询
+    if (!_isServiceRunning) {
+      return;
+    }
+
     try {
       debugPrint('📤 准备发送批量查询请求...');
 

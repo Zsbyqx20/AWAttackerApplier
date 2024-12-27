@@ -20,6 +20,42 @@ class ConfirmDialog extends StatelessWidget {
     this.icon,
   });
 
+  /// 显示确认对话框
+  static Future<bool?> show({
+    required BuildContext context,
+    required String title,
+    required String content,
+    String cancelText = '取消',
+    String confirmText = '确认',
+    Color? confirmColor,
+    IconData? icon,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => ConfirmDialog._(
+        title: title,
+        content: content,
+        cancelText: cancelText,
+        confirmText: confirmText,
+        confirmColor: confirmColor,
+        icon: icon,
+      ),
+    );
+  }
+
+  /// 私有构造函数，用于内部创建对话框
+  const ConfirmDialog._({
+    super.key,
+    required this.title,
+    required this.content,
+    this.cancelText = '取消',
+    this.confirmText = '确认',
+    this.confirmColor,
+    this.icon,
+  }) : onConfirm = _noOp;
+
+  static void _noOp() {}
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -74,7 +110,7 @@ class ConfirmDialog extends StatelessWidget {
               children: [
                 Expanded(
                   child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => Navigator.of(context).pop(false),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -94,10 +130,7 @@ class ConfirmDialog extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      onConfirm();
-                      Navigator.of(context).pop();
-                    },
+                    onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: confirmColor ?? theme.colorScheme.error,
                       foregroundColor: Colors.white,

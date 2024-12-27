@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     
     <application
-        android:label="AWAttacker"
+        android:label="AWAttackApplier"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <meta-data
@@ -41,7 +41,7 @@
             android:value="2" />
 
         <service
-            android:name="com.example.awattacker.OverlayService"
+            android:name="com.mobilellm.awattackapplier.OverlayService"
             android:exported="false"
             android:foregroundServiceType="dataSync">
             <meta-data

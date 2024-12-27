@@ -14,10 +14,6 @@ class OverlayConverter {
         (style.textColor.b * 255).toInt() |
         (0xFF << 24);
 
-    debugPrint(
-        'Sending backgroundColor: 0x${backgroundColor.toRadixString(16)}');
-    debugPrint('Sending textColor: 0x${textColor.toRadixString(16)}');
-
     return {
       'x': style.x,
       'y': style.y,
@@ -71,10 +67,6 @@ class OverlayConverter {
   static OverlayStyle styleFromNative(Map<String, dynamic> map) {
     final backgroundColor = map['backgroundColor'] as int;
     final textColor = map['textColor'] as int;
-
-    debugPrint(
-        'Native backgroundColor: 0x${backgroundColor.toRadixString(16)}');
-    debugPrint('Native textColor: 0x${textColor.toRadixString(16)}');
 
     // 从 Java 端的值恢复完整的 alpha 通道
     final bgAlpha = (backgroundColor >> 24) & 0x7F;

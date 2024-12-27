@@ -1,4 +1,4 @@
-package com.example.awattacker
+package com.mobilellm.awattackapplier
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -22,7 +22,7 @@ class OverlayService : Service() {
         private const val TAG = "OverlayService"
         private const val CHANNEL_ID = "overlay_service_channel"
         private const val NOTIFICATION_ID = 1
-        private const val METHOD_CHANNEL_NAME = "com.example.awattacker/overlay_service"
+        private const val METHOD_CHANNEL_NAME = "com.mobilellm.awattackapplier/overlay_service"
     }
 
     override fun onCreate() {

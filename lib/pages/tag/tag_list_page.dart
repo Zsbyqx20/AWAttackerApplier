@@ -68,42 +68,29 @@ class _TagListPageState extends State<TagListPage> {
     );
   }
 
-  void _handleTagActivation(
-      BuildContext context, RuleProvider provider, String tag, bool active) {
+  void _handleTagActivation(BuildContext context, RuleProvider provider,
+      String tag, bool active) async {
     if (active) {
       final affectedRules = provider.rules.where((r) => r.tags.contains(tag));
-      showDialog(
+      final confirmed = await ConfirmDialog.show(
         context: context,
-        builder: (context) => ConfirmDialog(
-          title: '激活标签',
-          content: '激活标签"$tag"将影响${affectedRules.length}条规则，是否继续？',
-          confirmText: '激活',
-          icon: Icons.local_offer_outlined,
-          onConfirm: () {
-            provider.toggleTagActivation(tag);
-          },
-          confirmColor: Theme.of(context).colorScheme.primary,
-        ),
+        title: '激活标签',
+        content: '激活标签"$tag"将影响${affectedRules.length}条规则，是否继续？',
+        confirmText: '激活',
+        icon: Icons.local_offer_outlined,
+        confirmColor: Theme.of(context).colorScheme.primary,
       );
+      if (confirmed == true) {
+        await provider.toggleTagActivation(tag);
+      }
     } else {
-      provider.toggleTagActivation(tag);
+      await provider.toggleTagActivation(tag);
     }
   }
 
-  void _handleTagDelete(
-      BuildContext context, RuleProvider provider, String tag, int ruleCount) {
-    showDialog(
-      context: context,
-      builder: (context) => ConfirmDialog(
-        title: '删除标签',
-        content: '删除标签"$tag"将从$ruleCount条规则中移除，是否继续？',
-        confirmText: '删除',
-        icon: Icons.delete_outline,
-        onConfirm: () {
-          provider.deleteTag(tag);
-        },
-      ),
-    );
+  void _handleTagDelete(BuildContext context, RuleProvider provider, String tag,
+      int ruleCount) async {
+    await provider.deleteTag(tag);
   }
 }
 
@@ -142,7 +129,6 @@ class _TagListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context);
     final tagColor = _getTagColor(context);
 
     return Card(
@@ -180,19 +166,13 @@ class _TagListItem extends StatelessWidget {
             ),
           ),
           confirmDismiss: (_) async {
-            final confirmed = await showDialog<bool>(
+            final confirmed = await ConfirmDialog.show(
               context: context,
-              builder: (context) => ConfirmDialog(
-                title: '删除标签',
-                content: '删除标签"$tag"将从$ruleCount条规则中移除，是否继续？',
-                confirmText: '删除',
-                icon: Icons.delete_outline,
-                onConfirm: () {
-                  Navigator.of(context).pop(true);
-                },
-              ),
+              title: '删除标签',
+              content: '删除标签"$tag"将从$ruleCount条规则中移除，是否继续？',
+              confirmText: '删除',
+              icon: Icons.delete_outline,
             );
-
             if (confirmed == true) {
               onDelete();
             }

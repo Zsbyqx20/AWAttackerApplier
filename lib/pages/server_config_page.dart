@@ -26,7 +26,8 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   final TextEditingController _apiController = TextEditingController();
   final TextEditingController _wsController = TextEditingController();
   final StorageRepository _storageRepository;
-  final _channel = const MethodChannel('com.example.awattacker/overlay');
+  final _channel =
+      const MethodChannel('com.mobilellm.awattackapplier/overlay_service');
 
   bool _hasOverlayPermission = false;
   bool _isCheckingPermission = false;
@@ -225,48 +226,78 @@ class _ServerConfigPageState extends State<ServerConfigPage>
           const SizedBox(height: 12),
           const ServerStatusCard(),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _hasOverlayPermission && !_isStartingService
-                  ? (provider.isServiceRunning ? _stopService : _startService)
-                  : null,
-              icon: _isStartingService
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          _hasOverlayPermission
-                              ? Colors.white
-                              : Colors.grey[400]!,
-                        ),
-                      ),
-                    )
-                  : Icon(
-                      provider.isServiceRunning
-                          ? Icons.stop_outlined
-                          : Icons.play_arrow_outlined,
-                      color: _hasOverlayPermission
-                          ? Colors.white
-                          : Colors.grey[400],
-                    ),
-              label: Text(
-                provider.isServiceRunning ? '停止服务' : '启动服务',
+          Card(
+            elevation: 1,
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: Colors.grey[100]!,
+                width: 1,
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: provider.isServiceRunning
-                    ? Colors.red[400]
-                    : Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey[300],
-                disabledForegroundColor: Colors.grey[400],
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: ElevatedButton.icon(
+                  onPressed: _hasOverlayPermission && !_isStartingService
+                      ? (provider.isServiceRunning
+                          ? _stopService
+                          : _startService)
+                      : null,
+                  icon: _isStartingService
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              _hasOverlayPermission
+                                  ? Colors.white
+                                  : Colors.grey[400]!,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            provider.isServiceRunning
+                                ? Icons.power_settings_new_rounded
+                                : Icons.play_circle_outline_rounded,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                  label: Text(
+                    provider.isServiceRunning ? '停止服务' : '启动服务',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: provider.isServiceRunning
+                        ? Colors.red[400]
+                        : Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 24,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    disabledBackgroundColor: Colors.grey[300],
+                    disabledForegroundColor: Colors.grey[400],
+                  ),
                 ),
-                elevation: 0,
               ),
             ),
           ),
