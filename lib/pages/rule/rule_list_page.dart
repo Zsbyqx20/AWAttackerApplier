@@ -41,20 +41,62 @@ class _RuleListPageState extends State<RuleListPage>
     super.dispose();
   }
 
-  void _handleAddRule() {
-    Navigator.of(context).push(
+  void _handleAddRule() async {
+    final rule = await Navigator.of(context).push<Rule>(
       MaterialPageRoute(
         builder: (context) => const RuleEditPage(),
       ),
     );
+
+    if (rule != null && mounted) {
+      try {
+        await context.read<RuleProvider>().addRule(rule);
+      } catch (e) {
+        if (!mounted) return;
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('保存失败'),
+            content: Text(e.toString()),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('确定'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
 
-  void _handleEditRule(Rule rule) {
-    Navigator.of(context).push(
+  void _handleEditRule(Rule rule) async {
+    final updatedRule = await Navigator.of(context).push<Rule>(
       MaterialPageRoute(
         builder: (context) => RuleEditPage(rule: rule),
       ),
     );
+
+    if (updatedRule != null && mounted) {
+      try {
+        await context.read<RuleProvider>().updateRule(updatedRule);
+      } catch (e) {
+        if (!mounted) return;
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('保存失败'),
+            content: Text(e.toString()),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('确定'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleImport() async {

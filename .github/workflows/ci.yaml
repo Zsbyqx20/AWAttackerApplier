@@ -4,8 +4,15 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - 'android/**'
+      - 'assets/**'
+      - 'web/**'
     tags:
-      - 'v*' # 匹配所有以v开头的标签，如 v1.0.0
+      - 'v*'
 
 jobs:
   build:
