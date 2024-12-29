@@ -68,7 +68,7 @@ class RuleImportValidator {
 
   /// 验证颜色值
   static void validateColor(Color color, String fieldName) {
-    if (color.alpha == 0) {
+    if (color.a == 0.0) {
       throw RuleImportException.invalidFieldValue(fieldName, '颜色不能完全透明');
     }
   }

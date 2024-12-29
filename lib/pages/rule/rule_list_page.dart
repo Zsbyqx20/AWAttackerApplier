@@ -1,14 +1,11 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import '../../models/rule.dart';
 import '../../providers/rule_provider.dart';
 import '../../widgets/rule_stats_card.dart';
 import '../../widgets/rule_card.dart';
-import '../../widgets/empty_rule_list.dart';
 import 'rule_edit_page.dart';
 import '../../widgets/rule_import_preview_dialog.dart';
 import '../../widgets/rule_import_result_dialog.dart';
@@ -71,7 +68,7 @@ class _RuleListPageState extends State<RuleListPage>
 
       final file = File(result.files.single.path!);
       final content = await file.readAsString();
-      final ruleImport = await RuleImport.fromJson(content);
+      final ruleImport = RuleImport.fromJson(content);
 
       if (!mounted) return;
 
@@ -170,6 +167,7 @@ class _RuleListPageState extends State<RuleListPage>
         final enabledCount = rules.where((r) => r.isEnabled).length;
 
         return Scaffold(
+          backgroundColor: Colors.grey[100],
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
