@@ -17,7 +17,14 @@ class RuleImportValidator {
 
   /// 验证活动名格式
   static void validateActivityName(String activityName) {
-    final regex = RegExp(r'^[a-zA-Z][a-zA-Z0-9_$.]*$');
+    if (!activityName.startsWith('.')) {
+      throw RuleImportException.invalidFieldValue(
+        'activityName',
+        '活动名必须以点号(.)开头',
+      );
+    }
+
+    final regex = RegExp(r'^\.[a-zA-Z][a-zA-Z0-9_$.]*$');
     if (!regex.hasMatch(activityName)) {
       throw RuleImportException.invalidFieldValue(
         'activityName',

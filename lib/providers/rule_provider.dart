@@ -6,6 +6,8 @@ import '../exceptions/tag_activation_exception.dart';
 import '../models/rule_import.dart';
 import '../utils/rule_import_validator.dart';
 import '../exceptions/rule_import_exception.dart';
+import '../utils/rule_field_validator.dart';
+import '../models/rule_validation_result.dart';
 
 class RuleProvider extends ChangeNotifier {
   final RuleRepository _repository;
@@ -14,6 +16,7 @@ class RuleProvider extends ChangeNotifier {
   Set<String> _activeTags = {};
   bool _isLoading = false;
   String? _error;
+  Map<String, RuleValidationResult> _validationResults = {};
 
   RuleProvider(this._repository) : _storageRepository = StorageRepository();
 
@@ -21,6 +24,8 @@ class RuleProvider extends ChangeNotifier {
   Set<String> get activeTags => Set.unmodifiable(_activeTags);
   bool get isLoading => _isLoading;
   String? get error => _error;
+  Map<String, RuleValidationResult> get validationResults =>
+      Map.unmodifiable(_validationResults);
 
   // 获取所有已使用的标签
   Set<String> get allTags {
@@ -159,10 +164,104 @@ class RuleProvider extends ChangeNotifier {
     }
   }
 
+  /// 验证单个字段
+  RuleValidationResult validateField(String fieldName, dynamic value) {
+    RuleValidationResult result;
+
+    switch (fieldName) {
+      case 'name':
+        result = RuleFieldValidator.validateName(value as String?);
+        break;
+      case 'packageName':
+        result = RuleFieldValidator.validatePackageName(value as String?);
+        break;
+      case 'activityName':
+        result = RuleFieldValidator.validateActivityName(value as String?);
+        break;
+      case 'tags':
+        result = RuleFieldValidator.validateTags(value as List<String>?);
+        break;
+      case 'overlayStyle':
+        result = RuleFieldValidator.validateOverlayStyle(value);
+        break;
+      default:
+        result = RuleValidationResult.fieldError(
+          fieldName,
+          '未知字段',
+          code: 'UNKNOWN_FIELD',
+        );
+    }
+
+    _validationResults[fieldName] = result;
+    notifyListeners();
+    return result;
+  }
+
+  /// 清除字段验证结果
+  void clearFieldValidation(String fieldName) {
+    _validationResults.remove(fieldName);
+    notifyListeners();
+  }
+
+  /// 清除所有验证结果
+  void clearAllValidations() {
+    _validationResults.clear();
+    notifyListeners();
+  }
+
+  /// 验证整个规则
+  bool validateRule(Rule rule) {
+    try {
+      _validateRule(rule);
+      return true;
+    } catch (e) {
+      if (e is RuleImportException) {
+        _validationResults[e.code ?? 'UNKNOWN'] =
+            RuleValidationResult.fromException(e);
+      }
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 获取字段验证结果
+  RuleValidationResult? getFieldValidation(String fieldName) {
+    return _validationResults[fieldName];
+  }
+
+  /// 检查字段是否有效
+  bool isFieldValid(String fieldName) {
+    final result = _validationResults[fieldName];
+    return result?.isValid ?? true;
+  }
+
+  /// 获取字段错误信息
+  String? getFieldError(String fieldName) {
+    final result = _validationResults[fieldName];
+    return result?.isValid == false ? result?.errorMessage : null;
+  }
+
+  @override
   Future<void> addRule(Rule rule) async {
     try {
+      // 验证规则
+      if (!validateRule(rule)) {
+        throw RuleImportException('规则验证失败');
+      }
+
+      // 检查重复
+      if (_rules.any((r) =>
+          r.packageName == rule.packageName &&
+          r.activityName == rule.activityName)) {
+        throw RuleImportException.invalidFieldValue(
+          'rule',
+          '规则已存在: ${rule.packageName}/${rule.activityName}',
+        );
+      }
+
       await _repository.addRule(rule);
       _rules.add(rule);
+      clearAllValidations();
       notifyListeners();
     } catch (e) {
       _error = e.toString();
@@ -173,12 +272,30 @@ class RuleProvider extends ChangeNotifier {
     }
   }
 
+  @override
   Future<void> updateRule(Rule rule) async {
     try {
+      // 验证规则
+      if (!validateRule(rule)) {
+        throw RuleImportException('规则验证失败');
+      }
+
+      // 检查重复（排除自身）
+      if (_rules.any((r) =>
+          r.id != rule.id &&
+          r.packageName == rule.packageName &&
+          r.activityName == rule.activityName)) {
+        throw RuleImportException.invalidFieldValue(
+          'rule',
+          '规则已存在: ${rule.packageName}/${rule.activityName}',
+        );
+      }
+
       await _repository.updateRule(rule);
       final index = _rules.indexWhere((r) => r.id == rule.id);
       if (index != -1) {
         _rules[index] = rule;
+        clearAllValidations();
         notifyListeners();
       }
     } catch (e) {

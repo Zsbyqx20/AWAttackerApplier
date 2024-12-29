@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import '../../models/overlay_style.dart';
 import '../../models/rule.dart';
 import '../../providers/rule_provider.dart';
+import '../../providers/rule_validation_provider.dart';
 import '../../widgets/text_input_field.dart';
 import '../../widgets/style_editor.dart';
 import '../../widgets/tag_chips.dart';
+import '../../widgets/validation_error_widget.dart';
 
 class RuleEditPage extends StatefulWidget {
   final Rule? rule;
@@ -24,10 +26,13 @@ class _RuleEditPageState extends State<RuleEditPage>
   late final TextEditingController _textController;
   late final TextEditingController _uiAutomatorCodeController;
   late TabController _tabController;
+  late final RuleValidationProvider _validationProvider;
+  final ScrollController _scrollController = ScrollController();
 
   List<OverlayStyle> _overlayStyles = [];
   List<String> _tags = [];
   int _currentTabIndex = 0;
+  bool _isValid = false;
 
   OverlayStyle get _currentStyle => _overlayStyles[_currentTabIndex];
 
@@ -51,6 +56,8 @@ class _RuleEditPageState extends State<RuleEditPage>
   @override
   void initState() {
     super.initState();
+    _validationProvider = RuleValidationProvider();
+
     _nameController = TextEditingController(text: widget.rule?.name ?? '');
     _packageNameController =
         TextEditingController(text: widget.rule?.packageName ?? '');
@@ -69,6 +76,44 @@ class _RuleEditPageState extends State<RuleEditPage>
         TextEditingController(text: _currentStyle.uiAutomatorCode);
 
     _initTabController();
+
+    // 初始验证
+    _validateAllFields();
+
+    // 添加监听器
+    _nameController.addListener(() {
+      _validationProvider.validateField('name', _nameController.text);
+      _updateSaveButtonState();
+    });
+    _packageNameController.addListener(() {
+      _validationProvider.validateField(
+          'packageName', _packageNameController.text);
+      _updateSaveButtonState();
+    });
+    _activityNameController.addListener(() {
+      _validationProvider.validateField(
+          'activityName', _activityNameController.text);
+      _updateSaveButtonState();
+    });
+  }
+
+  void _validateAllFields() {
+    _validationProvider.validateField('name', _nameController.text);
+    _validationProvider.validateField(
+        'packageName', _packageNameController.text);
+    _validationProvider.validateField(
+        'activityName', _activityNameController.text);
+    _validationProvider.validateField('tags', _tags);
+    for (final style in _overlayStyles) {
+      _validationProvider.validateField('overlayStyle', style);
+    }
+    _updateSaveButtonState();
+  }
+
+  void _updateSaveButtonState() {
+    setState(() {
+      _isValid = _validationProvider.state.isValid;
+    });
   }
 
   void _addOverlayStyle() {
@@ -228,18 +273,108 @@ class _RuleEditPageState extends State<RuleEditPage>
   }
 
   void _saveRule() {
-    final rule = Rule(
-      id: widget.rule?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      name: _nameController.text,
-      packageName: _packageNameController.text,
-      activityName: _activityNameController.text,
-      isEnabled: widget.rule?.isEnabled ?? false,
-      overlayStyles: _overlayStyles,
-      tags: _tags,
-    );
+    // 验证所有字段
+    _validateAllFields();
 
-    Navigator.of(context).pop(rule);
+    // 如果验证通过，保存并返回
+    if (_validationProvider.state.isValid) {
+      final rule = Rule(
+        id: widget.rule?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: _nameController.text,
+        packageName: _packageNameController.text,
+        activityName: _activityNameController.text,
+        isEnabled: widget.rule?.isEnabled ?? false,
+        overlayStyles: _overlayStyles,
+        tags: _tags,
+      );
+      Navigator.of(context).pop(rule);
+      return;
+    }
+
+    // 如果验证失败，找到第一个错误字段并滚动到其位置
+    final firstErrorField = _validationProvider.state.fieldResults.entries
+        .where((entry) => !entry.value.isValid)
+        .map((entry) => entry.key)
+        .first;
+
+    // 获取错误字段对应的GlobalKey
+    final fieldKeys = {
+      'name': _nameFieldKey,
+      'packageName': _packageNameFieldKey,
+      'activityName': _activityNameFieldKey,
+      'tags': _tagsFieldKey,
+    };
+
+    // 获取字段的显示名称
+    final fieldDisplayNames = {
+      'name': '规则名称',
+      'packageName': '包名',
+      'activityName': '活动名',
+      'tags': '标签',
+      'overlayStyle': '悬浮窗样式',
+    };
+
+    final errorFieldKey = fieldKeys[firstErrorField];
+    if (errorFieldKey?.currentContext != null) {
+      Scrollable.ensureVisible(
+        errorFieldKey!.currentContext!,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        alignment: 0.2,
+      );
+    }
+
+    // 构建详细的错误信息
+    final validationResult =
+        _validationProvider.getFieldValidation(firstErrorField);
+    final errorMessage = StringBuffer();
+
+    // 添加字段名称
+    errorMessage
+        .write('${fieldDisplayNames[firstErrorField] ?? firstErrorField}: ');
+
+    // 添加错误消息
+    errorMessage.write(validationResult?.errorMessage ?? '验证失败');
+
+    // 如果有错误代码，添加错误代码
+    if (validationResult?.errorCode != null) {
+      errorMessage.write(' [${validationResult!.errorCode}]');
+    }
+
+    // 如果有详细信息，添加详细信息
+    if (validationResult?.errorDetails != null &&
+        validationResult!.errorDetails!.isNotEmpty) {
+      errorMessage.write('\n${validationResult.errorDetails}');
+    }
+
+    // 显示错误提示
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          errorMessage.toString(),
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        duration: const Duration(seconds: 4), // 增加显示时间，让用户有足够时间阅读
+        action: SnackBarAction(
+          label: '知道了',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
   }
+
+  // 添加字段的GlobalKey
+  final _nameFieldKey = GlobalKey();
+  final _packageNameFieldKey = GlobalKey();
+  final _activityNameFieldKey = GlobalKey();
+  final _tagsFieldKey = GlobalKey();
 
   @override
   void dispose() {
@@ -249,6 +384,7 @@ class _RuleEditPageState extends State<RuleEditPage>
     _textController.dispose();
     _uiAutomatorCodeController.dispose();
     _tabController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -266,7 +402,7 @@ class _RuleEditPageState extends State<RuleEditPage>
         backgroundColor: Colors.white,
         actions: [
           TextButton(
-            onPressed: _saveRule,
+            onPressed: _saveRule, // 移除条件判断，始终允许点击
             child: Text(
               '保存',
               style: TextStyle(
@@ -278,162 +414,187 @@ class _RuleEditPageState extends State<RuleEditPage>
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('基本信息'),
-                  const SizedBox(height: 16),
-                  TextInputField(
-                    label: '规则名称',
-                    hint: '请输入规则名称',
-                    controller: _nameController,
-                    onChanged: (value) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  TextInputField(
-                    label: '包名',
-                    hint: '请输入包名',
-                    controller: _packageNameController,
-                    onChanged: (value) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  TextInputField(
-                    label: '活动名',
-                    hint: '请输入活动名',
-                    controller: _activityNameController,
-                    onChanged: (value) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '标签',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[700],
-                          fontWeight: FontWeight.w500,
-                        ),
+      body: ListenableBuilder(
+        listenable: _validationProvider,
+        builder: (context, child) => SingleChildScrollView(
+          controller: _scrollController,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('基本信息'),
+                    const SizedBox(height: 16),
+                    ValidationErrorContainer(
+                      key: _nameFieldKey,
+                      validationResult:
+                          _validationProvider.getFieldValidation('name'),
+                      child: TextInputField(
+                        label: '规则名称',
+                        hint: '请输入规则名称',
+                        controller: _nameController,
+                        onChanged: (value) => setState(() {}),
                       ),
-                      const SizedBox(height: 8),
-                      TagChipsInput(
-                        tags: _tags,
-                        suggestions: ruleProvider.allTags.toList(),
-                        onChanged: _updateTags,
-                        maxTags: 10,
+                    ),
+                    const SizedBox(height: 16),
+                    ValidationErrorContainer(
+                      key: _packageNameFieldKey,
+                      validationResult:
+                          _validationProvider.getFieldValidation('packageName'),
+                      child: TextInputField(
+                        label: '包名',
+                        hint: '请输入包名',
+                        controller: _packageNameController,
+                        onChanged: (value) => setState(() {}),
                       ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildSectionTitle('悬浮窗样式'),
-                      Row(
+                    ),
+                    const SizedBox(height: 16),
+                    ValidationErrorContainer(
+                      key: _activityNameFieldKey,
+                      validationResult: _validationProvider
+                          .getFieldValidation('activityName'),
+                      child: TextInputField(
+                        label: '活动名',
+                        hint: '请输入活动名',
+                        controller: _activityNameController,
+                        onChanged: (value) => setState(() {}),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ValidationErrorContainer(
+                      key: _tagsFieldKey,
+                      validationResult:
+                          _validationProvider.getFieldValidation('tags'),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          IconButton(
-                            onPressed: _removeCurrentOverlayStyle,
-                            icon: Icon(
-                              Icons.remove_circle_outline,
-                              color: Colors.red[400],
+                          Text(
+                            '标签',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                              fontWeight: FontWeight.w500,
                             ),
-                            tooltip: '删除当前样式',
-                            splashRadius: 24,
                           ),
-                          IconButton(
-                            onPressed: _addOverlayStyle,
-                            icon: Icon(
-                              Icons.add_circle_outline,
-                              color: theme.colorScheme.primary,
-                            ),
-                            tooltip: '添加新样式',
-                            splashRadius: 24,
+                          const SizedBox(height: 8),
+                          TagChipsInput(
+                            tags: _tags,
+                            suggestions: ruleProvider.allTags.toList(),
+                            onChanged: _updateTags,
+                            maxTags: 10,
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[200]!),
                     ),
-                    padding: const EdgeInsets.all(4),
-                    child: Center(
-                      child: TabBar(
-                        controller: _tabController,
-                        isScrollable: true,
-                        labelColor: theme.colorScheme.primary,
-                        unselectedLabelColor: Colors.grey[600],
-                        labelStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildSectionTitle('悬浮窗样式'),
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: _removeCurrentOverlayStyle,
+                              icon: Icon(
+                                Icons.remove_circle_outline,
+                                color: Colors.red[400],
+                              ),
+                              tooltip: '删除当前样式',
+                              splashRadius: 24,
+                            ),
+                            IconButton(
+                              onPressed: _addOverlayStyle,
+                              icon: Icon(
+                                Icons.add_circle_outline,
+                                color: theme.colorScheme.primary,
+                              ),
+                              tooltip: '添加新样式',
+                              splashRadius: 24,
+                            ),
+                          ],
                         ),
-                        unselectedLabelStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        indicator: BoxDecoration(
-                          color: theme.colorScheme.primary.withAlpha(26),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: theme.colorScheme.primary.withAlpha(51),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: Center(
+                        child: TabBar(
+                          controller: _tabController,
+                          isScrollable: true,
+                          labelColor: theme.colorScheme.primary,
+                          unselectedLabelColor: Colors.grey[600],
+                          labelStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ),
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: EdgeInsets.zero,
-                        dividerColor: Colors.transparent,
-                        tabAlignment: TabAlignment.center,
-                        tabs: List.generate(
-                          _overlayStyles.length,
-                          (index) => Container(
-                            width: 80,
-                            height: 36,
-                            alignment: Alignment.center,
-                            child: Text('样式 ${index + 1}'),
+                          unselectedLabelStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          indicator: BoxDecoration(
+                            color: theme.colorScheme.primary.withAlpha(26),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: theme.colorScheme.primary.withAlpha(51),
+                            ),
+                          ),
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          labelPadding:
+                              const EdgeInsets.symmetric(horizontal: 4),
+                          padding: EdgeInsets.zero,
+                          dividerColor: Colors.transparent,
+                          tabAlignment: TabAlignment.center,
+                          tabs: List.generate(
+                            _overlayStyles.length,
+                            (index) => Container(
+                              width: 80,
+                              height: 36,
+                              alignment: Alignment.center,
+                              child: Text('样式 ${index + 1}'),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  StyleEditor(
-                    style: _currentStyle,
-                    textController: _textController,
-                    uiAutomatorCodeController: _uiAutomatorCodeController,
-                    onTextChanged: _updateTextContent,
-                    onFontSizeChanged: _updateFontSize,
-                    onPositionChanged: _updatePosition,
-                    onBackgroundColorChanged: _updateBackgroundColor,
-                    onTextColorChanged: _updateTextColor,
-                    onHorizontalAlignChanged: _updateHorizontalAlign,
-                    onVerticalAlignChanged: _updateVerticalAlign,
-                    onUiAutomatorCodeChanged: _updateUiAutomatorCode,
-                    onPaddingChanged: _updatePadding,
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    StyleEditor(
+                      style: _currentStyle,
+                      textController: _textController,
+                      uiAutomatorCodeController: _uiAutomatorCodeController,
+                      onTextChanged: _updateTextContent,
+                      onFontSizeChanged: _updateFontSize,
+                      onPositionChanged: _updatePosition,
+                      onBackgroundColorChanged: _updateBackgroundColor,
+                      onTextColorChanged: _updateTextColor,
+                      onHorizontalAlignChanged: _updateHorizontalAlign,
+                      onVerticalAlignChanged: _updateVerticalAlign,
+                      onUiAutomatorCodeChanged: _updateUiAutomatorCode,
+                      onPaddingChanged: _updatePadding,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
