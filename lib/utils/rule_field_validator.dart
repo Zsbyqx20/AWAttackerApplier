@@ -15,10 +15,9 @@ class RuleFieldValidator {
     try {
       RuleImportValidator.validatePackageName(packageName);
       return RuleValidationResult.success();
+    } on RuleImportException catch (e) {
+      return RuleValidationResult.fromException(e);
     } catch (e) {
-      if (e is RuleImportException) {
-        return RuleValidationResult.fromException(e);
-      }
       return RuleValidationResult.fieldError('packageName', e.toString());
     }
   }
@@ -32,10 +31,9 @@ class RuleFieldValidator {
     try {
       RuleImportValidator.validateActivityName(activityName);
       return RuleValidationResult.success();
+    } on RuleImportException catch (e) {
+      return RuleValidationResult.fromException(e);
     } catch (e) {
-      if (e is RuleImportException) {
-        return RuleValidationResult.fromException(e);
-      }
       return RuleValidationResult.fieldError('activityName', e.toString());
     }
   }
@@ -56,10 +54,9 @@ class RuleFieldValidator {
     try {
       RuleImportValidator.validateTags([tag]);
       return RuleValidationResult.success();
+    } on RuleImportException catch (e) {
+      return RuleValidationResult.fromException(e);
     } catch (e) {
-      if (e is RuleImportException) {
-        return RuleValidationResult.fromException(e);
-      }
       return RuleValidationResult.fieldError('tag', e.toString());
     }
   }
@@ -73,10 +70,9 @@ class RuleFieldValidator {
     try {
       RuleImportValidator.validateTags(tags);
       return RuleValidationResult.success();
+    } on RuleImportException catch (e) {
+      return RuleValidationResult.fromException(e);
     } catch (e) {
-      if (e is RuleImportException) {
-        return RuleValidationResult.fromException(e);
-      }
       return RuleValidationResult.fieldError('tags', e.toString());
     }
   }
@@ -90,10 +86,9 @@ class RuleFieldValidator {
     try {
       RuleImportValidator.validateOverlayStyle(style);
       return RuleValidationResult.success();
+    } on RuleImportException catch (e) {
+      return RuleValidationResult.fromException(e);
     } catch (e) {
-      if (e is RuleImportException) {
-        return RuleValidationResult.fromException(e);
-      }
       return RuleValidationResult.fieldError('overlayStyle', e.toString());
     }
   }
@@ -107,10 +102,9 @@ class RuleFieldValidator {
     try {
       RuleImportValidator.validateColor(color, fieldName);
       return RuleValidationResult.success();
+    } on RuleImportException catch (e) {
+      return RuleValidationResult.fromException(e);
     } catch (e) {
-      if (e is RuleImportException) {
-        return RuleValidationResult.fromException(e);
-      }
       return RuleValidationResult.fieldError(fieldName, e.toString());
     }
   }

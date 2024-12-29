@@ -23,8 +23,19 @@ class RuleValidationResult {
 
   /// 从RuleImportException创建失败的验证结果
   factory RuleValidationResult.fromException(RuleImportException exception) {
+    // 从异常详情中提取字段名
+    String? fieldName;
+    if (exception.details is String) {
+      final detailsStr = exception.details as String;
+      final match = RegExp(r'字段 ([^:]+):').firstMatch(detailsStr);
+      if (match != null && match.groupCount >= 1) {
+        fieldName = match.group(1);
+      }
+    }
+
     return RuleValidationResult(
       isValid: false,
+      fieldName: fieldName,
       errorMessage: exception.message,
       errorCode: exception.code,
       errorDetails: exception.details,

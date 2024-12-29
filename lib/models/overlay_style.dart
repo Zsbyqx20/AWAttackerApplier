@@ -102,8 +102,8 @@ class OverlayStyle {
           (textColor.g * 255).toInt() << 8 |
           (textColor.b * 255).toInt() |
           (0xFF << 24),
-      'horizontalAlign': horizontalAlign.index,
-      'verticalAlign': verticalAlign.index,
+      'horizontalAlign': _textAlignToString(horizontalAlign),
+      'verticalAlign': _textAlignToString(verticalAlign),
       'uiAutomatorCode': uiAutomatorCode,
       'padding': {
         'left': padding.left,
@@ -112,6 +112,20 @@ class OverlayStyle {
         'bottom': padding.bottom,
       },
     };
+  }
+
+  // 将 TextAlign 转换为字符串
+  String _textAlignToString(TextAlign align) {
+    switch (align) {
+      case TextAlign.left:
+        return 'left';
+      case TextAlign.center:
+        return 'center';
+      case TextAlign.right:
+        return 'right';
+      default:
+        return 'left'; // 默认为左对齐
+    }
   }
 
   factory OverlayStyle.fromJson(Map<String, dynamic> json) {

@@ -71,6 +71,12 @@ class RuleImportValidator {
       throw RuleImportException.invalidFieldValue(
           'uiAutomatorCode', 'UI Automator代码不能为空');
     }
+
+    // 验证背景色
+    validateColor(style.backgroundColor, 'backgroundColor');
+
+    // 验证文本色
+    validateColor(style.textColor, 'textColor');
   }
 
   /// 验证颜色值

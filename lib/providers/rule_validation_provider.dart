@@ -1,37 +1,8 @@
 import 'package:flutter/foundation.dart';
-import '../models/rule.dart';
+import '../models/rule_validation_state.dart';
 import '../models/rule_validation_result.dart';
 import '../utils/rule_field_validator.dart';
-
-/// 规则验证状态
-class RuleValidationState {
-  final Map<String, RuleValidationResult> fieldResults;
-  final bool isValid;
-
-  const RuleValidationState({
-    required this.fieldResults,
-    required this.isValid,
-  });
-
-  /// 创建初始状态
-  factory RuleValidationState.initial() {
-    return const RuleValidationState(
-      fieldResults: {},
-      isValid: false,
-    );
-  }
-
-  /// 创建新的状态
-  RuleValidationState copyWith({
-    Map<String, RuleValidationResult>? fieldResults,
-    bool? isValid,
-  }) {
-    return RuleValidationState(
-      fieldResults: fieldResults ?? this.fieldResults,
-      isValid: isValid ?? this.isValid,
-    );
-  }
-}
+import '../models/rule.dart';
 
 /// 规则验证状态管理器
 class RuleValidationProvider extends ChangeNotifier {
