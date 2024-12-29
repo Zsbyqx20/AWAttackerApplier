@@ -3,12 +3,10 @@ import '../models/rule.dart';
 
 class RuleStatsCard extends StatelessWidget {
   final List<Rule> rules;
-  final VoidCallback onAddRule;
 
   const RuleStatsCard({
     super.key,
     required this.rules,
-    required this.onAddRule,
   });
 
   @override
@@ -70,24 +68,6 @@ class RuleStatsCard extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: onAddRule,
-                icon: const Icon(Icons.add),
-                label: const Text('添加规则'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
             ),
           ],
         ),
