@@ -194,78 +194,110 @@ class _RuleListPageState extends State<RuleListPage>
                 ),
             ],
           ),
-          floatingActionButton: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_isExpanded) ...[
-                ScaleTransition(
-                  scale: CurvedAnimation(
-                    parent: _controller,
-                    curve: Curves.easeOut,
-                  ),
-                  child: FloatingActionButton.extended(
-                    heroTag: 'add',
-                    onPressed: () {
-                      setState(() => _isExpanded = false);
-                      _controller.reverse();
-                      _handleAddRule();
-                    },
-                    icon: const Icon(Icons.add_box),
-                    label: const Text('添加规则'),
-                  ),
+          floatingActionButton: Padding(
+            padding: const EdgeInsets.only(right: 24, bottom: 24),
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              clipBehavior: Clip.none,
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (_isExpanded) ...[
+                      ScaleTransition(
+                        scale: CurvedAnimation(
+                          parent: _controller,
+                          curve: Curves.easeOutBack,
+                          reverseCurve: Curves.easeInBack,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: FloatingActionButton.extended(
+                            heroTag: 'add',
+                            elevation: 4,
+                            backgroundColor: const Color(0xFFE3F2FD),
+                            foregroundColor: const Color(0xFF1565C0),
+                            onPressed: () {
+                              setState(() => _isExpanded = false);
+                              _controller.reverse();
+                              _handleAddRule();
+                            },
+                            icon: const Icon(Icons.add_box),
+                            label: const Text('添加规则'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ScaleTransition(
+                        scale: CurvedAnimation(
+                          parent: _controller,
+                          curve: Curves.easeOutBack,
+                          reverseCurve: Curves.easeInBack,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: FloatingActionButton.extended(
+                            heroTag: 'import',
+                            elevation: 4,
+                            backgroundColor: const Color(0xFFE8EAF6),
+                            foregroundColor: const Color(0xFF3949AB),
+                            onPressed: () {
+                              setState(() => _isExpanded = false);
+                              _controller.reverse();
+                              _handleImport();
+                            },
+                            icon: const Icon(Icons.file_open_outlined),
+                            label: const Text('导入规则'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ScaleTransition(
+                        scale: CurvedAnimation(
+                          parent: _controller,
+                          curve: Curves.easeOutBack,
+                          reverseCurve: Curves.easeInBack,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: FloatingActionButton.extended(
+                            heroTag: 'export',
+                            elevation: 4,
+                            backgroundColor: const Color(0xFFF3E5F5),
+                            foregroundColor: const Color(0xFF6A1B9A),
+                            onPressed: () {
+                              setState(() => _isExpanded = false);
+                              _controller.reverse();
+                              _handleExport();
+                            },
+                            icon: const Icon(Icons.save_alt_outlined),
+                            label: const Text('导出规则'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    FloatingActionButton(
+                      elevation: 6,
+                      onPressed: () {
+                        setState(() => _isExpanded = !_isExpanded);
+                        if (_isExpanded) {
+                          _controller.forward();
+                        } else {
+                          _controller.reverse();
+                        }
+                      },
+                      child: AnimatedRotation(
+                        duration: const Duration(milliseconds: 200),
+                        turns: _isExpanded ? 0.125 : 0,
+                        child: const Icon(Icons.add),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                ScaleTransition(
-                  scale: CurvedAnimation(
-                    parent: _controller,
-                    curve: Curves.easeOut,
-                  ),
-                  child: FloatingActionButton.extended(
-                    heroTag: 'import',
-                    onPressed: () {
-                      setState(() => _isExpanded = false);
-                      _controller.reverse();
-                      _handleImport();
-                    },
-                    icon: const Icon(Icons.file_upload),
-                    label: const Text('导入规则'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ScaleTransition(
-                  scale: CurvedAnimation(
-                    parent: _controller,
-                    curve: Curves.easeOut,
-                  ),
-                  child: FloatingActionButton.extended(
-                    heroTag: 'export',
-                    onPressed: () {
-                      setState(() => _isExpanded = false);
-                      _controller.reverse();
-                      _handleExport();
-                    },
-                    icon: const Icon(Icons.file_download),
-                    label: const Text('导出规则'),
-                  ),
-                ),
-                const SizedBox(height: 16),
               ],
-              FloatingActionButton(
-                onPressed: () {
-                  setState(() => _isExpanded = !_isExpanded);
-                  if (_isExpanded) {
-                    _controller.forward();
-                  } else {
-                    _controller.reverse();
-                  }
-                },
-                child: AnimatedRotation(
-                  duration: const Duration(milliseconds: 200),
-                  turns: _isExpanded ? 0.125 : 0,
-                  child: const Icon(Icons.add),
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
