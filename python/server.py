@@ -1,15 +1,23 @@
+import asyncio
+import base64
+import hashlib
+import json
+import logging
+import shutil
+import tempfile
+import time
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Set, cast
+
+import uvicorn
+from appium import webdriver
+from appium.options.android import UiAutomator2Options
+from appium.webdriver.common.appiumby import AppiumBy
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
-from appium import webdriver
-from appium.webdriver.common.appiumby import AppiumBy
-from appium.options.android import UiAutomator2Options
-import logging
-from typing import Optional, Dict, cast, Set
-import uvicorn
-from contextlib import asynccontextmanager
-import asyncio
-import time
-import hashlib
 
 # 配置日志
 logger = logging.getLogger()
@@ -35,6 +43,10 @@ CAPABILITIES = {
     "allowInsecure": ["adb_shell", "shell"],
 }
 
+# 添加新的配置常量
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
 
 # 数据模型定义
 class WindowEvent(BaseModel):
@@ -45,12 +57,40 @@ class WindowEvent(BaseModel):
     source_changed: bool = False  # 添加标识页面源码是否改变的字段
 
 
+# 文件传输相关的数据模型
+class FileTransferMessage(BaseModel):
+    type: str  # 消息类型：START/CHUNK/END
+    file_id: str  # 文件唯一标识
+    total_chunks: Optional[int] = None  # 总分片数
+    chunk_index: Optional[int] = None  # 当前分片索引
+    chunk_data: Optional[str] = None  # Base64编码的分片数据
+    timestamp: int  # 时间戳
+    file_name: Optional[str] = None  # 添加文件名字段
+    content_type: Optional[str] = None  # 添加内容类型字段
+
+
+@dataclass
+class FileTransferSession:
+    file_id: str
+    total_chunks: int
+    received_chunks: List[Optional[str]]
+    start_time: datetime
+    last_update: datetime
+    file_name: Optional[str] = None
+    content_type: Optional[str] = None
+    temp_file: Optional[Path] = None
+    save_dir: Optional[Path] = UPLOAD_DIR  # 添加保存目录字段
+
+
 # WebSocket连接管理器
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Set[WebSocket] = set()
-        self.monitoring_task = None  # 添加监控任务引用
-        self.ping_task = None  # 添加ping任务引用
+        self.monitoring_task = None
+        self.ping_task = None
+        self.file_transfers: Dict[str, FileTransferSession] = {}
+        self.temp_dir = Path(tempfile.gettempdir()) / "awattacker_transfers"
+        self.temp_dir.mkdir(parents=True, exist_ok=True)
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -110,6 +150,181 @@ class ConnectionManager:
         except asyncio.CancelledError:
             logger.info("Ping task cancelled")
             return
+
+    async def handle_file_transfer(
+        self, websocket: WebSocket, message: FileTransferMessage
+    ):
+        """处理文件传输消息"""
+        try:
+            if message.type == "START":
+                # 创建临时文件
+                temp_file = (
+                    self.temp_dir
+                    / f"{message.file_id}_{message.file_name or 'unnamed'}"
+                )
+
+                # 创建新的传输会话
+                self.file_transfers[message.file_id] = FileTransferSession(
+                    file_id=message.file_id,
+                    total_chunks=message.total_chunks or 0,
+                    received_chunks=[None] * (message.total_chunks or 0),
+                    start_time=datetime.now(),
+                    last_update=datetime.now(),
+                    file_name=message.file_name,
+                    content_type=message.content_type,
+                    temp_file=temp_file,
+                )
+
+                # 发送确认消息
+                await websocket.send_json({
+                    "type": "FILE_TRANSFER_ACK",
+                    "file_id": message.file_id,
+                    "status": "started",
+                    "temp_file": str(temp_file),
+                })
+                logger.info(f"Started file transfer session: {message.file_id}")
+
+            elif message.type == "CHUNK":
+                if message.file_id not in self.file_transfers:
+                    raise ValueError(
+                        f"No active transfer session for file_id: {message.file_id}"
+                    )
+
+                session = self.file_transfers[message.file_id]
+                chunk_index = message.chunk_index or 0
+
+                # 存储分片数据
+                if 0 <= chunk_index < session.total_chunks:
+                    session.received_chunks[chunk_index] = message.chunk_data
+                    session.last_update = datetime.now()
+
+                # 计算进度
+                received_count = sum(
+                    1 for chunk in session.received_chunks if chunk is not None
+                )
+                progress = (received_count / session.total_chunks) * 100
+
+                # 发送进度更新
+                await websocket.send_json({
+                    "type": "FILE_TRANSFER_PROGRESS",
+                    "file_id": message.file_id,
+                    "progress": progress,
+                    "received_chunks": received_count,
+                    "total_chunks": session.total_chunks,
+                })
+
+                logger.debug(
+                    f"Received chunk {chunk_index + 1}/{session.total_chunks} for file {message.file_id}"
+                )
+
+            elif message.type == "END":
+                if message.file_id not in self.file_transfers:
+                    raise ValueError(
+                        f"No active transfer session for file_id: {message.file_id}"
+                    )
+
+                session = self.file_transfers[message.file_id]
+
+                # 检查是否所有分片都已接收
+                if None in session.received_chunks:
+                    missing_chunks = [
+                        i
+                        for i, chunk in enumerate(session.received_chunks)
+                        if chunk is None
+                    ]
+                    raise ValueError(
+                        f"Incomplete transfer, missing chunks: {missing_chunks}"
+                    )
+
+                # 合并所有分片
+                complete_data = "".join(
+                    chunk for chunk in session.received_chunks if chunk is not None
+                )
+
+                # 处理完整的文件数据
+                try:
+                    decoded_data = base64.b64decode(complete_data)
+
+                    # 根据内容类型处理数据
+                    if session.content_type == "application/json":
+                        # 解析JSON数据
+                        json_data = json.loads(decoded_data.decode("utf-8"))
+
+                        # 保存到临时文件
+                        if session.temp_file:
+                            with open(session.temp_file, "w", encoding="utf-8") as f:
+                                json.dump(json_data, f, ensure_ascii=False, indent=2)
+
+                            # 移动到最终保存位置
+                            if session.save_dir:
+                                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                                final_filename = (
+                                    f"{timestamp}_{session.file_name or 'unnamed.json'}"
+                                )
+                                final_path = session.save_dir / final_filename
+                                shutil.copy2(session.temp_file, final_path)
+                                logger.info(f"File saved to: {final_path}")
+                    else:
+                        # 保存原始数据到临时文件
+                        if session.temp_file:
+                            with open(session.temp_file, "wb") as f:
+                                f.write(decoded_data)
+
+                            # 移动到最终保存位置
+                            if session.save_dir:
+                                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                                final_filename = (
+                                    f"{timestamp}_{session.file_name or 'unnamed.bin'}"
+                                )
+                                final_path = session.save_dir / final_filename
+                                shutil.copy2(session.temp_file, final_path)
+                                logger.info(f"File saved to: {final_path}")
+
+                    # 发送完成确认
+                    await websocket.send_json({
+                        "type": "FILE_TRANSFER_COMPLETE",
+                        "file_id": message.file_id,
+                        "status": "success",
+                        "file_path": str(session.temp_file)
+                        if session.temp_file
+                        else None,
+                        "saved_path": str(final_path)
+                        if "final_path" in locals()
+                        else None,
+                    })
+                    logger.info(f"File transfer completed: {message.file_id}")
+
+                except Exception as e:
+                    logger.error(f"Error processing complete file: {str(e)}")
+                    await websocket.send_json({
+                        "type": "FILE_TRANSFER_ERROR",
+                        "file_id": message.file_id,
+                        "error": str(e),
+                    })
+                finally:
+                    # 清理临时文件
+                    if session.temp_file and session.temp_file.exists():
+                        try:
+                            session.temp_file.unlink()
+                            logger.debug(f"Temporary file removed: {session.temp_file}")
+                        except Exception as e:
+                            logger.error(f"Error removing temporary file: {str(e)}")
+                    # 清理会话数据
+                    del self.file_transfers[message.file_id]
+
+        except Exception as e:
+            logger.error(f"Error in file transfer: {str(e)}")
+            await websocket.send_json({
+                "type": "FILE_TRANSFER_ERROR",
+                "file_id": message.file_id if hasattr(message, "file_id") else None,
+                "error": str(e),
+            })
+            # 清理会话数据和临时文件
+            if hasattr(message, "file_id") and message.file_id in self.file_transfers:
+                session = self.file_transfers[message.file_id]
+                if session.temp_file and session.temp_file.exists():
+                    session.temp_file.unlink()
+                del self.file_transfers[message.file_id]
 
 
 # 创建连接管理器实例
@@ -221,7 +436,7 @@ async def monitor_window_changes():
     last_source_hash = None
 
     try:
-        while True:  # 移除 is_monitoring 检��，使用 task cancellation 来控制
+        while True:  # 移除 is_monitoring 检查，使用 task cancellation 来控制
             try:
                 current_package = driver.current_package
                 current_activity = driver.current_activity
@@ -281,12 +496,17 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            # 接收并处理消息
             message = await websocket.receive_json()
-            if message.get("type") == "pong":
+            message_type = message.get("type")
+
+            if message_type == "pong":
                 logger.debug("Received pong from client")
+            elif message_type in ["START", "CHUNK", "END"]:
+                # 处理文件传输消息
+                transfer_message = FileTransferMessage(**message)
+                await manager.handle_file_transfer(websocket, transfer_message)
             else:
-                logger.warning(f"Received unknown message type: {message.get('type')}")
+                logger.warning(f"Received unknown message type: {message_type}")
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:
