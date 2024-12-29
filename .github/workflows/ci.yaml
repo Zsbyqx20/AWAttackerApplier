@@ -24,6 +24,7 @@ jobs:
           channel: stable
           flutter-version: 3.27.1
       - run: flutter pub get
+      - run: flutter test
       - run: flutter build apk --release
       
       - name: Upload APK
