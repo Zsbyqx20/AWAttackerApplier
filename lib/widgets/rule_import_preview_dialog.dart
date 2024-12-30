@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/rule.dart';
+import '../models/rule_merge_result.dart';
+import '../utils/rule_merger.dart';
+import '../utils/rule_field_validator.dart';
 
 class RuleImportPreviewDialog extends StatelessWidget {
   final List<Rule> rules;
@@ -27,18 +30,34 @@ class RuleImportPreviewDialog extends StatelessWidget {
     );
   }
 
-  bool _hasConflict(Rule rule) {
-    return existingRules.any(
-      (r) =>
-          r.packageName == rule.packageName &&
-          r.activityName == rule.activityName,
-    );
+  RuleMergeResult _checkConflict(Rule rule) {
+    // 首先验证活动名格式
+    final activityNameResult =
+        RuleFieldValidator.validateActivityName(rule.activityName);
+    if (!activityNameResult.isValid) {
+      return RuleMergeResult.conflict(
+        errorMessage: '活动名必须以点号"."开头',
+      );
+    }
+
+    for (final existingRule in existingRules) {
+      final result = RuleMerger.checkConflict(existingRule, rule);
+      if (result.isConflict || result.isMergeable) {
+        return result;
+      }
+    }
+    return RuleMergeResult.success(rule);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final selectedRules = ValueNotifier<List<Rule>>(List.from(rules));
+    // 初始化时只选择没有冲突的规则
+    final initialRules = rules.where((rule) {
+      final result = _checkConflict(rule);
+      return !result.isConflict;
+    }).toList();
+    final selectedRules = ValueNotifier<List<Rule>>(initialRules);
 
     return Dialog(
       elevation: 0,
@@ -98,7 +117,13 @@ class RuleImportPreviewDialog extends StatelessWidget {
               ValueListenableBuilder<List<Rule>>(
                 valueListenable: selectedRules,
                 builder: (context, selected, _) {
-                  final isAllSelected = selected.length == rules.length;
+                  final selectableRules = rules.where((rule) {
+                    final result = _checkConflict(rule);
+                    return !result.isConflict;
+                  }).toList();
+                  // 只有当选中的规则数量等于可选规则数量，且可选规则数量大于0时，才显示为全选状态
+                  final isAllSelected = selectableRules.isNotEmpty &&
+                      selected.length == selectableRules.length;
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.grey[50],
@@ -110,7 +135,12 @@ class RuleImportPreviewDialog extends StatelessWidget {
                         if (isAllSelected) {
                           selectedRules.value = [];
                         } else {
-                          selectedRules.value = List.from(rules);
+                          // 只选择没有冲突的规则
+                          final selectableRules = rules.where((rule) {
+                            final result = _checkConflict(rule);
+                            return !result.isConflict;
+                          }).toList();
+                          selectedRules.value = selectableRules;
                         }
                       },
                       icon: Icon(
@@ -147,184 +177,270 @@ class RuleImportPreviewDialog extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final rule = rules[index];
                       final isSelected = selected.contains(rule);
-                      final hasConflict = _hasConflict(rule);
+                      final mergeResult = _checkConflict(rule);
 
-                      return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: InkWell(
-                          onTap: () {
-                            final newSelected = List<Rule>.from(selected);
-                            if (isSelected) {
-                              newSelected.remove(rule);
-                            } else {
-                              newSelected.add(rule);
-                            }
-                            selectedRules.value = newSelected;
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Checkbox(
-                                  value: isSelected,
-                                  onChanged: (value) {
-                                    final newSelected =
-                                        List<Rule>.from(selected);
-                                    if (value == true) {
-                                      newSelected.add(rule);
-                                    } else {
-                                      newSelected.remove(rule);
-                                    }
-                                    selectedRules.value = newSelected;
-                                  },
-                                ),
-                                Expanded(
-                                  child: Column(
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Column(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[200]!),
+                              ),
+                              child: InkWell(
+                                onTap: () {
+                                  final mergeResult = _checkConflict(rule);
+                                  if (mergeResult.isConflict) return;
+
+                                  final newSelected = List<Rule>.from(selected);
+                                  if (isSelected) {
+                                    newSelected.remove(rule);
+                                  } else {
+                                    newSelected.add(rule);
+                                  }
+                                  selectedRules.value = newSelected;
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              rule.name,
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          if (hasConflict)
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: theme.colorScheme.error
-                                                    .withValues(alpha: 0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                '冲突',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color:
-                                                      theme.colorScheme.error,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
+                                      Checkbox(
+                                        value: isSelected,
+                                        onChanged: mergeResult.isConflict
+                                            ? null
+                                            : (value) {
+                                                final newSelected =
+                                                    List<Rule>.from(selected);
+                                                if (value == true) {
+                                                  newSelected.add(rule);
+                                                } else {
+                                                  newSelected.remove(rule);
+                                                }
+                                                selectedRules.value =
+                                                    newSelected;
+                                              },
                                       ),
-                                      const SizedBox(height: 8),
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[50],
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          border: Border.all(
-                                              color: Colors.grey[200]!),
-                                        ),
+                                      Expanded(
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               children: [
-                                                Icon(
-                                                  Icons.android_outlined,
-                                                  size: 14,
-                                                  color: Colors.grey[600],
-                                                ),
-                                                const SizedBox(width: 6),
                                                 Expanded(
                                                   child: Text(
-                                                    rule.packageName,
-                                                    style: TextStyle(
-                                                      fontSize: 13,
-                                                      color: Colors.grey[700],
+                                                    rule.name,
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w600,
                                                     ),
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
                                                   ),
                                                 ),
+                                                if (mergeResult.isConflict)
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: theme
+                                                          .colorScheme.error
+                                                          .withOpacity(0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              6),
+                                                    ),
+                                                    child: Text(
+                                                      mergeResult.errorMessage
+                                                                  ?.contains(
+                                                                      '活动名') ==
+                                                              true
+                                                          ? '格式错误'
+                                                          : '冲突',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: theme
+                                                            .colorScheme.error,
+                                                      ),
+                                                    ),
+                                                  )
+                                                else if (mergeResult
+                                                    .isMergeable)
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: theme
+                                                          .colorScheme.secondary
+                                                          .withOpacity(0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              6),
+                                                    ),
+                                                    child: Text(
+                                                      '可合并',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: theme.colorScheme
+                                                            .secondary,
+                                                      ),
+                                                    ),
+                                                  ),
                                               ],
                                             ),
-                                            const SizedBox(height: 6),
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.apps_outlined,
-                                                  size: 14,
-                                                  color: Colors.grey[600],
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Expanded(
-                                                  child: Text(
-                                                    rule.activityName,
-                                                    style: TextStyle(
-                                                      fontSize: 13,
-                                                      color: Colors.grey[700],
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
+                                            const SizedBox(height: 8),
+                                            Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey[50],
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                border: Border.all(
+                                                    color: Colors.grey[200]!),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.android_outlined,
+                                                        size: 14,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Expanded(
+                                                        child: Text(
+                                                          '${rule.packageName}/${rule.activityName}',
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                            color: Colors
+                                                                .grey[600],
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                ),
-                                              ],
+                                                  if (rule.tags.isNotEmpty) ...[
+                                                    const SizedBox(height: 8),
+                                                    Wrap(
+                                                      spacing: 4,
+                                                      runSpacing: 4,
+                                                      children: rule.tags
+                                                          .map(
+                                                            (tag) => Container(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .symmetric(
+                                                                horizontal: 6,
+                                                                vertical: 2,
+                                                              ),
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                color: theme
+                                                                    .colorScheme
+                                                                    .primary
+                                                                    .withOpacity(
+                                                                        0.1),
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            4),
+                                                              ),
+                                                              child: Text(
+                                                                tag,
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 12,
+                                                                  color: theme
+                                                                      .colorScheme
+                                                                      .primary,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          )
+                                                          .toList(),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                      if (rule.tags.isNotEmpty) ...[
-                                        const SizedBox(height: 8),
-                                        Wrap(
-                                          spacing: 4,
-                                          runSpacing: 4,
-                                          children: rule.tags.map((tag) {
-                                            return Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: theme.colorScheme.primary
-                                                    .withValues(alpha: 0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                tag,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color:
-                                                      theme.colorScheme.primary,
-                                                ),
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      ],
                                     ],
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                            if (mergeResult.isConflict)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: (mergeResult.errorMessage
+                                                    ?.contains('活动名') ==
+                                                true
+                                            ? Colors.orange
+                                            : theme.colorScheme.error)
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        mergeResult.errorMessage
+                                                    ?.contains('活动名') ==
+                                                true
+                                            ? Icons.warning_amber_outlined
+                                            : Icons.error_outline,
+                                        size: 16,
+                                        color: mergeResult.errorMessage
+                                                    ?.contains('活动名') ==
+                                                true
+                                            ? Colors.orange
+                                            : theme.colorScheme.error,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          mergeResult.errorMessage ?? '未知错误',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: mergeResult.errorMessage
+                                                        ?.contains('活动名') ==
+                                                    true
+                                                ? Colors.orange
+                                                : theme.colorScheme.error,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       );
                     },
@@ -354,7 +470,7 @@ class RuleImportPreviewDialog extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: ValueListenableBuilder<List<Rule>>(
                       valueListenable: selectedRules,
@@ -371,9 +487,9 @@ class RuleImportPreviewDialog extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: Text(
-                          '导入所选 (${selected.length})',
-                          style: const TextStyle(
+                        child: const Text(
+                          '导入',
+                          style: TextStyle(
                             fontWeight: FontWeight.w500,
                           ),
                         ),

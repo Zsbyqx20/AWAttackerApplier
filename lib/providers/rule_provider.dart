@@ -1,13 +1,15 @@
 import 'package:flutter/foundation.dart';
 import '../models/rule.dart';
+import '../models/overlay_style.dart';
 import '../repositories/rule_repository.dart';
 import '../repositories/storage_repository.dart';
 import '../exceptions/tag_activation_exception.dart';
 import '../models/rule_import.dart';
-import '../utils/rule_import_validator.dart';
 import '../exceptions/rule_import_exception.dart';
 import '../utils/rule_field_validator.dart';
 import '../models/rule_validation_result.dart';
+import '../models/rule_merge_result.dart';
+import '../utils/rule_merger.dart';
 
 class RuleProvider extends ChangeNotifier {
   final RuleRepository _repository;
@@ -16,7 +18,7 @@ class RuleProvider extends ChangeNotifier {
   Set<String> _activeTags = {};
   bool _isLoading = false;
   String? _error;
-  Map<String, RuleValidationResult> _validationResults = {};
+  final Map<String, RuleValidationResult> _validationResults = {};
 
   RuleProvider(this._repository) : _storageRepository = StorageRepository();
 
@@ -168,33 +170,49 @@ class RuleProvider extends ChangeNotifier {
   RuleValidationResult validateField(String fieldName, dynamic value) {
     RuleValidationResult result;
 
-    switch (fieldName) {
-      case 'name':
-        result = RuleFieldValidator.validateName(value as String?);
-        break;
-      case 'packageName':
-        result = RuleFieldValidator.validatePackageName(value as String?);
-        break;
-      case 'activityName':
-        result = RuleFieldValidator.validateActivityName(value as String?);
-        break;
-      case 'tags':
-        result = RuleFieldValidator.validateTags(value as List<String>?);
-        break;
-      case 'overlayStyle':
-        result = RuleFieldValidator.validateOverlayStyle(value);
-        break;
-      default:
+    try {
+      switch (fieldName) {
+        case 'name':
+          result = RuleFieldValidator.validateName(value as String?);
+          break;
+        case 'packageName':
+          result = RuleFieldValidator.validatePackageName(value as String?);
+          break;
+        case 'activityName':
+          result = RuleFieldValidator.validateActivityName(value as String?);
+          break;
+        case 'tags':
+          result = RuleFieldValidator.validateTags(value as List<String>?);
+          break;
+        case 'overlayStyle':
+          result =
+              RuleFieldValidator.validateOverlayStyle(value as OverlayStyle?);
+          break;
+        default:
+          result = RuleValidationResult.fieldError(
+            fieldName,
+            '未知字段',
+            code: 'UNKNOWN_FIELD',
+          );
+      }
+
+      _validationResults[fieldName] = result;
+      notifyListeners();
+      return result;
+    } catch (e) {
+      if (e is RuleImportException) {
+        result = RuleValidationResult.fromException(e);
+      } else {
         result = RuleValidationResult.fieldError(
           fieldName,
-          '未知字段',
-          code: 'UNKNOWN_FIELD',
+          e.toString(),
+          code: 'VALIDATION_ERROR',
         );
+      }
+      _validationResults[fieldName] = result;
+      notifyListeners();
+      return result;
     }
-
-    _validationResults[fieldName] = result;
-    notifyListeners();
-    return result;
   }
 
   /// 清除字段验证结果
@@ -212,12 +230,39 @@ class RuleProvider extends ChangeNotifier {
   /// 验证整个规则
   bool validateRule(Rule rule) {
     try {
-      _validateRule(rule);
+      // 验证规则名称
+      final nameResult = validateField('name', rule.name);
+      if (!nameResult.isValid) return false;
+
+      // 验证包名
+      final packageResult = validateField('packageName', rule.packageName);
+      if (!packageResult.isValid) return false;
+
+      // 验证活动名
+      final activityResult = validateField('activityName', rule.activityName);
+      if (!activityResult.isValid) return false;
+
+      // 验证标签
+      final tagsResult = validateField('tags', rule.tags);
+      if (!tagsResult.isValid) return false;
+
+      // 验证悬浮窗样式
+      for (final style in rule.overlayStyles) {
+        final styleResult = validateField('overlayStyle', style);
+        if (!styleResult.isValid) return false;
+      }
+
       return true;
     } catch (e) {
       if (e is RuleImportException) {
         _validationResults[e.code ?? 'UNKNOWN'] =
             RuleValidationResult.fromException(e);
+      } else {
+        _validationResults['UNKNOWN'] = RuleValidationResult.fieldError(
+          'rule',
+          e.toString(),
+          code: 'VALIDATION_ERROR',
+        );
       }
       notifyListeners();
       return false;
@@ -241,7 +286,18 @@ class RuleProvider extends ChangeNotifier {
     return result?.isValid == false ? result?.errorMessage : null;
   }
 
-  @override
+  /// 检查规则是否存在冲突
+  RuleMergeResult checkRuleConflict(Rule newRule) {
+    for (final existingRule in _rules) {
+      final result = RuleMerger.checkConflict(existingRule, newRule);
+      if (result.isConflict || result.isMergeable) {
+        return result;
+      }
+    }
+    return RuleMergeResult.success(newRule);
+  }
+
+  /// 添加规则
   Future<void> addRule(Rule rule) async {
     try {
       // 验证规则
@@ -249,30 +305,36 @@ class RuleProvider extends ChangeNotifier {
         throw RuleImportException('规则验证失败');
       }
 
-      // 检查重复
-      if (_rules.any((r) =>
-          r.packageName == rule.packageName &&
-          r.activityName == rule.activityName)) {
-        throw RuleImportException.invalidFieldValue(
-          'rule',
-          '规则已存在: ${rule.packageName}/${rule.activityName}',
-        );
+      // 检查冲突
+      final mergeResult = checkRuleConflict(rule);
+
+      if (mergeResult.isConflict) {
+        throw RuleImportException(mergeResult.errorMessage ?? '规则存在冲突');
       }
 
-      await _repository.addRule(rule);
-      _rules.add(rule);
-      clearAllValidations();
+      if (mergeResult.isMergeable) {
+        // 更新现有规则
+        final mergedRule = mergeResult.mergedRule!;
+        await _repository.updateRule(mergedRule);
+        final index = _rules.indexWhere((r) => r.id == mergedRule.id);
+        if (index != -1) {
+          _rules[index] = mergedRule;
+        }
+      } else {
+        // 添加新规则
+        final savedRule = await _repository.addRule(rule);
+        _rules.add(savedRule);
+      }
+
       notifyListeners();
     } catch (e) {
-      _error = e.toString();
-      if (kDebugMode) {
-        print('Error adding rule: $e');
+      if (e is RuleImportException) {
+        rethrow;
       }
-      rethrow;
+      throw RuleImportException(e.toString());
     }
   }
 
-  @override
   Future<void> updateRule(Rule rule) async {
     try {
       // 验证规则
@@ -389,52 +451,64 @@ class RuleProvider extends ChangeNotifier {
   }
 
   /// 导入规则
-  Future<RuleImportResult> importRules(String jsonStr) async {
+  Future<List<RuleMergeResult>> importRules(List<Rule> newRules) async {
+    final results = <RuleMergeResult>[];
+
     try {
-      final ruleImport = RuleImport.fromJson(jsonStr);
-      final errors = <String>[];
-      var successCount = 0;
-
-      // 批量导入规则
-      for (var i = 0; i < ruleImport.rules.length; i++) {
-        final rule = ruleImport.rules[i];
-        try {
-          // 验证规则
-          _validateRule(rule);
-
-          // 检查重复
-          if (_rules.any((r) =>
-              r.packageName == rule.packageName &&
-              r.activityName == rule.activityName)) {
-            throw RuleImportException.invalidFieldValue(
-              'rule',
-              '规则已存在: ${rule.packageName}/${rule.activityName}',
-            );
-          }
-
-          // 添加规则
-          await _repository.addRule(rule);
-          _rules.add(rule);
-          successCount++;
-        } catch (e) {
-          errors.add('规则 ${i + 1}: ${e.toString()}');
+      // 验证所有规则
+      for (final rule in newRules) {
+        if (!validateRule(rule)) {
+          final errorMessage = _validationResults.values
+              .where((r) => !r.isValid)
+              .map((r) => r.toString())
+              .join('\n');
+          results.add(RuleMergeResult.conflict(
+            errorMessage: '规则验证失败: ${rule.name}\n$errorMessage',
+          ));
+          continue;
         }
       }
 
+      // 如果有验证失败的规则，直接返回结果
+      if (results.isNotEmpty) {
+        return results;
+      }
+
+      // 检查所有规则的冲突情况
+      final mergeResults = RuleMerger.checkConflicts(_rules, newRules);
+
+      // 处理每个规则的导入结果
+      for (final result in mergeResults) {
+        if (result.isConflict) {
+          // 记录冲突结果
+          results.add(result);
+          continue;
+        }
+
+        if (result.isMergeable) {
+          // 更新现有规则
+          final mergedRule = result.mergedRule!;
+          await _repository.updateRule(mergedRule);
+          final index = _rules.indexWhere((r) => r.id == mergedRule.id);
+          if (index != -1) {
+            _rules[index] = mergedRule;
+          }
+        } else {
+          // 添加新规则
+          final savedRule = await _repository.addRule(result.mergedRule!);
+          _rules.add(savedRule);
+        }
+
+        results.add(result);
+      }
+
       notifyListeners();
-      return RuleImportResult(
-        totalCount: ruleImport.rules.length,
-        successCount: successCount,
-        failureCount: ruleImport.rules.length - successCount,
-        errors: errors,
-      );
+      return results;
     } catch (e) {
-      return RuleImportResult(
-        totalCount: 0,
-        successCount: 0,
-        failureCount: 1,
-        errors: [e.toString()],
-      );
+      if (e is RuleImportException) {
+        rethrow;
+      }
+      throw RuleImportException(e.toString());
     }
   }
 
@@ -444,22 +518,5 @@ class RuleProvider extends ChangeNotifier {
       version: RuleImport.currentVersion,
       rules: List.from(_rules),
     ).toJson();
-  }
-
-  /// 验证单个规则
-  void _validateRule(Rule rule) {
-    // 验证包名
-    RuleImportValidator.validatePackageName(rule.packageName);
-
-    // 验证活动名
-    RuleImportValidator.validateActivityName(rule.activityName);
-
-    // 验证标签
-    RuleImportValidator.validateTags(rule.tags);
-
-    // 验证悬浮窗样式
-    for (final style in rule.overlayStyles) {
-      RuleImportValidator.validateOverlayStyle(style);
-    }
   }
 }

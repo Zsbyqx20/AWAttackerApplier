@@ -1,15 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/rule.dart';
+import '../../models/rule_merge_result.dart';
+import '../../models/rule_import.dart';
 import '../../providers/rule_provider.dart';
+import '../../widgets/rule_import_preview_dialog.dart';
+import '../../widgets/rule_import_result_dialog.dart';
 import '../../widgets/rule_stats_card.dart';
 import '../../widgets/rule_card.dart';
 import 'rule_edit_page.dart';
-import '../../widgets/rule_import_preview_dialog.dart';
-import '../../widgets/rule_import_result_dialog.dart';
-import '../../models/rule_import.dart';
 
 class RuleListPage extends StatefulWidget {
   const RuleListPage({super.key});
@@ -20,8 +22,8 @@ class RuleListPage extends StatefulWidget {
 
 class _RuleListPageState extends State<RuleListPage>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
   bool _isExpanded = false;
+  late final AnimationController _controller;
 
   @override
   void initState() {
@@ -39,166 +41,6 @@ class _RuleListPageState extends State<RuleListPage>
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  void _handleAddRule() async {
-    final rule = await Navigator.of(context).push<Rule>(
-      MaterialPageRoute(
-        builder: (context) => const RuleEditPage(),
-      ),
-    );
-
-    if (rule != null && mounted) {
-      try {
-        await context.read<RuleProvider>().addRule(rule);
-      } catch (e) {
-        if (!mounted) return;
-        await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('保存失败'),
-            content: Text(e.toString()),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('确定'),
-              ),
-            ],
-          ),
-        );
-      }
-    }
-  }
-
-  void _handleEditRule(Rule rule) async {
-    final updatedRule = await Navigator.of(context).push<Rule>(
-      MaterialPageRoute(
-        builder: (context) => RuleEditPage(rule: rule),
-      ),
-    );
-
-    if (updatedRule != null && mounted) {
-      try {
-        await context.read<RuleProvider>().updateRule(updatedRule);
-      } catch (e) {
-        if (!mounted) return;
-        await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('保存失败'),
-            content: Text(e.toString()),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('确定'),
-              ),
-            ],
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleImport() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
-
-      if (result == null || !mounted) return;
-
-      final file = File(result.files.single.path!);
-      final content = await file.readAsString();
-      final ruleImport = RuleImport.fromJson(content);
-
-      if (!mounted) return;
-
-      final selectedRules = await RuleImportPreviewDialog.show(
-        context: context,
-        rules: ruleImport.rules,
-        existingRules: context.read<RuleProvider>().rules,
-      );
-
-      if (selectedRules == null || !mounted) return;
-
-      final importResult = await context.read<RuleProvider>().importRules(
-            RuleImport(
-              version: RuleImport.currentVersion,
-              rules: selectedRules,
-            ).toJson(),
-          );
-
-      if (!mounted) return;
-
-      await RuleImportResultDialog.show(
-        context: context,
-        result: importResult,
-      );
-
-      setState(() {
-        _isExpanded = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      await RuleImportResultDialog.show(
-        context: context,
-        result: RuleImportResult.failure(e.toString()),
-      );
-
-      setState(() {
-        _isExpanded = false;
-      });
-    }
-  }
-
-  Future<void> _handleExport() async {
-    try {
-      final provider = context.read<RuleProvider>();
-      final rules = provider.rules;
-      final ruleImport = RuleImport(
-        version: RuleImport.currentVersion,
-        rules: rules,
-      );
-      final content = ruleImport.toJson();
-
-      final result = await FilePicker.platform.saveFile(
-        dialogTitle: '导出规则',
-        fileName: 'rules.json',
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
-
-      if (result == null || !mounted) return;
-
-      final file = File(result);
-      await file.writeAsString(content);
-
-      setState(() {
-        _isExpanded = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('导出失败'),
-          content: Text(e.toString()),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('确定'),
-            ),
-          ],
-        ),
-      );
-
-      setState(() {
-        _isExpanded = false;
-      });
-    }
   }
 
   @override
@@ -230,7 +72,7 @@ class _RuleListPageState extends State<RuleListPage>
                     final rule = rules[index];
                     return RuleCard(
                       rule: rule,
-                      onTap: () => _handleEditRule(rule),
+                      onTap: () => _handleEdit(rule),
                     );
                   },
                 ),
@@ -263,7 +105,7 @@ class _RuleListPageState extends State<RuleListPage>
                             onPressed: () {
                               setState(() => _isExpanded = false);
                               _controller.reverse();
-                              _handleAddRule();
+                              _handleAdd();
                             },
                             icon: const Icon(Icons.add_box),
                             label: const Text('添加规则'),
@@ -344,5 +186,157 @@ class _RuleListPageState extends State<RuleListPage>
         );
       },
     );
+  }
+
+  Future<void> _handleImport() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (result == null) return;
+
+      final file = File(result.files.single.path!);
+      final content = await file.readAsString();
+      final ruleImport = RuleImport.fromJson(content);
+      final rules = ruleImport.rules;
+
+      if (rules.isEmpty) {
+        if (!mounted) return;
+        await RuleImportResultDialog.show(
+          context: context,
+          mergeResults: [RuleMergeResult.conflict(errorMessage: '没有找到可导入的规则')],
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      final selectedRules = await RuleImportPreviewDialog.show(
+        context: context,
+        rules: rules,
+        existingRules: context.read<RuleProvider>().rules,
+      );
+
+      if (selectedRules == null || selectedRules.isEmpty) return;
+
+      if (!mounted) return;
+      final provider = context.read<RuleProvider>();
+      final results = await provider.importRules(selectedRules);
+
+      if (!mounted) return;
+      await RuleImportResultDialog.show(
+        context: context,
+        mergeResults: results,
+      );
+
+      setState(() {
+        _isExpanded = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      await RuleImportResultDialog.show(
+        context: context,
+        mergeResults: [RuleMergeResult.conflict(errorMessage: e.toString())],
+      );
+
+      setState(() {
+        _isExpanded = false;
+      });
+    }
+  }
+
+  Future<void> _handleExport() async {
+    try {
+      final rules = context.read<RuleProvider>().rules;
+      if (rules.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('没有可导出的规则')),
+        );
+        return;
+      }
+
+      final json = jsonEncode(rules);
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: '导出规则',
+        fileName: 'rules.json',
+      );
+
+      if (result == null) return;
+
+      final file = File(result);
+      await file.writeAsString(json);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('导出成功')),
+      );
+
+      setState(() {
+        _isExpanded = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('导出失败：$e')),
+      );
+
+      setState(() {
+        _isExpanded = false;
+      });
+    }
+  }
+
+  Future<void> _handleAdd() async {
+    if (!mounted) return;
+    final newRule = await Navigator.push<Rule>(
+      context,
+      MaterialPageRoute<Rule>(
+        builder: (context) => const RuleEditPage(),
+      ),
+    );
+
+    if (newRule != null && mounted) {
+      await context.read<RuleProvider>().addRule(newRule);
+    }
+  }
+
+  Future<void> _handleEdit(Rule rule) async {
+    if (!mounted) return;
+    final editedRule = await Navigator.push<Rule>(
+      context,
+      MaterialPageRoute<Rule>(
+        builder: (context) => RuleEditPage(rule: rule),
+      ),
+    );
+
+    if (editedRule != null && mounted) {
+      await context.read<RuleProvider>().updateRule(editedRule);
+    }
+  }
+
+  Future<void> _handleDelete(Rule rule) async {
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除规则'),
+        content: Text('确定要删除规则"${rule.name}"吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    await context.read<RuleProvider>().deleteRule(rule.id);
   }
 }

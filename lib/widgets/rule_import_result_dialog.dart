@@ -1,30 +1,35 @@
 import 'package:flutter/material.dart';
-import '../models/rule_import.dart';
+import '../models/rule_merge_result.dart';
 
 class RuleImportResultDialog extends StatelessWidget {
-  final RuleImportResult result;
+  final List<RuleMergeResult> mergeResults;
 
   const RuleImportResultDialog._({
     super.key,
-    required this.result,
+    required this.mergeResults,
   });
 
   /// 显示导入结果对话框
   static Future<void> show({
     required BuildContext context,
-    required RuleImportResult result,
+    required List<RuleMergeResult> mergeResults,
   }) {
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => RuleImportResultDialog._(result: result),
+      builder: (context) =>
+          RuleImportResultDialog._(mergeResults: mergeResults),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasErrors = result.errors.isNotEmpty;
+    final totalCount = mergeResults.length;
+    final successCount = mergeResults.where((r) => r.isSuccess).length;
+    final mergeableCount = mergeResults.where((r) => r.isMergeable).length;
+    final conflictCount = mergeResults.where((r) => r.isConflict).length;
+    final hasErrors = conflictCount > 0;
 
     return Dialog(
       elevation: 0,
@@ -65,13 +70,85 @@ class RuleImportResultDialog extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            Text(
-              '共 ${result.totalCount} 条规则，成功 ${result.successCount} 条，失败 ${result.failureCount} 条',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '共 $totalCount 条',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
+                if (successCount > 0)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '成功 $successCount',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                if (mergeableCount > 0)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '合并 $mergeableCount',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.secondary,
+                      ),
+                    ),
+                  ),
+                if (conflictCount > 0)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.error.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '冲突 $conflictCount',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             if (hasErrors) ...[
               const SizedBox(height: 16),
@@ -85,9 +162,10 @@ class RuleImportResultDialog extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: result.errors
-                        .map((error) => Text(
-                              error,
+                    children: mergeResults
+                        .where((r) => r.isConflict)
+                        .map((result) => Text(
+                              result.errorMessage ?? '未知错误',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[700],

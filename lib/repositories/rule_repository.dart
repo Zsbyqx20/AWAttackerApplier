@@ -39,10 +39,11 @@ class RuleRepository {
     }
   }
 
-  Future<void> addRule(Rule rule) async {
+  Future<Rule> addRule(Rule rule) async {
     final rules = await loadRules();
     rules.add(rule);
     await _saveRules(rules);
+    return rule;
   }
 
   Future<void> updateRule(Rule rule) async {
