@@ -48,7 +48,6 @@ class _RuleListPageState extends State<RuleListPage>
     return Consumer<RuleProvider>(
       builder: (context, provider, child) {
         final rules = provider.rules;
-        final enabledCount = rules.where((r) => r.isEnabled).length;
 
         return Scaffold(
           backgroundColor: Colors.grey[100],
@@ -314,29 +313,5 @@ class _RuleListPageState extends State<RuleListPage>
     if (editedRule != null && mounted) {
       await context.read<RuleProvider>().updateRule(editedRule);
     }
-  }
-
-  Future<void> _handleDelete(Rule rule) async {
-    if (!mounted) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('删除规则'),
-        content: Text('确定要删除规则"${rule.name}"吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-    await context.read<RuleProvider>().deleteRule(rule.id);
   }
 }

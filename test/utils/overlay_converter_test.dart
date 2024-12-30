@@ -112,9 +112,15 @@ void main() {
       final nativeMap = OverlayConverter.styleToNative(testStyle);
       final convertedStyle = OverlayConverter.styleFromNative(nativeMap);
 
-      expect(convertedStyle.backgroundColor.value,
-          equals(testStyle.backgroundColor.value));
-      expect(convertedStyle.textColor.value, equals(testStyle.textColor.value));
+      expect(convertedStyle.backgroundColor.r,
+          equals(testStyle.backgroundColor.r));
+      expect(convertedStyle.backgroundColor.g,
+          equals(testStyle.backgroundColor.g));
+      expect(convertedStyle.backgroundColor.b,
+          equals(testStyle.backgroundColor.b));
+      expect(convertedStyle.textColor.r, equals(testStyle.textColor.r));
+      expect(convertedStyle.textColor.g, equals(testStyle.textColor.g));
+      expect(convertedStyle.textColor.b, equals(testStyle.textColor.b));
     });
 
     test('文本对齐转换的双向一致性', () {

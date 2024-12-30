@@ -255,7 +255,8 @@ class RuleImportPreviewDialog extends StatelessWidget {
                                                     decoration: BoxDecoration(
                                                       color: theme
                                                           .colorScheme.error
-                                                          .withOpacity(0.1),
+                                                          .withValues(
+                                                              alpha: 0.1),
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               6),
@@ -285,7 +286,8 @@ class RuleImportPreviewDialog extends StatelessWidget {
                                                     decoration: BoxDecoration(
                                                       color: theme
                                                           .colorScheme.secondary
-                                                          .withOpacity(0.1),
+                                                          .withValues(
+                                                              alpha: 0.1),
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               6),
@@ -357,8 +359,9 @@ class RuleImportPreviewDialog extends StatelessWidget {
                                                                 color: theme
                                                                     .colorScheme
                                                                     .primary
-                                                                    .withOpacity(
-                                                                        0.1),
+                                                                    .withValues(
+                                                                        alpha:
+                                                                            0.1),
                                                                 borderRadius:
                                                                     BorderRadius
                                                                         .circular(
@@ -404,7 +407,7 @@ class RuleImportPreviewDialog extends StatelessWidget {
                                                 true
                                             ? Colors.orange
                                             : theme.colorScheme.error)
-                                        .withOpacity(0.1),
+                                        .withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(

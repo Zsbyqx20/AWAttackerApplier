@@ -99,7 +99,9 @@ class RuleImportResultDialog extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      color: theme.colorScheme.primary.withValues(
+                        alpha: 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -118,7 +120,9 @@ class RuleImportResultDialog extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.secondary.withOpacity(0.1),
+                      color: theme.colorScheme.secondary.withValues(
+                        alpha: 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -137,7 +141,9 @@ class RuleImportResultDialog extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.error.withOpacity(0.1),
+                      color: theme.colorScheme.error.withValues(
+                        alpha: 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
