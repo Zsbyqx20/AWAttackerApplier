@@ -1,6 +1,6 @@
 [project]
 name = "awattacker"
-version = "1.1.1"
+version = "1.1.2"
 description = "Default template for PDM package"
 authors = [
     {name = "Zsbyqx20", email = "112002598+Zsbyqx20@users.noreply.github.com"},
