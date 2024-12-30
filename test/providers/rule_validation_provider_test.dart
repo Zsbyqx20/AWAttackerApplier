@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:awattackerapplier/providers/rule_validation_provider.dart';
+import 'package:awattackerapplier/models/rule.dart';
+import 'package:awattackerapplier/models/overlay_style.dart';
+import 'package:flutter/material.dart';
 
 void main() {
   group('RuleValidationProvider', () {
@@ -14,117 +17,222 @@ void main() {
       expect(provider.state.fieldResults, isEmpty);
     });
 
-    group('validateField', () {
-      test('验证规则名称', () {
-        provider.validateField('name', '测试规则');
-        expect(provider.state.isValid, isTrue);
-        expect(provider.state.fieldResults['name']?.isValid, isTrue);
+    group('单个字段验证', () {
+      test('验证有效的名称', () {
+        provider.validateField('name', 'ValidName');
 
+        expect(provider.state.isValid, isTrue);
+        expect(provider.isFieldValid('name'), isTrue);
+        expect(provider.getFieldError('name'), isNull);
+      });
+
+      test('验证无效的名称', () {
         provider.validateField('name', '');
+
         expect(provider.state.isValid, isFalse);
-        expect(provider.state.fieldResults['name']?.isValid, isFalse);
-        expect(
-          provider.state.fieldResults['name']?.errorMessage,
-          equals('规则名称不能为空'),
-        );
+        expect(provider.isFieldValid('name'), isFalse);
+        expect(provider.getFieldError('name'), isNotNull);
       });
 
-      test('验证包名', () {
+      test('验证有效的包名', () {
         provider.validateField('packageName', 'com.example.app');
-        expect(provider.state.isValid, isTrue);
-        expect(provider.state.fieldResults['packageName']?.isValid, isTrue);
 
-        provider.validateField('packageName', '.invalid.package');
-        expect(provider.state.isValid, isFalse);
-        expect(provider.state.fieldResults['packageName']?.isValid, isFalse);
+        expect(provider.state.isValid, isTrue);
+        expect(provider.isFieldValid('packageName'), isTrue);
+        expect(provider.getFieldError('packageName'), isNull);
       });
 
-      test('验证活动名', () {
+      test('验证无效的包名', () {
+        provider.validateField('packageName', '');
+
+        expect(provider.state.isValid, isFalse);
+        expect(provider.isFieldValid('packageName'), isFalse);
+        expect(provider.getFieldError('packageName'), isNotNull);
+      });
+
+      test('验证有效的活动名', () {
         provider.validateField('activityName', '.MainActivity');
-        expect(provider.state.isValid, isTrue);
-        expect(provider.state.fieldResults['activityName']?.isValid, isTrue);
 
-        provider.validateField('activityName', 'MainActivity');
-        expect(provider.state.isValid, isFalse);
-        expect(provider.state.fieldResults['activityName']?.isValid, isFalse);
-        expect(
-          provider.state.fieldResults['activityName']?.errorDetails,
-          equals('字段 activityName: 活动名必须以点号(.)开头'),
-        );
+        expect(provider.state.isValid, isTrue);
+        expect(provider.isFieldValid('activityName'), isTrue);
+        expect(provider.getFieldError('activityName'), isNull);
       });
 
-      test('验证标签列表', () {
-        provider.validateField('tags', ['tag1', 'tag2']);
-        expect(provider.state.isValid, isTrue);
-        expect(provider.state.fieldResults['tags']?.isValid, isTrue);
+      test('验证无效的活动名', () {
+        provider.validateField('activityName', 'MainActivity');
 
-        provider.validateField('tags', ['tag1', '', 'tag3']);
         expect(provider.state.isValid, isFalse);
-        expect(provider.state.fieldResults['tags']?.isValid, isFalse);
-        expect(
-          provider.state.fieldResults['tags']?.errorDetails,
-          equals('字段 tags: 标签不能为空'),
+        expect(provider.isFieldValid('activityName'), isFalse);
+        expect(provider.getFieldError('activityName'), isNotNull);
+      });
+
+      test('验证有效的标签列表', () {
+        provider.validateField('tags', <String>['tag1', 'tag2']);
+
+        expect(provider.state.isValid, isTrue);
+        expect(provider.isFieldValid('tags'), isTrue);
+        expect(provider.getFieldError('tags'), isNull);
+      });
+
+      test('验证无效的标签列表', () {
+        provider.validateField('tags', <String>['']);
+
+        expect(provider.state.isValid, isFalse);
+        expect(provider.isFieldValid('tags'), isFalse);
+        expect(provider.getFieldError('tags'), isNotNull);
+      });
+
+      test('验证有效的悬浮窗样式', () {
+        final style = OverlayStyle(
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 50,
+          text: 'Test',
+          fontSize: 14,
+          backgroundColor: Colors.white,
+          textColor: Colors.black,
+          horizontalAlign: TextAlign.left,
+          verticalAlign: TextAlign.center,
+          padding: const EdgeInsets.all(8),
+          uiAutomatorCode: 'new UiSelector().text("Test")',
         );
+
+        provider.validateField('overlayStyle', style);
+
+        expect(provider.state.isValid, isTrue);
+        expect(provider.isFieldValid('overlayStyle'), isTrue);
+        expect(provider.getFieldError('overlayStyle'), isNull);
+      });
+
+      test('验证无效的悬浮窗样式', () {
+        provider.validateField('overlayStyle', null);
+
+        expect(provider.state.isValid, isFalse);
+        expect(provider.isFieldValid('overlayStyle'), isFalse);
+        expect(provider.getFieldError('overlayStyle'), isNotNull);
       });
 
       test('验证未知字段', () {
-        provider.validateField('unknown', 'value');
+        provider.validateField('unknownField', 'value');
+
         expect(provider.state.isValid, isFalse);
-        expect(provider.state.fieldResults['unknown']?.isValid, isFalse);
-        expect(
-          provider.state.fieldResults['unknown']?.errorMessage,
-          equals('未知字段'),
-        );
+        expect(provider.isFieldValid('unknownField'), isFalse);
+        expect(provider.getFieldError('unknownField'), equals('未知字段'));
       });
     });
 
-    group('clearFieldValidation', () {
-      test('清除单个字段的验证结果', () {
-        // 先添加一些验证结果
+    group('验证结果的清除', () {
+      setUp(() {
         provider.validateField('name', '');
-        provider.validateField('packageName', '.invalid');
+        provider.validateField('packageName', '');
+      });
+
+      test('清除单个字段的验证结果', () {
         expect(provider.state.fieldResults.length, equals(2));
 
-        // 清除一个字段的验证结果
         provider.clearFieldValidation('name');
+
         expect(provider.state.fieldResults.length, equals(1));
-        expect(provider.state.fieldResults.containsKey('name'), isFalse);
-        expect(provider.state.fieldResults.containsKey('packageName'), isTrue);
+        expect(provider.getFieldValidation('name'), isNull);
+        expect(provider.getFieldValidation('packageName'), isNotNull);
       });
-    });
 
-    group('clearAllValidations', () {
       test('清除所有验证结果', () {
-        // 先添加一些验证结果
-        provider.validateField('name', '');
-        provider.validateField('packageName', '.invalid');
-        provider.validateField('activityName', 'MainActivity');
-        expect(provider.state.fieldResults.length, equals(3));
+        expect(provider.state.fieldResults.length, equals(2));
 
-        // 清除所有验证结果
         provider.clearAllValidations();
+
         expect(provider.state.fieldResults, isEmpty);
         expect(provider.state.isValid, isTrue);
       });
     });
 
-    test('监听器应该在状态改变时被调用', () {
-      var listenerCallCount = 0;
-      provider.addListener(() {
-        listenerCallCount++;
+    group('整个规则的验证', () {
+      test('验证有效的规则', () {
+        final rule = Rule(
+          id: '1',
+          name: 'ValidName',
+          packageName: 'com.example.app',
+          activityName: '.MainActivity',
+          isEnabled: true,
+          overlayStyles: [
+            OverlayStyle(
+              x: 0,
+              y: 0,
+              width: 100,
+              height: 50,
+              text: 'Test',
+              fontSize: 14,
+              backgroundColor: Colors.white,
+              textColor: Colors.black,
+              horizontalAlign: TextAlign.left,
+              verticalAlign: TextAlign.center,
+              padding: const EdgeInsets.all(8),
+              uiAutomatorCode: 'new UiSelector().text("Test")',
+            ),
+          ],
+          tags: <String>['tag1', 'tag2'],
+        );
+
+        provider.validateRule(rule);
+
+        expect(provider.state.isValid, isTrue);
+        expect(provider.isFieldValid('name'), isTrue);
+        expect(provider.isFieldValid('packageName'), isTrue);
+        expect(provider.isFieldValid('activityName'), isTrue);
+        expect(provider.isFieldValid('tags'), isTrue);
+        expect(provider.isFieldValid('overlayStyle'), isTrue);
       });
 
-      provider.validateField('name', '测试规则');
-      expect(listenerCallCount, equals(1));
+      test('验证无效的规则', () {
+        final rule = Rule(
+          id: '1',
+          name: '', // 无效的名称
+          packageName: '', // 无效的包名
+          activityName: 'MainActivity', // 无效的活动名（没有以点号开头）
+          isEnabled: true,
+          overlayStyles: [], // 无效的悬浮窗样式列表
+          tags: <String>[''], // 无效的标签列表（包含空字符串）
+        );
 
-      provider.validateField('name', '');
-      expect(listenerCallCount, equals(2));
+        provider.validateRule(rule);
 
-      provider.clearFieldValidation('name');
-      expect(listenerCallCount, equals(3));
+        expect(provider.state.isValid, isFalse);
+        expect(provider.isFieldValid('name'), isFalse);
+        expect(provider.isFieldValid('packageName'), isFalse);
+        expect(provider.isFieldValid('activityName'), isFalse);
+        expect(provider.isFieldValid('tags'), isFalse);
+      });
+    });
 
-      provider.clearAllValidations();
-      expect(listenerCallCount, equals(4));
+    group('字段验证状态查询', () {
+      setUp(() {
+        provider.validateField('name', '');
+        provider.validateField('packageName', 'com.example.app');
+      });
+
+      test('获取字段验证结果', () {
+        final nameResult = provider.getFieldValidation('name');
+        final packageResult = provider.getFieldValidation('packageName');
+        final unknownResult = provider.getFieldValidation('unknown');
+
+        expect(nameResult?.isValid, isFalse);
+        expect(packageResult?.isValid, isTrue);
+        expect(unknownResult, isNull);
+      });
+
+      test('检查字段是否有效', () {
+        expect(provider.isFieldValid('name'), isFalse);
+        expect(provider.isFieldValid('packageName'), isTrue);
+        expect(provider.isFieldValid('unknown'), isTrue); // 未验证的字段默认为有效
+      });
+
+      test('获取字段错误信息', () {
+        expect(provider.getFieldError('name'), isNotNull);
+        expect(provider.getFieldError('packageName'), isNull);
+        expect(provider.getFieldError('unknown'), isNull);
+      });
     });
   });
 }

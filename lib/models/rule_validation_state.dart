@@ -8,16 +8,16 @@ class RuleValidationState {
   /// 字段验证结果
   final Map<String, RuleValidationResult> fieldResults;
 
-  const RuleValidationState({
+  RuleValidationState({
     required this.isValid,
-    required this.fieldResults,
-  });
+    required Map<String, RuleValidationResult> fieldResults,
+  }) : fieldResults = Map.unmodifiable(fieldResults);
 
   /// 创建初始状态
   factory RuleValidationState.initial() {
-    return const RuleValidationState(
+    return RuleValidationState(
       isValid: true,
-      fieldResults: {},
+      fieldResults: const {},
     );
   }
 
@@ -28,7 +28,9 @@ class RuleValidationState {
   }) {
     return RuleValidationState(
       isValid: isValid ?? this.isValid,
-      fieldResults: fieldResults ?? this.fieldResults,
+      fieldResults: fieldResults != null
+          ? Map<String, RuleValidationResult>.from(fieldResults)
+          : this.fieldResults,
     );
   }
 }
