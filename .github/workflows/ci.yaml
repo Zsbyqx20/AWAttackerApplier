@@ -11,6 +11,7 @@ on:
       - 'android/**'
       - 'assets/**'
       - 'web/**'
+      - 'test/**'
     tags:
       - 'v*'
 
