@@ -1,25 +1,25 @@
 class WindowEvent {
   final String type;
-  final String packageName;
-  final String activityName;
+  final String? packageName;
+  final String? activityName;
   final int timestamp;
-  final bool sourceChanged;
+  final bool contentChanged;
 
   WindowEvent({
     required this.type,
-    required this.packageName,
-    required this.activityName,
+    this.packageName,
+    this.activityName,
     required this.timestamp,
-    this.sourceChanged = false,
+    this.contentChanged = false,
   });
 
   factory WindowEvent.fromJson(Map<String, dynamic> json) {
     return WindowEvent(
       type: json['type'] as String,
-      packageName: json['package_name'] as String,
-      activityName: json['activity_name'] as String,
+      packageName: json['package_name'] as String?,
+      activityName: json['activity_name'] as String?,
       timestamp: json['timestamp'] as int,
-      sourceChanged: json['source_changed'] as bool? ?? false,
+      contentChanged: json['content_changed'] as bool? ?? false,
     );
   }
 
@@ -29,7 +29,7 @@ class WindowEvent {
       'package_name': packageName,
       'activity_name': activityName,
       'timestamp': timestamp,
-      'source_changed': sourceChanged,
+      'content_changed': contentChanged,
     };
   }
 }

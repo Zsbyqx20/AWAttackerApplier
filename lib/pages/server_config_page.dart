@@ -2,14 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../constants/storage_keys.dart';
 import '../models/permission_status.dart';
 import '../providers/connection_provider.dart';
-import '../repositories/storage_repository.dart';
-import '../services/overlay_service.dart';
 import '../widgets/permission_card.dart';
-import '../widgets/server_config_card.dart';
-import '../widgets/server_status_card.dart';
 
 class ServerConfigPage extends StatefulWidget {
   final Function(bool) onPermissionChanged;
@@ -25,9 +20,6 @@ class ServerConfigPage extends StatefulWidget {
 
 class _ServerConfigPageState extends State<ServerConfigPage>
     with WidgetsBindingObserver {
-  final TextEditingController _apiController = TextEditingController();
-  final TextEditingController _wsController = TextEditingController();
-  final StorageRepository _storageRepository;
   final _channel =
       const MethodChannel('com.mobilellm.awattackapplier/overlay_service');
 
@@ -35,13 +27,10 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   bool _hasAccessibilityPermission = false;
   bool _isStartingService = false;
 
-  _ServerConfigPageState() : _storageRepository = StorageRepository();
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadUrls();
     _checkPermissions();
     _setupPermissionListener();
   }
@@ -67,8 +56,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
 
   @override
   void dispose() {
-    _apiController.dispose();
-    _wsController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -78,24 +65,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     if (state == AppLifecycleState.resumed) {
       _checkPermissions();
     }
-  }
-
-  Future<void> _loadUrls() async {
-    await _storageRepository.init();
-    final urls = await _storageRepository.loadUrls();
-    if (mounted) {
-      setState(() {
-        _apiController.text = urls[StorageKeys.apiUrlKey]!;
-        _wsController.text = urls[StorageKeys.wsUrlKey]!;
-      });
-    }
-  }
-
-  Future<void> _saveUrls() async {
-    await _storageRepository.saveUrls(
-      apiUrl: _apiController.text,
-      wsUrl: _wsController.text,
-    );
   }
 
   Future<void> _checkPermissions() async {
@@ -145,7 +114,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
 
     try {
       final provider = context.read<ConnectionProvider>();
-      provider.updateUrls(_apiController.text, _wsController.text);
       await provider.checkAndConnect();
     } catch (e) {
       if (mounted) {
@@ -206,16 +174,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
             ],
             onRequestPermission: _requestPermission,
           ),
-          const SizedBox(height: 12),
-          ServerConfigCard(
-            apiController: _apiController,
-            wsController: _wsController,
-            enabled: allPermissionsGranted,
-            onApiChanged: (_) => _saveUrls(),
-            onWsChanged: (_) => _saveUrls(),
-          ),
-          const SizedBox(height: 12),
-          const ServerStatusCard(),
           const SizedBox(height: 24),
           Card(
             elevation: 1,
@@ -254,7 +212,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(

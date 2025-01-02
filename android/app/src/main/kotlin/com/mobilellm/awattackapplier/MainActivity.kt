@@ -10,14 +10,23 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import android.view.accessibility.AccessibilityManager
 import android.content.Context
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import org.json.JSONObject
+import androidx.annotation.NonNull
+import androidx.core.content.ContextCompat
+import android.graphics.Rect
 
 class MainActivity: FlutterActivity() {
     companion object {
         private const val TAG = "MainActivity"
         private const val OVERLAY_PERMISSION_REQUEST_CODE = 1
         private const val CHANNEL = "com.mobilellm.awattackapplier/overlay_service"
+        
+        // 提供静态访问方法，用于从AccessibilityService发送事件
+        private var methodChannel: MethodChannel? = null
+        fun getMethodChannel(): MethodChannel? = methodChannel
     }
 
     private var pendingResult: MethodChannel.Result? = null
@@ -26,97 +35,103 @@ class MainActivity: FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
         windowManagerHelper = WindowManagerHelper(this)
+    }
+
+    override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
         
-        val messenger = flutterEngine?.dartExecutor?.binaryMessenger
-        if (messenger != null) {
-            channel = MethodChannel(messenger, CHANNEL)
-            channel.setMethodCallHandler { call, result ->
-                when (call.method) {
-                    "checkOverlayPermission" -> {
-                        result.success(checkOverlayPermission())
-                    }
-                    "requestOverlayPermission" -> {
-                        pendingResult = result
-                        requestOverlayPermission()
-                    }
-                    "checkAccessibilityPermission" -> {
-                        result.success(checkAccessibilityPermission())
-                    }
-                    "requestAccessibilityPermission" -> {
-                        pendingResult = result
-                        requestAccessibilityPermission()
-                    }
-                    "checkAllPermissions" -> {
-                        val permissions = JSONObject().apply {
-                            put("overlay", checkOverlayPermission())
-                            put("accessibility", checkAccessibilityPermission())
-                        }
-                        result.success(permissions.toString())
-                    }
-                    "createOverlay" -> {
-                        try {
-                            val id = call.argument<String>("id")
-                            val style = call.argument<Map<String, Any>>("style")
-                            if (id != null && style != null) {
-                                windowManagerHelper?.createOverlay(id, style)
-                                result.success(mapOf(
-                                    "success" to true
-                                ))
-                            } else {
-                                result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "创建悬浮窗时发生错误", e)
-                            result.error("CREATE_FAILED", e.message, null)
-                        }
-                    }
-                    "updateOverlay" -> {
-                        try {
-                            val id = call.argument<String>("id")
-                            val style = call.argument<Map<String, Any>>("style")
-                            if (id != null && style != null) {
-                                windowManagerHelper?.updateOverlay(id, style)
-                                result.success(mapOf(
-                                    "success" to true
-                                ))
-                            } else {
-                                result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "更新悬浮窗时发生错误", e)
-                            result.error("UPDATE_FAILED", e.message, null)
-                        }
-                    }
-                    "removeOverlay" -> {
-                        try {
-                            val id = call.argument<String>("id")
-                            if (id != null) {
-                                windowManagerHelper?.removeOverlay(id)
-                                result.success(true)
-                            } else {
-                                result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "移除悬浮窗时发生错误", e)
-                            result.error("REMOVE_FAILED", e.message, null)
-                        }
-                    }
-                    "removeAllOverlays" -> {
-                        try {
-                            windowManagerHelper?.removeAllOverlays()
-                            result.success(true)
-                        } catch (e: Exception) {
-                            Log.e(TAG, "移除所有悬浮窗时发生错误", e)
-                            result.error("REMOVE_ALL_FAILED", e.message, null)
-                        }
-                    }
-                    else -> result.notImplemented()
+        channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        methodChannel = channel  // 保存静态引用
+        
+        channel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "checkOverlayPermission" -> {
+                    result.success(checkOverlayPermission())
                 }
+                "requestOverlayPermission" -> {
+                    pendingResult = result
+                    requestOverlayPermission()
+                }
+                "checkAccessibilityPermission" -> {
+                    result.success(checkAccessibilityPermission())
+                }
+                "requestAccessibilityPermission" -> {
+                    pendingResult = result
+                    requestAccessibilityPermission()
+                }
+                "checkAllPermissions" -> {
+                    val permissions = JSONObject().apply {
+                        put("overlay", checkOverlayPermission())
+                        put("accessibility", checkAccessibilityPermission())
+                    }
+                    result.success(permissions.toString())
+                }
+                "createOverlay" -> {
+                    try {
+                        val id = call.argument<String>("id")
+                        val style = call.argument<Map<String, Any>>("style")
+                        if (id != null && style != null) {
+                            windowManagerHelper?.createOverlay(id, style)
+                            result.success(mapOf(
+                                "success" to true
+                            ))
+                        } else {
+                            result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "创建悬浮窗时发生错误", e)
+                        result.error("CREATE_FAILED", e.message, null)
+                    }
+                }
+                "updateOverlay" -> {
+                    try {
+                        val id = call.argument<String>("id")
+                        val style = call.argument<Map<String, Any>>("style")
+                        if (id != null && style != null) {
+                            windowManagerHelper?.updateOverlay(id, style)
+                            result.success(mapOf(
+                                "success" to true
+                            ))
+                        } else {
+                            result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "更新悬浮窗时发生错误", e)
+                        result.error("UPDATE_FAILED", e.message, null)
+                    }
+                }
+                "removeOverlay" -> {
+                    try {
+                        val id = call.argument<String>("id")
+                        if (id != null) {
+                            windowManagerHelper?.removeOverlay(id)
+                            result.success(true)
+                        } else {
+                            result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "移除悬浮窗时发生错误", e)
+                        result.error("REMOVE_FAILED", e.message, null)
+                    }
+                }
+                "removeAllOverlays" -> {
+                    try {
+                        windowManagerHelper?.removeAllOverlays()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "移除所有悬浮窗时发生错误", e)
+                        result.error("REMOVE_ALL_FAILED", e.message, null)
+                    }
+                }
+                "findElements" -> {
+                    handleFindElements(call, result)
+                }
+                "findElement" -> {
+                    handleFindElement(call, result)
+                }
+                else -> result.notImplemented()
             }
-        } else {
-            Log.e(TAG, "Failed to initialize MethodChannel: BinaryMessenger is null")
         }
     }
 
@@ -128,6 +143,7 @@ class MainActivity: FlutterActivity() {
             put("accessibility", checkAccessibilityPermission())
         }
         if (::channel.isInitialized) {
+            Log.d(TAG, "Broadcasting permission status: ${permissions}")
             channel.invokeMethod("onPermissionChanged", permissions.toString())
         }
     }
@@ -143,7 +159,9 @@ class MainActivity: FlutterActivity() {
     private fun checkAccessibilityPermission(): Boolean {
         val am = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
         val enabledServices = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC)
-        return enabledServices.any { it.id.contains(packageName) }
+        val isEnabled = enabledServices.any { it.id.contains(packageName) }
+        Log.d(TAG, "Accessibility permission check: $isEnabled")
+        return isEnabled
     }
 
     private fun requestOverlayPermission() {
@@ -171,7 +189,7 @@ class MainActivity: FlutterActivity() {
             startActivity(intent)
             pendingResult?.success(true)
         } catch (e: Exception) {
-            Log.e(TAG, "请求无障碍权限时发生错误", e)
+            Log.e(TAG, "Request accessibility permission failed", e)
             pendingResult?.error("PERMISSION_REQUEST_FAILED", e.message, null)
         } finally {
             pendingResult = null
@@ -205,5 +223,66 @@ class MainActivity: FlutterActivity() {
         super.onDestroy()
         windowManagerHelper?.removeAllOverlays()
         windowManagerHelper = null
+    }
+
+    private fun handleFindElements(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val selectorCodes = call.argument<List<String>>("selectorCodes")
+            if (selectorCodes == null) {
+                result.error("INVALID_ARGUMENT", "Selector codes cannot be null", null)
+                return
+            }
+
+            val service = AWAccessibilityService.getInstance()
+            if (service == null) {
+                result.error("SERVICE_NOT_RUNNING", "Accessibility service is not running", null)
+                return
+            }
+
+            val elements = service.findElements(selectorCodes)
+            result.success(elements.map { it.toMapResult() })
+        } catch (e: Exception) {
+            result.error("FIND_ERROR", e.message, null)
+        }
+    }
+
+    private fun handleFindElement(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val selectorCode = call.argument<String>("selectorCode")
+            if (selectorCode == null) {
+                result.error("INVALID_ARGUMENT", "Selector code cannot be null", null)
+                return
+            }
+
+            val service = AWAccessibilityService.getInstance()
+            if (service == null) {
+                result.error("SERVICE_NOT_RUNNING", "Accessibility service is not running", null)
+                return
+            }
+
+            val element = service.findElementByUiSelector(selectorCode)?.let {
+                val bounds = Rect()
+                it.getBoundsInScreen(bounds)
+                AWAccessibilityService.ElementResult(
+                    success = true,
+                    coordinates = mapOf(
+                        "x" to bounds.left,
+                        "y" to bounds.top
+                    ),
+                    size = mapOf(
+                        "width" to bounds.width(),
+                        "height" to bounds.height()
+                    ),
+                    visible = it.isVisibleToUser
+                )
+            } ?: AWAccessibilityService.ElementResult(
+                success = false,
+                message = "Element not found"
+            )
+
+            result.success(element.toMapResult())
+        } catch (e: Exception) {
+            result.error("FIND_ERROR", e.message, null)
+        }
     }
 }
