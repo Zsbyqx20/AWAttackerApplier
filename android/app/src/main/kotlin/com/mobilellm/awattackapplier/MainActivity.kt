@@ -6,8 +6,12 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.accessibilityservice.AccessibilityServiceInfo
+import android.view.accessibility.AccessibilityManager
+import android.content.Context
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.MethodChannel
+import org.json.JSONObject
 
 class MainActivity: FlutterActivity() {
     companion object {
@@ -36,6 +40,20 @@ class MainActivity: FlutterActivity() {
                     "requestOverlayPermission" -> {
                         pendingResult = result
                         requestOverlayPermission()
+                    }
+                    "checkAccessibilityPermission" -> {
+                        result.success(checkAccessibilityPermission())
+                    }
+                    "requestAccessibilityPermission" -> {
+                        pendingResult = result
+                        requestAccessibilityPermission()
+                    }
+                    "checkAllPermissions" -> {
+                        val permissions = JSONObject().apply {
+                            put("overlay", checkOverlayPermission())
+                            put("accessibility", checkAccessibilityPermission())
+                        }
+                        result.success(permissions.toString())
                     }
                     "createOverlay" -> {
                         try {
@@ -105,9 +123,12 @@ class MainActivity: FlutterActivity() {
     override fun onResume() {
         super.onResume()
         // 每次回到前台时检查权限状态并广播
-        val hasPermission = checkOverlayPermission()
+        val permissions = JSONObject().apply {
+            put("overlay", checkOverlayPermission())
+            put("accessibility", checkAccessibilityPermission())
+        }
         if (::channel.isInitialized) {
-            channel.invokeMethod("onPermissionChanged", hasPermission)
+            channel.invokeMethod("onPermissionChanged", permissions.toString())
         }
     }
 
@@ -117,6 +138,12 @@ class MainActivity: FlutterActivity() {
         } else {
             true
         }
+    }
+
+    private fun checkAccessibilityPermission(): Boolean {
+        val am = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+        val enabledServices = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC)
+        return enabledServices.any { it.id.contains(packageName) }
     }
 
     private fun requestOverlayPermission() {
@@ -138,18 +165,35 @@ class MainActivity: FlutterActivity() {
         }
     }
 
+    private fun requestAccessibilityPermission() {
+        try {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            startActivity(intent)
+            pendingResult?.success(true)
+        } catch (e: Exception) {
+            Log.e(TAG, "请求无障碍权限时发生错误", e)
+            pendingResult?.error("PERMISSION_REQUEST_FAILED", e.message, null)
+        } finally {
+            pendingResult = null
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == OVERLAY_PERMISSION_REQUEST_CODE) {
             val hasPermission = checkOverlayPermission()
-            // 通知权限结果
             pendingResult?.success(hasPermission)
             pendingResult = null
-            // 广播权限变化
-            if (::channel.isInitialized) {
-                channel.invokeMethod("onPermissionChanged", hasPermission)
-            }
             
+            // 广播权限状态变化
+            val permissions = JSONObject().apply {
+                put("overlay", hasPermission)
+                put("accessibility", checkAccessibilityPermission())
+            }
+            if (::channel.isInitialized) {
+                channel.invokeMethod("onPermissionChanged", permissions.toString())
+            }
+
             // 如果获得了权限，启动悬浮窗服务
             if (hasPermission) {
                 startService(Intent(this, OverlayService::class.java))

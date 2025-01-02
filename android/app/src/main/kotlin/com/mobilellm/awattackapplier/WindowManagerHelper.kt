@@ -94,7 +94,7 @@ class WindowManagerHelper(private val context: Context) {
         return WindowManager.LayoutParams().apply {
             // 设置窗口类型
             type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
             } else {
                 WindowManager.LayoutParams.TYPE_PHONE
             }
