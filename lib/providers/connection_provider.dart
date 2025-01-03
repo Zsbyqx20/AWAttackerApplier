@@ -13,6 +13,27 @@ enum ConnectionStatus {
   disconnected,
 }
 
+class CachedOverlayPosition {
+  final double x;
+  final double y;
+  final double width;
+  final double height;
+  final String overlayId;
+
+  CachedOverlayPosition({
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+    required this.overlayId,
+  });
+
+  bool matchesPosition(
+      double newX, double newY, double newWidth, double newHeight) {
+    return x == newX && y == newY && width == newWidth && height == newHeight;
+  }
+}
+
 class ConnectionProvider extends ChangeNotifier {
   bool _isServiceRunning = false;
   ConnectionStatus _status = ConnectionStatus.disconnected;
@@ -20,6 +41,7 @@ class ConnectionProvider extends ChangeNotifier {
   late final OverlayService _overlayService;
   late final AccessibilityService _accessibilityService;
   StreamSubscription? _windowEventSubscription;
+  final Map<String, CachedOverlayPosition> _overlayPositionCache = {};
 
   ConnectionProvider(this._ruleProvider) {
     debugPrint('🏗️ 创建ConnectionProvider');
@@ -100,6 +122,7 @@ class ConnectionProvider extends ChangeNotifier {
   Future<void> stop() async {
     try {
       await _overlayService.stop();
+      _overlayPositionCache.clear(); // 清除位置缓存
       _isServiceRunning = false;
       _setStatus(ConnectionStatus.disconnected);
       notifyListeners();
@@ -142,6 +165,7 @@ class ConnectionProvider extends ChangeNotifier {
 
     if (matchedRules.isEmpty) {
       debugPrint('❌ 没有找到匹配的规则，清理现有悬浮窗');
+      _overlayPositionCache.clear(); // 清除位置缓存
       await _overlayService.removeAllOverlays();
       return;
     }
@@ -208,20 +232,53 @@ class ConnectionProvider extends ChangeNotifier {
         if (result.success &&
             result.coordinates != null &&
             result.size != null) {
+          final overlayId = 'overlay_$i';
+          final newX = result.coordinates!['x']!.toDouble();
+          final newY = result.coordinates!['y']!.toDouble();
+          final newWidth = result.size!['width']!.toDouble();
+          final newHeight = result.size!['height']!.toDouble();
+
+          // 检查坐标是否合法
+          if (newX < 0 || newY < 0 || newWidth <= 0 || newHeight <= 0) {
+            debugPrint(
+                '❌ 元素坐标或尺寸不合法: ($newX, $newY), $newWidth x $newHeight，清理悬浮窗');
+            popOverlayCache(overlayId);
+            await _overlayService.removeOverlay(overlayId);
+            continue;
+          }
+
+          // 检查缓存
+          final cachedPosition = _overlayPositionCache[overlayId];
+          if (cachedPosition != null &&
+              cachedPosition.matchesPosition(newX, newY, newWidth, newHeight)) {
+            debugPrint('📍 悬浮窗位置未变化，跳过更新: $overlayId');
+            continue;
+          }
+
           // 创建或更新悬浮窗
           final overlayStyle = style.copyWith(
-            x: result.coordinates!['x']!.toDouble(),
-            y: result.coordinates!['y']!.toDouble(),
-            width: result.size!['width']!.toDouble(),
-            height: result.size!['height']!.toDouble(),
+            x: newX,
+            y: newY,
+            width: newWidth,
+            height: newHeight,
           );
 
           final overlayResult = await _overlayService.createOverlay(
-            'overlay_$i',
+            overlayId,
             overlayStyle,
           );
 
-          if (!overlayResult.success) {
+          if (overlayResult.success) {
+            // 更新缓存
+            _overlayPositionCache[overlayId] = CachedOverlayPosition(
+              x: newX,
+              y: newY,
+              width: newWidth,
+              height: newHeight,
+              overlayId: overlayId,
+            );
+            debugPrint('✅ 悬浮窗位置已更新并缓存: $overlayId');
+          } else {
             debugPrint('❌ 创建悬浮窗失败: ${overlayResult.error}');
           }
         }
@@ -240,5 +297,12 @@ class ConnectionProvider extends ChangeNotifier {
   void dispose() {
     _windowEventSubscription?.cancel();
     super.dispose();
+  }
+
+  /// 移除指定悬浮窗的缓存
+  /// 返回被移除的缓存，如果缓存不存在则返回null
+  CachedOverlayPosition? popOverlayCache(String overlayId) {
+    debugPrint('🗑️ 移除悬浮窗缓存: $overlayId');
+    return _overlayPositionCache.remove(overlayId);
   }
 }

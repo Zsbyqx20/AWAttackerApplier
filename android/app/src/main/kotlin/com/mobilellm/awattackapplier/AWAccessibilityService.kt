@@ -21,28 +21,31 @@ class AWAccessibilityService : AccessibilityService() {
     private var lastActivity: String? = null
     private var lastWindowChangeTime: Long = 0
     private var lastEventHash: Int = 0
+    private var lastUserInteractionTime: Long = 0
     private val MIN_WINDOW_CHANGE_INTERVAL = 100L // 最小窗口变化间隔(ms)
+    private val USER_INTERACTION_WINDOW = 500L // 用户操作的有效时间窗口
 
     private val IGNORED_PACKAGES = listOf(
-        "com.android.systemui",
-        "com.android.settings",
-        "com.google.android.apps.nexuslauncher",
-        "com.android.launcher",
-        "com.android.launcher2",
-        "com.android.launcher3",
-        "com.google.android.googlequicksearchbox",
+        // "com.android.systemui",
+        // "com.android.settings",
+        // "com.google.android.apps.nexuslauncher",
+        // "com.android.launcher",
+        // "com.android.launcher2",
+        // "com.android.launcher3",
+        // "com.google.android.googlequicksearchbox",
         "com.mobilellm.awattackapplier"
     )
 
     private fun getRelativeActivityName(fullName: String?, packageName: String?): String? {
         if (fullName == null || packageName == null) return fullName
         
-        // 如果活动名以包名开头，移除包名部分但保留点号
+        // 如果活动名以包名开头，移除包名部分并确保以点号开头
         return if (fullName.startsWith(packageName)) {
-            fullName.substring(packageName.length)  // 保留开头的点号
+            val remaining = fullName.substring(packageName.length)
+            if (remaining.startsWith('.')) remaining else ".$remaining"
         } else {
-            // 如果不是以包名开头，在最后一个点号前加上点号
-            "." + fullName.substringAfterLast('.')
+            // 如果不是以包名开头，确保以点号开头
+            if (fullName.startsWith('.')) fullName else ".$fullName"
         }
     }
 
@@ -68,7 +71,14 @@ class AWAccessibilityService : AccessibilityService() {
             // 设置需要监听的事件类型
             eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or 
                         AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or
-                        AccessibilityEvent.TYPE_VIEW_SCROLLED
+                        AccessibilityEvent.TYPE_VIEW_SCROLLED or
+                        AccessibilityEvent.TYPE_VIEW_CLICKED or
+                        AccessibilityEvent.TYPE_VIEW_LONG_CLICKED or
+                        AccessibilityEvent.TYPE_VIEW_SELECTED or
+                        AccessibilityEvent.TYPE_VIEW_FOCUSED or
+                        AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED or
+                        AccessibilityEvent.TYPE_TOUCH_INTERACTION_START or
+                        AccessibilityEvent.TYPE_TOUCH_INTERACTION_END
 
             // 设置反馈类型
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
@@ -83,12 +93,27 @@ class AWAccessibilityService : AccessibilityService() {
         }
         
         serviceInfo = config
-        Log.d(TAG, "AccessibilityService configured")
+        Log.d(TAG, "AccessibilityService configured with all event types")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
 
+        // 记录用户操作
+        when (event.eventType) {
+            AccessibilityEvent.TYPE_VIEW_CLICKED,
+            AccessibilityEvent.TYPE_VIEW_LONG_CLICKED,
+            AccessibilityEvent.TYPE_VIEW_SELECTED,
+            AccessibilityEvent.TYPE_VIEW_FOCUSED,
+            AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
+            AccessibilityEvent.TYPE_TOUCH_INTERACTION_START,
+            AccessibilityEvent.TYPE_TOUCH_INTERACTION_END -> {
+                lastUserInteractionTime = System.currentTimeMillis()
+                Log.d(TAG, "检测到用户操作: ${getEventTypeName(event.eventType)}, 包名: ${event.packageName}, 类名: ${event.className}")
+            }
+        }
+
+        // 处理窗口和内容变化事件
         when (event.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 handleWindowStateChange(event)
@@ -118,14 +143,24 @@ class AWAccessibilityService : AccessibilityService() {
         contentChanged: Boolean
     ): Boolean {
         val currentTime = System.currentTimeMillis()
+        
+        // 检查是否在用户操作的有效时间窗口内
+        val hasRecentUserInteraction = 
+            (currentTime - lastUserInteractionTime) <= USER_INTERACTION_WINDOW
+        
+        if (!hasRecentUserInteraction) {
+            Log.d(TAG, "无最近用户操作，忽略事件: $type")
+            return false
+        }
+
         val eventHash = calculateEventHash(type, packageName, activityName, contentChanged)
         
         // 检查时间间隔和事件哈希值
-        if (currentTime - lastWindowChangeTime < MIN_WINDOW_CHANGE_INTERVAL && 
-            eventHash == lastEventHash) {
-            Log.d(TAG, "忽略重复事件: $type")
-            return false
-        }
+        // if (currentTime - lastWindowChangeTime < MIN_WINDOW_CHANGE_INTERVAL && 
+        //     eventHash == lastEventHash) {
+        //     Log.d(TAG, "忽略重复事件: $type")
+        //     return false
+        // }
 
         lastWindowChangeTime = currentTime
         lastEventHash = eventHash
@@ -154,7 +189,7 @@ class AWAccessibilityService : AccessibilityService() {
                 sendWindowEvent(
                     type = "WINDOW_STATE_CHANGED",
                     packageName = currentPackage,
-                    activityName = currentActivity,
+                    activityName = getRelativeActivityName(currentActivity, currentPackage),
                     contentChanged = false
                 )
             }
@@ -190,8 +225,9 @@ class AWAccessibilityService : AccessibilityService() {
     // 元素查找功能
     fun findElementByUiSelector(selectorCode: String): AccessibilityNodeInfo? {
         var retryCount = 0
-        val maxRetries = 3
-        val retryDelay = 100L // 100ms
+        val maxRetries = 5  // 增加重试次数
+        val retryDelay = 200L  // 增加延迟时间
+        var lastBounds: Rect? = null
 
         while (retryCount < maxRetries) {
             try {
@@ -211,9 +247,37 @@ class AWAccessibilityService : AccessibilityService() {
                     continue
                 }
 
-                return node
+                // 获取当前位置
+                val bounds = Rect()
+                node.getBoundsInScreen(bounds)
+                
+                // 记录位置信息用于日志
+                val boundsStr = "[$bounds]"
+
+                // 如果是第一次找到元素，记录位置并继续等待
+                if (lastBounds == null) {
+                    Log.d(TAG, "首次找到元素，位置: $boundsStr，等待位置稳定...")
+                    lastBounds = Rect(bounds)
+                    Thread.sleep(retryDelay)
+                    retryCount++
+                    continue
+                }
+
+                // 比较位置是否稳定
+                if (bounds == lastBounds) {
+                    Log.d(TAG, "元素位置稳定，最终位置: $boundsStr")
+                    return node  // 位置稳定，返回节点
+                } else {
+                    // 位置不稳定，更新记录并继续等待
+                    Log.d(TAG, "元素位置变化: ${lastBounds} -> $boundsStr，继续等待...")
+                    lastBounds = Rect(bounds)
+                    Thread.sleep(retryDelay)
+                    retryCount++
+                    continue
+                }
+
             } catch (e: Exception) {
-                Log.e(TAG, "Find element failed: $e")
+                Log.e(TAG, "查找元素时发生错误: $e")
                 retryCount++
                 if (retryCount < maxRetries) {
                     Thread.sleep(retryDelay)
@@ -221,7 +285,7 @@ class AWAccessibilityService : AccessibilityService() {
             }
         }
 
-        Log.e(TAG, "Failed to find element after $maxRetries retries")
+        Log.e(TAG, "在 $maxRetries 次重试后仍未找到稳定的元素位置")
         return null
     }
 
@@ -315,6 +379,22 @@ class AWAccessibilityService : AccessibilityService() {
     }
 
     fun getWindowManagerHelper(): WindowManagerHelper = WindowManagerHelper.getInstance(this)
+
+    private fun getEventTypeName(eventType: Int): String {
+        return when (eventType) {
+            AccessibilityEvent.TYPE_VIEW_CLICKED -> "VIEW_CLICKED"
+            AccessibilityEvent.TYPE_VIEW_LONG_CLICKED -> "VIEW_LONG_CLICKED"
+            AccessibilityEvent.TYPE_VIEW_SELECTED -> "VIEW_SELECTED"
+            AccessibilityEvent.TYPE_VIEW_FOCUSED -> "VIEW_FOCUSED"
+            AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED -> "VIEW_TEXT_CHANGED"
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> "WINDOW_STATE_CHANGED"
+            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> "WINDOW_CONTENT_CHANGED"
+            AccessibilityEvent.TYPE_VIEW_SCROLLED -> "VIEW_SCROLLED"
+            AccessibilityEvent.TYPE_TOUCH_INTERACTION_START -> "TOUCH_INTERACTION_START"
+            AccessibilityEvent.TYPE_TOUCH_INTERACTION_END -> "TOUCH_INTERACTION_END"
+            else -> "UNKNOWN_EVENT_TYPE($eventType)"
+        }
+    }
 }
 
 // UiAutomator选择器辅助类
