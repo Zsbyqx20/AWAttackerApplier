@@ -152,7 +152,7 @@ class RuleCard extends StatelessWidget {
                             confirmText: '删除',
                             icon: Icons.delete_outline,
                           );
-                          if (confirmed == true) {
+                          if (confirmed == true && context.mounted) {
                             context.read<RuleProvider>().deleteRule(rule.id);
                           }
                         },

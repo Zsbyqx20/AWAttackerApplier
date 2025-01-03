@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import '../models/overlay_style.dart';
@@ -17,6 +18,22 @@ class NativeOverlayService implements IOverlayService {
   @override
   Future<bool> checkPermission() async {
     try {
+      final result = await _channel.invokeMethod<String>('checkAllPermissions');
+      if (result != null) {
+        final permissions = jsonDecode(result) as Map<String, dynamic>;
+        return permissions['overlay'] == true &&
+            permissions['accessibility'] == true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('检查权限时发生错误: $e');
+      return false;
+    }
+  }
+
+  /// 检查悬浮窗权限
+  Future<bool> checkOverlayPermission() async {
+    try {
       final result =
           await _channel.invokeMethod<bool>('checkOverlayPermission');
       return result ?? false;
@@ -26,14 +43,40 @@ class NativeOverlayService implements IOverlayService {
     }
   }
 
+  /// 检查无障碍服务权限
+  Future<bool> checkAccessibilityPermission() async {
+    try {
+      final result =
+          await _channel.invokeMethod<bool>('checkAccessibilityPermission');
+      return result ?? false;
+    } catch (e) {
+      debugPrint('检查无障碍服务权限时发生错误: $e');
+      return false;
+    }
+  }
+
   @override
   Future<bool> requestPermission() async {
     try {
-      final result =
-          await _channel.invokeMethod<bool>('requestOverlayPermission');
-      return result ?? false;
+      // 先检查并请求悬浮窗权限
+      if (!await checkOverlayPermission()) {
+        final overlayGranted =
+            await _channel.invokeMethod<bool>('requestOverlayPermission');
+        if (overlayGranted != true) {
+          return false;
+        }
+      }
+
+      // 再检查并请求无障碍服务权限
+      if (!await checkAccessibilityPermission()) {
+        await _channel.invokeMethod<bool>('requestAccessibilityPermission');
+        // 由于无障碍服务权限需要用户手动开启，这里不等待结果
+        return true;
+      }
+
+      return true;
     } catch (e) {
-      debugPrint('请求悬浮窗权限时发生错误: $e');
+      debugPrint('请求权限时发生错误: $e');
       return false;
     }
   }
@@ -42,7 +85,15 @@ class NativeOverlayService implements IOverlayService {
   Future<OverlayResult> createOverlay(String id, OverlayStyle style) async {
     try {
       if (!await checkPermission()) {
-        throw OverlayException.permissionDenied();
+        final hasOverlay = await checkOverlayPermission();
+        final hasAccessibility = await checkAccessibilityPermission();
+
+        if (!hasOverlay) {
+          throw OverlayException.permissionDenied();
+        }
+        if (!hasAccessibility) {
+          throw OverlayException.accessibilityPermissionDenied();
+        }
       }
 
       final result =
@@ -60,6 +111,9 @@ class NativeOverlayService implements IOverlayService {
       }
     } catch (e) {
       debugPrint('创建悬浮窗时发生错误: $e');
+      if (e is OverlayException) {
+        return OverlayResult.failure(e.message);
+      }
       return OverlayResult.failure(e.toString());
     }
   }
@@ -68,7 +122,15 @@ class NativeOverlayService implements IOverlayService {
   Future<OverlayResult> updateOverlay(String id, OverlayStyle style) async {
     try {
       if (!await checkPermission()) {
-        throw OverlayException.permissionDenied();
+        final hasOverlay = await checkOverlayPermission();
+        final hasAccessibility = await checkAccessibilityPermission();
+
+        if (!hasOverlay) {
+          throw OverlayException.permissionDenied();
+        }
+        if (!hasAccessibility) {
+          throw OverlayException.accessibilityPermissionDenied();
+        }
       }
 
       if (!_activeOverlayIds.contains(id)) {
@@ -89,6 +151,9 @@ class NativeOverlayService implements IOverlayService {
       }
     } catch (e) {
       debugPrint('更新悬浮窗时发生错误: $e');
+      if (e is OverlayException) {
+        return OverlayResult.failure(e.message);
+      }
       return OverlayResult.failure(e.toString());
     }
   }
@@ -96,14 +161,8 @@ class NativeOverlayService implements IOverlayService {
   @override
   Future<bool> removeOverlay(String id) async {
     try {
-      if (!hasOverlay(id)) {
-        return false;
-      }
-
-      final result = await _channel.invokeMethod<bool>('removeOverlay', {
-        'id': id,
-      });
-
+      final result =
+          await _channel.invokeMethod<bool>('removeOverlay', {'id': id});
       if (result == true) {
         _activeOverlayIds.remove(id);
       }
@@ -117,16 +176,58 @@ class NativeOverlayService implements IOverlayService {
   @override
   Future<void> removeAllOverlays() async {
     try {
-      await _channel.invokeMethod('removeAllOverlays');
-      _activeOverlayIds.clear();
+      debugPrint('📤 正在移除所有悬浮窗...');
+      if (_activeOverlayIds.isEmpty) {
+        debugPrint('💡 没有活动的悬浮窗需要移除');
+        return;
+      }
+
+      debugPrint('🔍 当前活动的悬浮窗: ${_activeOverlayIds.join(', ')}');
+      final result = await _channel.invokeMethod<bool>('removeAllOverlays');
+      debugPrint('📥 原生层返回结果: $result');
+
+      if (result == true) {
+        debugPrint('✅ 所有悬浮窗已成功移除');
+        _activeOverlayIds.clear();
+      } else {
+        debugPrint('⚠️ 批量移除失败，尝试逐个移除...');
+        var hasError = false;
+        // 尝试逐个移除
+        for (final id in _activeOverlayIds.toList()) {
+          try {
+            final removed =
+                await _channel.invokeMethod<bool>('removeOverlay', {'id': id});
+            if (removed == true) {
+              _activeOverlayIds.remove(id);
+              debugPrint('✅ 成功移除悬浮窗: $id');
+            } else {
+              hasError = true;
+              debugPrint('❌ 移除悬浮窗失败: $id');
+            }
+          } catch (e) {
+            hasError = true;
+            debugPrint('❌ 移除悬浮窗时发生错误: $id, $e');
+            _activeOverlayIds.remove(id);
+          }
+        }
+
+        if (hasError) {
+          throw OverlayException.removeFailed('部分悬浮窗移除失败');
+        }
+      }
     } catch (e) {
-      debugPrint('移除所有悬浮窗时发生错误: $e');
+      debugPrint('❌ 移除所有悬浮窗时发生错误: $e');
+      // 即使发生错误也要清空活动列表，但要记录日志
+      final ids = _activeOverlayIds.toList();
+      _activeOverlayIds.clear();
+      debugPrint('⚠️ 强制清空活动悬浮窗列表: ${ids.join(', ')}');
+      rethrow; // 向上层抛出错误，让调用者知道实际的执行结果
     }
   }
 
   @override
   List<String> getActiveOverlayIds() {
-    return List.unmodifiable(_activeOverlayIds);
+    return _activeOverlayIds.toList();
   }
 
   @override

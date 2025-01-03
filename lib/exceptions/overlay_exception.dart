@@ -14,6 +14,10 @@ class OverlayException implements Exception {
   /// 预定义错误代码：权限错误
   static const String permissionDeniedCode = 'PERMISSION_DENIED';
 
+  /// 预定义错误代码：accessibility权限错误
+  static const String accessibilityPermissionDeniedCode =
+      'ACCESSIBILITY_PERMISSION_DENIED';
+
   /// 预定义错误代码：悬浮窗不存在
   static const String overlayNotFoundCode = 'OVERLAY_NOT_FOUND';
 
@@ -31,6 +35,15 @@ class OverlayException implements Exception {
     return OverlayException(
       permissionDeniedCode,
       '悬浮窗权限未授予',
+      details,
+    );
+  }
+
+  /// 创建accessibility权限错误异常
+  factory OverlayException.accessibilityPermissionDenied([String? details]) {
+    return OverlayException(
+      accessibilityPermissionDeniedCode,
+      '无障碍服务权限未授予',
       details,
     );
   }

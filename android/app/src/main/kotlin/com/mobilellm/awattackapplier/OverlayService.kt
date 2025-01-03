@@ -14,7 +14,6 @@ import io.flutter.embedding.engine.dart.DartExecutor.DartEntrypoint
 import org.json.JSONObject
 
 class OverlayService : Service() {
-    private var windowManagerHelper: WindowManagerHelper? = null
     private var methodChannel: MethodChannel? = null
     private var flutterEngine: FlutterEngine? = null
 
@@ -30,9 +29,6 @@ class OverlayService : Service() {
         Log.d(TAG, "onCreate")
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
-        
-        // 初始化WindowManager
-        windowManagerHelper = WindowManagerHelper(this)
         
         // 初始化Flutter引擎
         initializeFlutterEngine()
@@ -71,12 +67,13 @@ class OverlayService : Service() {
             methodChannel = MethodChannel(messenger, METHOD_CHANNEL_NAME).apply {
                 setMethodCallHandler { call, result ->
                     try {
+                        val windowHelper = WindowManagerHelper.getInstance(this@OverlayService)
                         when (call.method) {
                             "createOverlay" -> {
                                 val id = call.argument<String>("id")
                                 val style = call.argument<Map<String, Any>>("style")
                                 if (id != null && style != null) {
-                                    windowManagerHelper?.createOverlay(id, style)
+                                    windowHelper.createOverlay(id, style)
                                     result.success(mapOf(
                                         "success" to true
                                     ))
@@ -88,7 +85,7 @@ class OverlayService : Service() {
                                 val id = call.argument<String>("id")
                                 val style = call.argument<Map<String, Any>>("style")
                                 if (id != null && style != null) {
-                                    windowManagerHelper?.updateOverlay(id, style)
+                                    windowHelper.updateOverlay(id, style)
                                     result.success(mapOf(
                                         "success" to true
                                     ))
@@ -99,15 +96,23 @@ class OverlayService : Service() {
                             "removeOverlay" -> {
                                 val id = call.argument<String>("id")
                                 if (id != null) {
-                                    windowManagerHelper?.removeOverlay(id)
-                                    result.success(true)
+                                    val removed = windowHelper.removeOverlay(id)
+                                    if (removed) {
+                                        result.success(true)
+                                    } else {
+                                        result.error("REMOVE_FAILED", "Failed to remove overlay", null)
+                                    }
                                 } else {
                                     result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
                                 }
                             }
                             "removeAllOverlays" -> {
-                                windowManagerHelper?.removeAllOverlays()
-                                result.success(true)
+                                val removed = windowHelper.removeAllOverlays()
+                                if (removed) {
+                                    result.success(true)
+                                } else {
+                                    result.error("REMOVE_ALL_FAILED", "Failed to remove all overlays", null)
+                                }
                             }
                             else -> result.notImplemented()
                         }
@@ -127,7 +132,6 @@ class OverlayService : Service() {
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
         super.onDestroy()
-        windowManagerHelper?.removeAllOverlays()
         flutterEngine?.destroy()
         methodChannel?.setMethodCallHandler(null)
     }

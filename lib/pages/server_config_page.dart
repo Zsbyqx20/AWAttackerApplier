@@ -1,20 +1,18 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../constants/storage_keys.dart';
+import '../models/permission_status.dart';
 import '../providers/connection_provider.dart';
-import '../repositories/storage_repository.dart';
-import '../services/overlay_service.dart';
 import '../widgets/permission_card.dart';
-import '../widgets/server_config_card.dart';
-import '../widgets/server_status_card.dart';
 
 class ServerConfigPage extends StatefulWidget {
-  final Function(bool) onPermissionChanged;
+  final void Function({bool? overlayPermission, bool? accessibilityPermission})
+      onPermissionsChanged;
 
   const ServerConfigPage({
     super.key,
-    required this.onPermissionChanged,
+    required this.onPermissionsChanged,
   });
 
   @override
@@ -23,36 +21,38 @@ class ServerConfigPage extends StatefulWidget {
 
 class _ServerConfigPageState extends State<ServerConfigPage>
     with WidgetsBindingObserver {
-  final TextEditingController _apiController = TextEditingController();
-  final TextEditingController _wsController = TextEditingController();
-  final StorageRepository _storageRepository;
   final _channel =
       const MethodChannel('com.mobilellm.awattackapplier/overlay_service');
 
   bool _hasOverlayPermission = false;
-  bool _isCheckingPermission = false;
+  bool _hasAccessibilityPermission = false;
   bool _isStartingService = false;
-
-  _ServerConfigPageState() : _storageRepository = StorageRepository();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadUrls();
-    _checkOverlayPermission();
+    _checkPermissions();
     _setupPermissionListener();
   }
 
   void _setupPermissionListener() {
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'onPermissionChanged') {
-        final bool hasPermission = call.arguments as bool;
+        final permissions =
+            jsonDecode(call.arguments as String) as Map<String, dynamic>;
+        final hasOverlay = permissions['overlay'] as bool;
+        final hasAccessibility = permissions['accessibility'] as bool;
+
         if (mounted) {
           setState(() {
-            _hasOverlayPermission = hasPermission;
+            _hasOverlayPermission = hasOverlay;
+            _hasAccessibilityPermission = hasAccessibility;
           });
-          widget.onPermissionChanged(hasPermission);
+          widget.onPermissionsChanged(
+            overlayPermission: hasOverlay,
+            accessibilityPermission: hasAccessibility,
+          );
         }
       }
     });
@@ -60,8 +60,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
 
   @override
   void dispose() {
-    _apiController.dispose();
-    _wsController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -69,84 +67,46 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _checkOverlayPermission();
+      _checkPermissions();
     }
   }
 
-  Future<void> _loadUrls() async {
-    await _storageRepository.init();
-    final urls = await _storageRepository.loadUrls();
-    if (mounted) {
-      setState(() {
-        _apiController.text = urls[StorageKeys.apiUrlKey]!;
-        _wsController.text = urls[StorageKeys.wsUrlKey]!;
-      });
-    }
-  }
-
-  Future<void> _saveUrls() async {
-    await _storageRepository.saveUrls(
-      apiUrl: _apiController.text,
-      wsUrl: _wsController.text,
-    );
-  }
-
-  Future<bool> _checkOverlayPermission() async {
-    if (_isCheckingPermission) return false;
-
-    setState(() {
-      _isCheckingPermission = true;
-    });
-
+  Future<void> _checkPermissions() async {
     try {
-      final hasPermission = await OverlayService().checkPermission();
-      if (mounted) {
-        setState(() {
-          _hasOverlayPermission = hasPermission;
-        });
-        widget.onPermissionChanged(hasPermission);
+      final result = await _channel.invokeMethod<String>('checkAllPermissions');
+      if (result != null) {
+        final permissions = jsonDecode(result) as Map<String, dynamic>;
+        if (mounted) {
+          setState(() {
+            _hasOverlayPermission = permissions['overlay'] as bool;
+            _hasAccessibilityPermission = permissions['accessibility'] as bool;
+          });
+          widget.onPermissionsChanged(
+            overlayPermission: _hasOverlayPermission,
+            accessibilityPermission: _hasAccessibilityPermission,
+          );
+        }
       }
-      return hasPermission;
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCheckingPermission = false;
-        });
-      }
+    } catch (e) {
+      debugPrint('检查权限时发生错误: $e');
     }
   }
 
-  Future<void> _requestOverlayPermission() async {
-    if (_isCheckingPermission) return;
-
-    setState(() {
-      _isCheckingPermission = true;
-    });
-
+  Future<void> _requestPermission(PermissionType type) async {
     try {
-      final granted = await OverlayService().requestPermission();
-      if (mounted) {
-        setState(() {
-          _hasOverlayPermission = granted;
-        });
-        widget.onPermissionChanged(granted);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(granted ? '权限已授予' : '权限请求被拒绝'),
-          ),
-        );
+      switch (type) {
+        case PermissionType.overlay:
+          await _channel.invokeMethod<bool>('requestOverlayPermission');
+          break;
+        case PermissionType.accessibility:
+          await _channel.invokeMethod<bool>('requestAccessibilityPermission');
+          break;
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('请求权限时发生错误')),
+          SnackBar(content: Text('请求权限时发生错误: $e')),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCheckingPermission = false;
-        });
       }
     }
   }
@@ -160,7 +120,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
 
     try {
       final provider = context.read<ConnectionProvider>();
-      provider.updateUrls(_apiController.text, _wsController.text);
       await provider.checkAndConnect();
     } catch (e) {
       if (mounted) {
@@ -205,6 +164,8 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ConnectionProvider>();
+    final allPermissionsGranted =
+        _hasOverlayPermission && _hasAccessibilityPermission;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -212,19 +173,13 @@ class _ServerConfigPageState extends State<ServerConfigPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PermissionCard(
-            hasPermission: _hasOverlayPermission,
-            onRequestPermission: _requestOverlayPermission,
+            permissions: [
+              PermissionStatus.overlay(isGranted: _hasOverlayPermission),
+              PermissionStatus.accessibility(
+                  isGranted: _hasAccessibilityPermission),
+            ],
+            onRequestPermission: _requestPermission,
           ),
-          const SizedBox(height: 12),
-          ServerConfigCard(
-            apiController: _apiController,
-            wsController: _wsController,
-            enabled: _hasOverlayPermission,
-            onApiChanged: (_) => _saveUrls(),
-            onWsChanged: (_) => _saveUrls(),
-          ),
-          const SizedBox(height: 12),
-          const ServerStatusCard(),
           const SizedBox(height: 24),
           Card(
             elevation: 1,
@@ -241,7 +196,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
               child: Padding(
                 padding: const EdgeInsets.all(2),
                 child: ElevatedButton.icon(
-                  onPressed: _hasOverlayPermission && !_isStartingService
+                  onPressed: allPermissionsGranted && !_isStartingService
                       ? (provider.isServiceRunning
                           ? _stopService
                           : _startService)
@@ -253,7 +208,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              _hasOverlayPermission
+                              allPermissionsGranted
                                   ? Colors.white
                                   : Colors.grey[400]!,
                             ),
