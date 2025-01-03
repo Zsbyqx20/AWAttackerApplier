@@ -14,6 +14,7 @@ class _MainPageState extends State<MainPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _hasOverlayPermission = false;
+  bool _hasAccessibilityPermission = false;
 
   @override
   void initState() {
@@ -29,17 +30,30 @@ class _MainPageState extends State<MainPage>
   }
 
   void _handleTabChange() {
-    if (!_hasOverlayPermission && _tabController.index > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先授予悬浮窗权限')),
-      );
-      _tabController.animateTo(0);
+    if (_tabController.index > 0) {
+      if (!_hasOverlayPermission) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('请先授予悬浮窗权限')),
+        );
+        _tabController.animateTo(0);
+      } else if (!_hasAccessibilityPermission) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('请先授予无障碍服务权限')),
+        );
+        _tabController.animateTo(0);
+      }
     }
   }
 
-  void updateOverlayPermission(bool hasPermission) {
+  void updatePermissions(
+      {bool? overlayPermission, bool? accessibilityPermission}) {
     setState(() {
-      _hasOverlayPermission = hasPermission;
+      if (overlayPermission != null) {
+        _hasOverlayPermission = overlayPermission;
+      }
+      if (accessibilityPermission != null) {
+        _hasAccessibilityPermission = accessibilityPermission;
+      }
     });
   }
 
@@ -70,7 +84,10 @@ class _MainPageState extends State<MainPage>
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Tab(
                 icon: Icon(Icons.rule_folder_outlined,
-                    color: !_hasOverlayPermission ? Colors.grey[400] : null),
+                    color:
+                        !_hasOverlayPermission || !_hasAccessibilityPermission
+                            ? Colors.grey[400]
+                            : null),
                 text: '规则',
                 height: 60,
               ),
@@ -79,7 +96,10 @@ class _MainPageState extends State<MainPage>
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Tab(
                 icon: Icon(Icons.sell_outlined,
-                    color: !_hasOverlayPermission ? Colors.grey[400] : null),
+                    color:
+                        !_hasOverlayPermission || !_hasAccessibilityPermission
+                            ? Colors.grey[400]
+                            : null),
                 text: '标签',
                 height: 60,
               ),
@@ -89,12 +109,12 @@ class _MainPageState extends State<MainPage>
       ),
       body: TabBarView(
         controller: _tabController,
-        physics: !_hasOverlayPermission
+        physics: !_hasOverlayPermission || !_hasAccessibilityPermission
             ? const NeverScrollableScrollPhysics()
             : null,
         children: [
           ServerConfigPage(
-            onPermissionChanged: updateOverlayPermission,
+            onPermissionsChanged: updatePermissions,
           ),
           const RuleListPage(),
           const TagListPage(),

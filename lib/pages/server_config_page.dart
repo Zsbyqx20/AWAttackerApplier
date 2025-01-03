@@ -7,11 +7,12 @@ import '../providers/connection_provider.dart';
 import '../widgets/permission_card.dart';
 
 class ServerConfigPage extends StatefulWidget {
-  final Function(bool) onPermissionChanged;
+  final void Function({bool? overlayPermission, bool? accessibilityPermission})
+      onPermissionsChanged;
 
   const ServerConfigPage({
     super.key,
-    required this.onPermissionChanged,
+    required this.onPermissionsChanged,
   });
 
   @override
@@ -48,7 +49,10 @@ class _ServerConfigPageState extends State<ServerConfigPage>
             _hasOverlayPermission = hasOverlay;
             _hasAccessibilityPermission = hasAccessibility;
           });
-          widget.onPermissionChanged(hasOverlay && hasAccessibility);
+          widget.onPermissionsChanged(
+            overlayPermission: hasOverlay,
+            accessibilityPermission: hasAccessibility,
+          );
         }
       }
     });
@@ -77,8 +81,10 @@ class _ServerConfigPageState extends State<ServerConfigPage>
             _hasOverlayPermission = permissions['overlay'] as bool;
             _hasAccessibilityPermission = permissions['accessibility'] as bool;
           });
-          widget.onPermissionChanged(
-              _hasOverlayPermission && _hasAccessibilityPermission);
+          widget.onPermissionsChanged(
+            overlayPermission: _hasOverlayPermission,
+            accessibilityPermission: _hasAccessibilityPermission,
+          );
         }
       }
     } catch (e) {
