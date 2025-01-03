@@ -65,6 +65,24 @@ class MainActivity: FlutterActivity() {
                     }
                     result.success(permissions.toString())
                 }
+                "startDetection" -> {
+                    val service = AWAccessibilityService.getInstance()
+                    if (service != null) {
+                        service.startDetection()
+                        result.success(true)
+                    } else {
+                        result.error("SERVICE_NOT_RUNNING", "Accessibility service is not running", null)
+                    }
+                }
+                "stopDetection" -> {
+                    val service = AWAccessibilityService.getInstance()
+                    if (service != null) {
+                        service.stopDetection()
+                        result.success(true)
+                    } else {
+                        result.error("SERVICE_NOT_RUNNING", "Accessibility service is not running", null)
+                    }
+                }
                 "onWindowEvent" -> {
                     // 窗口事件不需要返回结果
                     result.success(null)

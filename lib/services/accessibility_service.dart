@@ -11,6 +11,9 @@ class AccessibilityService extends ChangeNotifier {
   static final AccessibilityService _instance =
       AccessibilityService._internal();
   bool _initialized = false;
+  bool _isDetectionEnabled = false;
+
+  bool get isDetectionEnabled => _isDetectionEnabled;
 
   factory AccessibilityService() {
     debugPrint('🏭 获取AccessibilityService实例');
@@ -100,11 +103,38 @@ class AccessibilityService extends ChangeNotifier {
     }
   }
 
+  /// 开启界面检测
+  Future<void> startDetection() async {
+    try {
+      await _channel.invokeMethod('startDetection');
+      _isDetectionEnabled = true;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ 开启界面检测失败: $e');
+      _isDetectionEnabled = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// 停止界面检测
+  Future<void> stopDetection() async {
+    try {
+      await _channel.invokeMethod('stopDetection');
+      _isDetectionEnabled = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ 停止界面检测失败: $e');
+      rethrow;
+    }
+  }
+
   /// 停止服务
   Future<void> stop() async {
     debugPrint('🛑 停止AccessibilityService');
     _isServiceRunning = false;
     _initialized = false;
+    _isDetectionEnabled = false;
 
     // 移除方法调用处理器
     _channel.setMethodCallHandler(null);

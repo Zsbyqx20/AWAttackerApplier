@@ -20,6 +20,7 @@ class AWAccessibilityService : AccessibilityService() {
     private var lastWindowHash: Int = 0
     private var lastPackage: String? = null
     private var lastActivity: String? = null
+    private var isDetectionEnabled = false
 
     private val IGNORED_PACKAGES = listOf(
         // "com.android.systemui",
@@ -81,6 +82,10 @@ class AWAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
+        if (!isDetectionEnabled) {
+            // Log.d(TAG, "界面检测已停止，忽略事件")
+            return
+        }
 
         when (event.eventType) {
             // 用户交互事件直接触发
@@ -341,6 +346,20 @@ class AWAccessibilityService : AccessibilityService() {
             AccessibilityEvent.TYPE_TOUCH_INTERACTION_END -> "TOUCH_INTERACTION_END"
             else -> "UNKNOWN_EVENT_TYPE($eventType)"
         }
+    }
+
+    fun startDetection() {
+        Log.d(TAG, "🎯 开启界面检测")
+        isDetectionEnabled = true
+    }
+
+    fun stopDetection() {
+        Log.d(TAG, "⏹️ 停止界面检测")
+        isDetectionEnabled = false
+        // 重置状态
+        lastWindowHash = 0
+        lastPackage = null
+        lastActivity = null
     }
 }
 

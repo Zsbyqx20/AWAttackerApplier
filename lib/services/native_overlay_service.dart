@@ -178,7 +178,7 @@ class NativeOverlayService implements IOverlayService {
     try {
       debugPrint('📤 正在移除所有悬浮窗...');
       if (_activeOverlayIds.isEmpty) {
-        debugPrint('ℹ️ 没有活动的悬浮窗需要移除');
+        debugPrint('💡 没有活动的悬浮窗需要移除');
         return;
       }
 

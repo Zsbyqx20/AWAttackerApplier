@@ -107,6 +107,10 @@ class ConnectionProvider extends ChangeNotifier {
         return false;
       }
 
+      // 开启界面检测
+      await _accessibilityService.startDetection();
+      debugPrint('✅ 已开启界面检测');
+
       _isServiceRunning = true;
       _setStatus(ConnectionStatus.connected);
       notifyListeners();
@@ -121,6 +125,10 @@ class ConnectionProvider extends ChangeNotifier {
   // 停止服务
   Future<void> stop() async {
     try {
+      // 先停止界面检测
+      await _accessibilityService.stopDetection();
+      debugPrint('✅ 已停止界面检测');
+
       await _overlayService.stop();
       await _accessibilityService.stop(); // 停止AccessibilityService
       _overlayPositionCache.clear(); // 清除位置缓存
