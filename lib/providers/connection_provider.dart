@@ -138,20 +138,6 @@ class ConnectionProvider extends ChangeNotifier {
     }
   }
 
-  // 重新订阅事件
-  Future<void> _resubscribeToEvents() async {
-    debugPrint('📡 重新订阅窗口事件');
-    _windowEventSubscription?.cancel();
-    _windowEventSubscription = _accessibilityService.windowEvents.listen(
-      _handleWindowEvent,
-      onError: (error) {
-        debugPrint('❌ 窗口事件流错误: $error');
-        _setStatus(ConnectionStatus.disconnected);
-      },
-      cancelOnError: false,
-    );
-  }
-
   void _handleWindowEvent(WindowEvent event) {
     debugPrint('📥 ConnectionProvider收到窗口事件: $event');
 
@@ -271,12 +257,24 @@ class ConnectionProvider extends ChangeNotifier {
             continue;
           }
 
+          // 调整坐标和大小，考虑padding的影响
+          final adjustedX = newX + style.x;
+          final adjustedY = newY + style.y;
+          final adjustedWidth = newWidth + style.width;
+          final adjustedHeight = newHeight + style.height;
+
+          debugPrint('📐 调整后的坐标和大小:');
+          debugPrint('  原始: ($newX, $newY), $newWidth x $newHeight');
+          debugPrint(
+              '  调整: ($adjustedX, $adjustedY), $adjustedWidth x $adjustedHeight');
+          debugPrint('  Padding: ${style.padding}');
+
           // 创建或更新悬浮窗
           final overlayStyle = style.copyWith(
-            x: newX,
-            y: newY,
-            width: newWidth,
-            height: newHeight,
+            x: adjustedX,
+            y: adjustedY,
+            width: adjustedWidth,
+            height: adjustedHeight,
           );
 
           final overlayResult = await _overlayService.createOverlay(
