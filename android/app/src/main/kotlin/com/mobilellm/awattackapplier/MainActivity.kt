@@ -31,11 +31,9 @@ class MainActivity: FlutterActivity() {
 
     private var pendingResult: MethodChannel.Result? = null
     private lateinit var channel: MethodChannel
-    private var windowManagerHelper: WindowManagerHelper? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        windowManagerHelper = WindowManagerHelper(this)
     }
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
@@ -67,29 +65,20 @@ class MainActivity: FlutterActivity() {
                     }
                     result.success(permissions.toString())
                 }
+                "onWindowEvent" -> {
+                    // 窗口事件不需要返回结果
+                    result.success(null)
+                }
                 "createOverlay" -> {
-                    try {
-                        val id = call.argument<String>("id")
-                        val style = call.argument<Map<String, Any>>("style")
-                        if (id != null && style != null) {
-                            windowManagerHelper?.createOverlay(id, style)
-                            result.success(mapOf(
-                                "success" to true
-                            ))
-                        } else {
-                            result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "创建悬浮窗时发生错误", e)
-                        result.error("CREATE_FAILED", e.message, null)
-                    }
+                    createOverlay(call, result)
                 }
                 "updateOverlay" -> {
                     try {
                         val id = call.argument<String>("id")
                         val style = call.argument<Map<String, Any>>("style")
                         if (id != null && style != null) {
-                            windowManagerHelper?.updateOverlay(id, style)
+                            val windowHelper = WindowManagerHelper.getInstance(this)
+                            windowHelper.updateOverlay(id, style)
                             result.success(mapOf(
                                 "success" to true
                             ))
@@ -105,8 +94,13 @@ class MainActivity: FlutterActivity() {
                     try {
                         val id = call.argument<String>("id")
                         if (id != null) {
-                            windowManagerHelper?.removeOverlay(id)
-                            result.success(true)
+                            val windowHelper = WindowManagerHelper.getInstance(this)
+                            val removed = windowHelper.removeOverlay(id)
+                            if (removed) {
+                                result.success(true)
+                            } else {
+                                result.error("REMOVE_FAILED", "Failed to remove overlay", null)
+                            }
                         } else {
                             result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
                         }
@@ -117,8 +111,13 @@ class MainActivity: FlutterActivity() {
                 }
                 "removeAllOverlays" -> {
                     try {
-                        windowManagerHelper?.removeAllOverlays()
-                        result.success(true)
+                        val windowHelper = WindowManagerHelper.getInstance(this)
+                        val removed = windowHelper.removeAllOverlays()
+                        if (removed) {
+                            result.success(true)
+                        } else {
+                            result.error("REMOVE_ALL_FAILED", "Failed to remove all overlays", null)
+                        }
                     } catch (e: Exception) {
                         Log.e(TAG, "移除所有悬浮窗时发生错误", e)
                         result.error("REMOVE_ALL_FAILED", e.message, null)
@@ -221,8 +220,7 @@ class MainActivity: FlutterActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        windowManagerHelper?.removeAllOverlays()
-        windowManagerHelper = null
+        methodChannel = null
     }
 
     private fun handleFindElements(call: MethodCall, result: MethodChannel.Result) {
@@ -283,6 +281,28 @@ class MainActivity: FlutterActivity() {
             result.success(element.toMapResult())
         } catch (e: Exception) {
             result.error("FIND_ERROR", e.message, null)
+        }
+    }
+
+    private fun createOverlay(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val id = call.argument<String>("id") ?: throw IllegalArgumentException("Missing id")
+            val style = call.argument<Map<String, Any>>("style")
+                ?: throw IllegalArgumentException("Missing style")
+            
+            // 使用 AccessibilityService 的实例创建悬浮窗
+            val accessibilityService = AWAccessibilityService.getInstance()
+            if (accessibilityService == null) {
+                result.error("SERVICE_NOT_RUNNING", "AccessibilityService is not running", null)
+                return
+            }
+            
+            val windowHelper = WindowManagerHelper.getInstance(this)
+            windowHelper.createOverlay(id, style)
+            result.success(mapOf("success" to true))
+        } catch (e: Exception) {
+            Log.e(TAG, "创建悬浮窗时发生错误", e)
+            result.error("CREATE_FAILED", e.message, null)
         }
     }
 }

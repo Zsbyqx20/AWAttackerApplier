@@ -176,10 +176,52 @@ class NativeOverlayService implements IOverlayService {
   @override
   Future<void> removeAllOverlays() async {
     try {
-      await _channel.invokeMethod('removeAllOverlays');
-      _activeOverlayIds.clear();
+      debugPrint('📤 正在移除所有悬浮窗...');
+      if (_activeOverlayIds.isEmpty) {
+        debugPrint('ℹ️ 没有活动的悬浮窗需要移除');
+        return;
+      }
+
+      debugPrint('🔍 当前活动的悬浮窗: ${_activeOverlayIds.join(', ')}');
+      final result = await _channel.invokeMethod<bool>('removeAllOverlays');
+      debugPrint('📥 原生层返回结果: $result');
+
+      if (result == true) {
+        debugPrint('✅ 所有悬浮窗已成功移除');
+        _activeOverlayIds.clear();
+      } else {
+        debugPrint('⚠️ 批量移除失败，尝试逐个移除...');
+        var hasError = false;
+        // 尝试逐个移除
+        for (final id in _activeOverlayIds.toList()) {
+          try {
+            final removed =
+                await _channel.invokeMethod<bool>('removeOverlay', {'id': id});
+            if (removed == true) {
+              _activeOverlayIds.remove(id);
+              debugPrint('✅ 成功移除悬浮窗: $id');
+            } else {
+              hasError = true;
+              debugPrint('❌ 移除悬浮窗失败: $id');
+            }
+          } catch (e) {
+            hasError = true;
+            debugPrint('❌ 移除悬浮窗时发生错误: $id, $e');
+            _activeOverlayIds.remove(id);
+          }
+        }
+
+        if (hasError) {
+          throw OverlayException.removeFailed('部分悬浮窗移除失败');
+        }
+      }
     } catch (e) {
-      debugPrint('移除所有悬浮窗时发生错误: $e');
+      debugPrint('❌ 移除所有悬浮窗时发生错误: $e');
+      // 即使发生错误也要清空活动列表，但要记录日志
+      final ids = _activeOverlayIds.toList();
+      _activeOverlayIds.clear();
+      debugPrint('⚠️ 强制清空活动悬浮窗列表: ${ids.join(', ')}');
+      rethrow; // 向上层抛出错误，让调用者知道实际的执行结果
     }
   }
 

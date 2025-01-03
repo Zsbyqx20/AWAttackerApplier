@@ -7,13 +7,19 @@ import '../models/element_result.dart';
 
 class AccessibilityService extends ChangeNotifier {
   static const _channel =
-      MethodChannel('com.mobilellm.awattackapplier/accessibility_service');
+      MethodChannel('com.mobilellm.awattackapplier/overlay_service');
   static final AccessibilityService _instance =
       AccessibilityService._internal();
+  bool _initialized = false;
 
-  factory AccessibilityService() => _instance;
+  factory AccessibilityService() {
+    debugPrint('🏭 获取AccessibilityService实例');
+    return _instance;
+  }
 
-  AccessibilityService._internal();
+  AccessibilityService._internal() {
+    debugPrint('🏗️ 创建AccessibilityService单例');
+  }
 
   final _windowEventController = StreamController<WindowEvent>.broadcast();
   Stream<WindowEvent> get windowEvents => _windowEventController.stream;
@@ -22,17 +28,38 @@ class AccessibilityService extends ChangeNotifier {
   bool get isServiceRunning => _isServiceRunning;
 
   Future<void> initialize() async {
+    if (_initialized) {
+      debugPrint('⚠️ AccessibilityService已经初始化过，跳过');
+      return;
+    }
+
+    debugPrint('🚀 开始初始化AccessibilityService');
     _channel.setMethodCallHandler(_handleMethodCall);
-    await checkAndRequestPermissions();
+    debugPrint('✅ 设置MethodCallHandler完成');
+
+    // 只检查权限状态，不自动请求
+    final hasPermission =
+        await _channel.invokeMethod<bool>('checkAccessibilityPermission') ??
+            false;
+    _isServiceRunning = hasPermission;
+    debugPrint('🔒 无障碍服务状态: ${hasPermission ? "已启用" : "未启用"}');
+
+    _initialized = true;
+    notifyListeners();
   }
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
+    debugPrint('🎯 收到方法调用: ${call.method}');
     switch (call.method) {
       case 'onWindowEvent':
+        debugPrint('📨 收到窗口事件: ${call.arguments}');
         final eventData = jsonDecode(call.arguments as String);
         final event = WindowEvent.fromJson(eventData);
         _windowEventController.add(event);
+        debugPrint('✅ 事件已广播: $event');
         break;
+      default:
+        debugPrint('❓ 未知的方法调用: ${call.method}');
     }
   }
 

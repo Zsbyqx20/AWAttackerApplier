@@ -5,6 +5,7 @@ import '../models/rule.dart';
 import '../models/overlay_style.dart';
 import '../services/overlay_service.dart';
 import '../services/accessibility_service.dart';
+import '../exceptions/overlay_exception.dart';
 import 'rule_provider.dart';
 
 enum ConnectionStatus {
@@ -16,14 +17,14 @@ class ConnectionProvider extends ChangeNotifier {
   bool _isServiceRunning = false;
   ConnectionStatus _status = ConnectionStatus.disconnected;
   final RuleProvider _ruleProvider;
-  final OverlayService _overlayService;
-  final AccessibilityService _accessibilityService;
+  late final OverlayService _overlayService;
+  late final AccessibilityService _accessibilityService;
   StreamSubscription? _windowEventSubscription;
 
-  ConnectionProvider(this._ruleProvider)
-      : _overlayService = OverlayService(),
-        _accessibilityService = AccessibilityService() {
-    _initialize();
+  ConnectionProvider(this._ruleProvider) {
+    debugPrint('🏗️ 创建ConnectionProvider');
+    _overlayService = OverlayService();
+    _accessibilityService = AccessibilityService();
   }
 
   // 状态获取器
@@ -38,28 +39,53 @@ class ConnectionProvider extends ChangeNotifier {
   }
 
   Future<void> _initialize() async {
+    debugPrint('🚀 开始初始化ConnectionProvider');
+
+    // 初始化AccessibilityService
     await _accessibilityService.initialize();
-    _windowEventSubscription =
-        _accessibilityService.windowEvents.listen(_handleWindowEvent);
+    debugPrint('✅ AccessibilityService初始化完成');
+
+    // 设置窗口事件监听
+    debugPrint('📡 开始设置窗口事件订阅');
+    _windowEventSubscription?.cancel(); // 确保之前的订阅被取消
+    _windowEventSubscription = _accessibilityService.windowEvents.listen(
+      _handleWindowEvent,
+      onError: (error) {
+        debugPrint('❌ 窗口事件流错误: $error');
+        _setStatus(ConnectionStatus.disconnected);
+      },
+      cancelOnError: false,
+    );
+    debugPrint('✅ 窗口事件订阅设置完成');
   }
 
   // 检查并启动服务
   Future<bool> checkAndConnect() async {
     if (_isServiceRunning) return true;
 
-    // 检查悬浮窗权限
-    if (!await _overlayService.checkPermission()) {
-      debugPrint('🔒 请求悬浮窗权限...');
-      final granted = await _overlayService.requestPermission();
-      if (!granted) {
-        debugPrint('❌ 悬浮窗权限被拒绝');
+    try {
+      // 确保初始化完成
+      await _initialize();
+
+      // 检查悬浮窗权限
+      if (!await _overlayService.checkPermission()) {
+        debugPrint('🔒 请求悬浮窗权限...');
+        final granted = await _overlayService.requestPermission();
+        if (!granted) {
+          debugPrint('❌ 悬浮窗权限被拒绝');
+          return false;
+        }
+      }
+
+      // 启动悬浮窗服务
+      final started = await _overlayService.start();
+      if (!started) {
+        debugPrint('❌ 启动悬浮窗服务失败');
+        _setStatus(ConnectionStatus.disconnected);
         return false;
       }
-    }
 
-    try {
       _isServiceRunning = true;
-      _overlayService.start(); // 启动悬浮窗服务
       _setStatus(ConnectionStatus.connected);
       notifyListeners();
       return true;
@@ -72,14 +98,30 @@ class ConnectionProvider extends ChangeNotifier {
 
   // 停止服务
   Future<void> stop() async {
-    _isServiceRunning = false;
-    _overlayService.stop(); // 停止悬浮窗服务
-    _setStatus(ConnectionStatus.disconnected);
-    notifyListeners();
+    try {
+      await _overlayService.stop();
+      _isServiceRunning = false;
+      _setStatus(ConnectionStatus.disconnected);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ 停止服务错误: $e');
+      // 即使出错也要更新状态
+      _isServiceRunning = false;
+      _setStatus(ConnectionStatus.disconnected);
+      notifyListeners();
+    }
   }
 
   void _handleWindowEvent(WindowEvent event) {
+    debugPrint('📥 ConnectionProvider收到窗口事件: $event');
+
     // 处理窗口事件
+    if (!_isServiceRunning) {
+      debugPrint('🚫 服务未运行，忽略窗口事件');
+      return;
+    }
+
+    debugPrint('🔄 处理窗口事件: ${event.type}');
     if (event.type == 'WINDOW_STATE_CHANGED') {
       _handleWindowStateChanged(event);
     } else if (event.type == 'WINDOW_CONTENT_CHANGED' ||
@@ -109,17 +151,27 @@ class ConnectionProvider extends ChangeNotifier {
   }
 
   void _handleContentChanged(WindowEvent event) async {
+    debugPrint('🔄 收到内容变化事件: ${event.packageName}/${event.activityName}');
+
     // 内容变化时重新检查元素
     if (event.contentChanged) {
+      debugPrint('📝 内容已变化，开始检查规则匹配');
       final matchedRules = _ruleProvider.rules.where((rule) {
         return rule.packageName == event.packageName &&
             rule.activityName == event.activityName &&
             rule.isEnabled;
       }).toList();
 
-      if (matchedRules.isNotEmpty) {
-        await _sendBatchQuickSearch(matchedRules);
+      if (matchedRules.isEmpty) {
+        debugPrint('❌ 没有找到匹配的规则，清理现有悬浮窗');
+        await _overlayService.removeAllOverlays();
+        return;
       }
+
+      debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则，开始更新悬浮窗');
+      await _sendBatchQuickSearch(matchedRules);
+    } else {
+      debugPrint('⏭️ 内容未变化，跳过处理');
     }
   }
 
@@ -164,11 +216,23 @@ class ConnectionProvider extends ChangeNotifier {
             height: result.size!['height']!.toDouble(),
           );
 
-          await _overlayService.createOverlay('overlay_$i', overlayStyle);
+          final overlayResult = await _overlayService.createOverlay(
+            'overlay_$i',
+            overlayStyle,
+          );
+
+          if (!overlayResult.success) {
+            debugPrint('❌ 创建悬浮窗失败: ${overlayResult.error}');
+          }
         }
       }
     } catch (e) {
       debugPrint('❌ 批量查找元素时发生错误: $e');
+      // 如果是权限错误，停止服务
+      if (e is OverlayException &&
+          e.code == OverlayException.permissionDeniedCode) {
+        await stop();
+      }
     }
   }
 
