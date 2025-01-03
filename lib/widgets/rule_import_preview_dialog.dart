@@ -9,7 +9,6 @@ class RuleImportPreviewDialog extends StatelessWidget {
   final List<Rule> existingRules;
 
   const RuleImportPreviewDialog._({
-    super.key,
     required this.rules,
     required this.existingRules,
   });

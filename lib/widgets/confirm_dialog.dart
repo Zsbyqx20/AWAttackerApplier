@@ -45,7 +45,6 @@ class ConfirmDialog extends StatelessWidget {
 
   /// 私有构造函数，用于内部创建对话框
   const ConfirmDialog._({
-    super.key,
     required this.title,
     required this.content,
     this.cancelText = '取消',

@@ -5,7 +5,6 @@ class RuleImportResultDialog extends StatelessWidget {
   final List<RuleMergeResult> mergeResults;
 
   const RuleImportResultDialog._({
-    super.key,
     required this.mergeResults,
   });
 
