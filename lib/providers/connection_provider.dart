@@ -122,7 +122,10 @@ class ConnectionProvider extends ChangeNotifier {
   Future<void> stop() async {
     try {
       await _overlayService.stop();
+      await _accessibilityService.stop(); // 停止AccessibilityService
       _overlayPositionCache.clear(); // 清除位置缓存
+      _windowEventSubscription?.cancel(); // 取消事件订阅
+      _windowEventSubscription = null;
       _isServiceRunning = false;
       _setStatus(ConnectionStatus.disconnected);
       notifyListeners();
@@ -135,6 +138,20 @@ class ConnectionProvider extends ChangeNotifier {
     }
   }
 
+  // 重新订阅事件
+  Future<void> _resubscribeToEvents() async {
+    debugPrint('📡 重新订阅窗口事件');
+    _windowEventSubscription?.cancel();
+    _windowEventSubscription = _accessibilityService.windowEvents.listen(
+      _handleWindowEvent,
+      onError: (error) {
+        debugPrint('❌ 窗口事件流错误: $error');
+        _setStatus(ConnectionStatus.disconnected);
+      },
+      cancelOnError: false,
+    );
+  }
+
   void _handleWindowEvent(WindowEvent event) {
     debugPrint('📥 ConnectionProvider收到窗口事件: $event');
 
@@ -145,16 +162,40 @@ class ConnectionProvider extends ChangeNotifier {
     }
 
     debugPrint('🔄 处理窗口事件: ${event.type}');
-    if (event.type == 'WINDOW_STATE_CHANGED') {
+
+    // 用户交互事件
+    if (event.type == 'VIEW_CLICKED' ||
+        event.type == 'VIEW_LONG_CLICKED' ||
+        event.type == 'VIEW_TEXT_CHANGED') {
+      _handleUserInteraction(event);
+    }
+    // 窗口状态变化事件（已经过哈希值验证）
+    else if (event.type == 'WINDOW_STATE_CHANGED') {
       _handleWindowStateChanged(event);
-    } else if (event.type == 'WINDOW_CONTENT_CHANGED' ||
-        event.type == 'VIEW_SCROLLED') {
-      _handleContentChanged(event);
     }
   }
 
+  void _handleUserInteraction(WindowEvent event) async {
+    debugPrint('👆 收到用户交互事件: ${event.packageName}/${event.activityName}');
+
+    // 获取匹配的规则
+    final matchedRules = _ruleProvider.rules.where((rule) {
+      return rule.packageName == event.packageName &&
+          rule.activityName == event.activityName &&
+          rule.isEnabled;
+    }).toList();
+
+    if (matchedRules.isEmpty) {
+      debugPrint('❌ 没有找到匹配的规则');
+      return;
+    }
+
+    debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则，开始检查元素');
+    await _sendBatchQuickSearch(matchedRules);
+  }
+
   void _handleWindowStateChanged(WindowEvent event) async {
-    debugPrint('🪟 收到窗口事件: ${event.packageName}/${event.activityName}');
+    debugPrint('🪟 收到窗口状态变化事件: ${event.packageName}/${event.activityName}');
 
     // 获取匹配的规则
     final matchedRules = _ruleProvider.rules.where((rule) {
@@ -170,33 +211,8 @@ class ConnectionProvider extends ChangeNotifier {
       return;
     }
 
-    debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则');
+    debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则，开始检查元素');
     await _sendBatchQuickSearch(matchedRules);
-  }
-
-  void _handleContentChanged(WindowEvent event) async {
-    debugPrint('🔄 收到内容变化事件: ${event.packageName}/${event.activityName}');
-
-    // 内容变化时重新检查元素
-    if (event.contentChanged) {
-      debugPrint('📝 内容已变化，开始检查规则匹配');
-      final matchedRules = _ruleProvider.rules.where((rule) {
-        return rule.packageName == event.packageName &&
-            rule.activityName == event.activityName &&
-            rule.isEnabled;
-      }).toList();
-
-      if (matchedRules.isEmpty) {
-        debugPrint('❌ 没有找到匹配的规则，清理现有悬浮窗');
-        await _overlayService.removeAllOverlays();
-        return;
-      }
-
-      debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则，开始更新悬浮窗');
-      await _sendBatchQuickSearch(matchedRules);
-    } else {
-      debugPrint('⏭️ 内容未变化，跳过处理');
-    }
   }
 
   Future<void> _sendBatchQuickSearch(List<Rule> matchedRules) async {
@@ -285,7 +301,6 @@ class ConnectionProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('❌ 批量查找元素时发生错误: $e');
-      // 如果是权限错误，停止服务
       if (e is OverlayException &&
           e.code == OverlayException.permissionDeniedCode) {
         await stop();

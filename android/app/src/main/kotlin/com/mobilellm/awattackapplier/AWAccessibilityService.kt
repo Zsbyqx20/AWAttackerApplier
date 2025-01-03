@@ -17,13 +17,9 @@ class AWAccessibilityService : AccessibilityService() {
         fun getInstance(): AWAccessibilityService? = instance
     }
 
+    private var lastWindowHash: Int = 0
     private var lastPackage: String? = null
     private var lastActivity: String? = null
-    private var lastWindowChangeTime: Long = 0
-    private var lastEventHash: Int = 0
-    private var lastUserInteractionTime: Long = 0
-    private val MIN_WINDOW_CHANGE_INTERVAL = 100L // 最小窗口变化间隔(ms)
-    private val USER_INTERACTION_WINDOW = 500L // 用户操作的有效时间窗口
 
     private val IGNORED_PACKAGES = listOf(
         // "com.android.systemui",
@@ -53,14 +49,11 @@ class AWAccessibilityService : AccessibilityService() {
         super.onCreate()
         instance = this
         Log.d(TAG, "AccessibilityService created")
-        
-        // 初始化 WindowManagerHelper
         WindowManagerHelper.initialize(this)
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        // 只有在服务真正连接时才配置
         if (instance != null) {
             configureService()
         }
@@ -68,157 +61,111 @@ class AWAccessibilityService : AccessibilityService() {
 
     private fun configureService() {
         val config = AccessibilityServiceInfo().apply {
-            // 设置需要监听的事件类型
-            eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or 
-                        AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or
-                        AccessibilityEvent.TYPE_VIEW_SCROLLED or
+            eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
                         AccessibilityEvent.TYPE_VIEW_CLICKED or
                         AccessibilityEvent.TYPE_VIEW_LONG_CLICKED or
-                        AccessibilityEvent.TYPE_VIEW_SELECTED or
-                        AccessibilityEvent.TYPE_VIEW_FOCUSED or
-                        AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED or
-                        AccessibilityEvent.TYPE_TOUCH_INTERACTION_START or
-                        AccessibilityEvent.TYPE_TOUCH_INTERACTION_END
+                        AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED
 
-            // 设置反馈类型
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
 
-            // 设置功能标志
             flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
                     AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
                     AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
 
-            // 设置通知超时
             notificationTimeout = 100
         }
         
         serviceInfo = config
-        Log.d(TAG, "AccessibilityService configured with all event types")
+        Log.d(TAG, "AccessibilityService configured")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
 
-        // 记录用户操作
         when (event.eventType) {
+            // 用户交互事件直接触发
             AccessibilityEvent.TYPE_VIEW_CLICKED,
             AccessibilityEvent.TYPE_VIEW_LONG_CLICKED,
-            AccessibilityEvent.TYPE_VIEW_SELECTED,
-            AccessibilityEvent.TYPE_VIEW_FOCUSED,
-            AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
-            AccessibilityEvent.TYPE_TOUCH_INTERACTION_START,
-            AccessibilityEvent.TYPE_TOUCH_INTERACTION_END -> {
-                lastUserInteractionTime = System.currentTimeMillis()
-                Log.d(TAG, "检测到用户操作: ${getEventTypeName(event.eventType)}, 包名: ${event.packageName}, 类名: ${event.className}")
+            AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED -> {
+                handleUserInteraction(event)
             }
-        }
-
-        // 处理窗口和内容变化事件
-        when (event.eventType) {
+            
+            // 窗口状态变化需要检查哈希值
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
-                handleWindowStateChange(event)
-            }
-            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
-                handleContentChange(event)
-            }
-            AccessibilityEvent.TYPE_VIEW_SCROLLED -> {
-                handleViewScroll(event)
+                val currentHash = calculateWindowHash()
+                Log.d(TAG, "窗口状态变化: currentHash=$currentHash, lastHash=$lastWindowHash")
+                if (currentHash != lastWindowHash) {
+                    lastWindowHash = currentHash
+                    handleWindowStateChanged(event)
+                } else {
+                    Log.d(TAG, "窗口状态变化但界面内容未变化，忽略事件")
+                }
             }
         }
     }
 
-    private fun calculateEventHash(
-        type: String,
-        packageName: String?,
-        activityName: String?,
-        contentChanged: Boolean
-    ): Int {
-        return "$type:$packageName:$activityName:$contentChanged".hashCode()
-    }
-
-    private fun shouldProcessEvent(
-        type: String,
-        packageName: String?,
-        activityName: String?,
-        contentChanged: Boolean
-    ): Boolean {
-        val currentTime = System.currentTimeMillis()
+    private fun calculateWindowHash(): Int {
+        val rootNode = rootInActiveWindow ?: return 0
+        val hashBuilder = StringBuilder()
         
-        // 检查是否在用户操作的有效时间窗口内
-        val hasRecentUserInteraction = 
-            (currentTime - lastUserInteractionTime) <= USER_INTERACTION_WINDOW
-        
-        if (!hasRecentUserInteraction) {
-            Log.d(TAG, "无最近用户操作，忽略事件: $type")
-            return false
+        fun traverseNode(node: AccessibilityNodeInfo) {
+            hashBuilder.append(node.className)
+            hashBuilder.append(node.text)
+            hashBuilder.append(node.contentDescription)
+            
+            for (i in 0 until node.childCount) {
+                node.getChild(i)?.let { 
+                    traverseNode(it)
+                    it.recycle()
+                }
+            }
         }
-
-        val eventHash = calculateEventHash(type, packageName, activityName, contentChanged)
         
-        // 检查时间间隔和事件哈希值
-        // if (currentTime - lastWindowChangeTime < MIN_WINDOW_CHANGE_INTERVAL && 
-        //     eventHash == lastEventHash) {
-        //     Log.d(TAG, "忽略重复事件: $type")
-        //     return false
-        // }
-
-        lastWindowChangeTime = currentTime
-        lastEventHash = eventHash
-        return true
+        try {
+            traverseNode(rootNode)
+            val hash = hashBuilder.toString().hashCode()
+            Log.d(TAG, "计算界面哈希值: $hash")
+            return hash
+        } finally {
+            rootNode.recycle()
+        }
     }
 
-    private fun handleWindowStateChange(event: AccessibilityEvent) {
+    private fun handleWindowStateChanged(event: AccessibilityEvent) {
         val currentPackage = event.packageName?.toString()
         val currentActivity = event.className?.toString()
-
-        // 忽略系统UI、设置和启动器等系统应用的变化
-        if (currentPackage == null || 
-            IGNORED_PACKAGES.any { currentPackage.startsWith(it) } ||
-            currentPackage == "android") {
-            Log.d(TAG, "忽略系统应用事件: $currentPackage")
-            return
-        }
-
-        // 检查状态是否真的发生变化
-        if (currentPackage != lastPackage || currentActivity != lastActivity) {
-            if (shouldProcessEvent("WINDOW_STATE_CHANGED", currentPackage, currentActivity, false)) {
-                lastPackage = currentPackage
-                lastActivity = currentActivity
-
-                // 发送窗口状态变化事件
-                sendWindowEvent(
-                    type = "WINDOW_STATE_CHANGED",
-                    packageName = currentPackage,
-                    activityName = getRelativeActivityName(currentActivity, currentPackage),
-                    contentChanged = false
-                )
-            }
+        
+        if (currentPackage != null && 
+            !IGNORED_PACKAGES.any { currentPackage.startsWith(it) }) {
+            Log.d(TAG, "检测到窗口变化: package=$currentPackage, activity=$currentActivity")
+            lastPackage = currentPackage
+            lastActivity = currentActivity
+            
+            sendWindowEvent(
+                type = "WINDOW_STATE_CHANGED",
+                packageName = currentPackage,
+                activityName = getRelativeActivityName(currentActivity, currentPackage),
+                contentChanged = true
+            )
+        } else {
+            Log.d(TAG, "忽略系统应用的窗口变化: $currentPackage")
         }
     }
 
-    private fun handleContentChange(event: AccessibilityEvent) {
-        // 仅处理当前应用的内容变化
-        if (event.packageName?.toString() != lastPackage) return
-
-        if (shouldProcessEvent("WINDOW_CONTENT_CHANGED", lastPackage, lastActivity, true)) {
-            // 发送内容变化事件
+    private fun handleUserInteraction(event: AccessibilityEvent) {
+        val eventType = getEventTypeName(event.eventType)
+        Log.d(TAG, "检测到用户交互: type=$eventType, package=$lastPackage, activity=$lastActivity")
+        
+        if (lastPackage != null && 
+            !IGNORED_PACKAGES.any { lastPackage!!.startsWith(it) }) {
             sendWindowEvent(
-                type = "WINDOW_CONTENT_CHANGED",
+                type = eventType,
                 packageName = lastPackage,
                 activityName = getRelativeActivityName(lastActivity, lastPackage),
-                contentChanged = true
+                contentChanged = false
             )
-        }
-    }
-
-    private fun handleViewScroll(event: AccessibilityEvent) {
-        if (shouldProcessEvent("VIEW_SCROLLED", lastPackage, lastActivity, true)) {
-            sendWindowEvent(
-                type = "VIEW_SCROLLED",
-                packageName = lastPackage,
-                activityName = getRelativeActivityName(lastActivity, lastPackage),
-                contentChanged = true
-            )
+        } else {
+            Log.d(TAG, "忽略系统应用的用户交互")
         }
     }
 
@@ -402,7 +349,6 @@ object UiAutomatorHelper {
     private const val TAG = "UiAutomatorHelper"
 
     fun findNodeBySelector(rootNode: AccessibilityNodeInfo, selectorCode: String): AccessibilityNodeInfo? {
-        Log.d(TAG, "解析选择器: $selectorCode")
         
         return when {
             selectorCode.contains(".text(") -> {
@@ -430,18 +376,15 @@ object UiAutomatorHelper {
     private fun extractSelectorValue(code: String, type: String): String {
         val regex = """.$type\("([^"]+)"\)""".toRegex()
         val value = regex.find(code)?.groupValues?.get(1) ?: ""
-        Log.d(TAG, "提取 $type 值: '$value'")
         return value
     }
 
     private fun findNodeByText(rootNode: AccessibilityNodeInfo, text: String): AccessibilityNodeInfo? {
         try {
             val nodes = rootNode.findAccessibilityNodeInfosByText(text)
-            Log.d(TAG, "通过文本查找到 ${nodes.size} 个节点")
             return nodes.firstOrNull()?.also {
                 val bounds = Rect()
                 it.getBoundsInScreen(bounds)
-                Log.d(TAG, "选中第一个节点，位置: $bounds")
             }
         } catch (e: Exception) {
             Log.e(TAG, "通过文本查找节点时出错: ${e.message}")
@@ -475,11 +418,9 @@ object UiAutomatorHelper {
     private fun findNodeById(rootNode: AccessibilityNodeInfo, id: String): AccessibilityNodeInfo? {
         try {
             val nodes = rootNode.findAccessibilityNodeInfosByViewId(id)
-            Log.d(TAG, "通过ID查找到 ${nodes.size} 个节点")
             return nodes.firstOrNull()?.also {
                 val bounds = Rect()
                 it.getBoundsInScreen(bounds)
-                Log.d(TAG, "选中第一个节点，位置: $bounds")
             }
         } catch (e: Exception) {
             Log.e(TAG, "通过ID查找节点时出错: ${e.message}")

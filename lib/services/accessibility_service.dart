@@ -21,19 +21,21 @@ class AccessibilityService extends ChangeNotifier {
     debugPrint('🏗️ 创建AccessibilityService单例');
   }
 
-  final _windowEventController = StreamController<WindowEvent>.broadcast();
+  late StreamController<WindowEvent> _windowEventController;
   Stream<WindowEvent> get windowEvents => _windowEventController.stream;
 
   bool _isServiceRunning = false;
   bool get isServiceRunning => _isServiceRunning;
 
   Future<void> initialize() async {
-    if (_initialized) {
-      debugPrint('⚠️ AccessibilityService已经初始化过，跳过');
-      return;
-    }
-
     debugPrint('🚀 开始初始化AccessibilityService');
+
+    // 重新初始化事件流
+    if (_initialized) {
+      await _windowEventController.close();
+    }
+    _windowEventController = StreamController<WindowEvent>.broadcast();
+
     _channel.setMethodCallHandler(_handleMethodCall);
     debugPrint('✅ 设置MethodCallHandler完成');
 
@@ -96,6 +98,24 @@ class AccessibilityService extends ChangeNotifier {
       debugPrint('查找元素时发生错误: $e');
       return null;
     }
+  }
+
+  /// 停止服务
+  Future<void> stop() async {
+    debugPrint('🛑 停止AccessibilityService');
+    _isServiceRunning = false;
+    _initialized = false;
+
+    // 移除方法调用处理器
+    _channel.setMethodCallHandler(null);
+
+    // 关闭事件流
+    if (_initialized) {
+      await _windowEventController.close();
+      _windowEventController = StreamController<WindowEvent>.broadcast();
+    }
+
+    notifyListeners();
   }
 
   Future<List<ElementResult>> findElements(List<String> selectorCodes) async {
