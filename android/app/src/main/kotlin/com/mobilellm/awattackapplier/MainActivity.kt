@@ -22,6 +22,8 @@ class MainActivity: FlutterActivity() {
     companion object {
         private const val TAG = "MainActivity"
         private const val OVERLAY_PERMISSION_REQUEST_CODE = 1
+        private const val CREATE_FILE_REQUEST_CODE = 2
+        private const val OPEN_FILE_REQUEST_CODE = 3
         private const val CHANNEL = "com.mobilellm.awattackapplier/overlay_service"
         
         // 提供静态访问方法，用于从AccessibilityService发送事件
@@ -30,6 +32,7 @@ class MainActivity: FlutterActivity() {
     }
 
     private var pendingResult: MethodChannel.Result? = null
+    private var pendingFileContent: String? = null
     private lateinit var channel: MethodChannel
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -147,6 +150,12 @@ class MainActivity: FlutterActivity() {
                 "findElement" -> {
                     handleFindElement(call, result)
                 }
+                "saveFile" -> {
+                    handleSaveFile(call, result)
+                }
+                "openFile" -> {
+                    handleOpenFile(result)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -215,23 +224,52 @@ class MainActivity: FlutterActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == OVERLAY_PERMISSION_REQUEST_CODE) {
-            val hasPermission = checkOverlayPermission()
-            pendingResult?.success(hasPermission)
-            pendingResult = null
-            
-            // 广播权限状态变化
-            val permissions = JSONObject().apply {
-                put("overlay", hasPermission)
-                put("accessibility", checkAccessibilityPermission())
+        
+        when (requestCode) {
+            CREATE_FILE_REQUEST_CODE -> {
+                if (resultCode == RESULT_OK && data != null) {
+                    val uri = data.data
+                    if (uri != null) {
+                        try {
+                            contentResolver.openOutputStream(uri)?.use { outputStream ->
+                                outputStream.write(pendingFileContent?.toByteArray() ?: ByteArray(0))
+                                pendingResult?.success(true)
+                            }
+                        } catch (e: Exception) {
+                            pendingResult?.error("SAVE_FILE_ERROR", e.message, null)
+                        }
+                    } else {
+                        pendingResult?.error("SAVE_FILE_ERROR", "Failed to get file URI", null)
+                    }
+                } else {
+                    pendingResult?.success(false)
+                }
+                pendingResult = null
+                pendingFileContent = null
             }
-            if (::channel.isInitialized) {
-                channel.invokeMethod("onPermissionChanged", permissions.toString())
+            OPEN_FILE_REQUEST_CODE -> {
+                if (resultCode == RESULT_OK && data != null) {
+                    val uri = data.data
+                    if (uri != null) {
+                        try {
+                            contentResolver.openInputStream(uri)?.use { inputStream ->
+                                val content = inputStream.bufferedReader().use { it.readText() }
+                                pendingResult?.success(content)
+                            }
+                        } catch (e: Exception) {
+                            pendingResult?.error("OPEN_FILE_ERROR", e.message, null)
+                        }
+                    } else {
+                        pendingResult?.error("OPEN_FILE_ERROR", "Failed to get file URI", null)
+                    }
+                } else {
+                    pendingResult?.success(null)
+                }
+                pendingResult = null
             }
-
-            // 如果获得了权限，启动悬浮窗服务
-            if (hasPermission) {
-                startService(Intent(this, OverlayService::class.java))
+            OVERLAY_PERMISSION_REQUEST_CODE -> {
+                pendingResult?.success(Settings.canDrawOverlays(this))
+                pendingResult = null
             }
         }
     }
@@ -321,6 +359,42 @@ class MainActivity: FlutterActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "创建悬浮窗时发生错误", e)
             result.error("CREATE_FAILED", e.message, null)
+        }
+    }
+
+    private fun handleSaveFile(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val content = call.argument<String>("content")
+                ?: throw IllegalArgumentException("Missing content")
+            val fileName = call.argument<String>("fileName") ?: "rules.json"
+            
+            pendingResult = result
+            pendingFileContent = content
+            
+            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "application/json"
+                putExtra(Intent.EXTRA_TITLE, fileName)
+            }
+            
+            startActivityForResult(intent, CREATE_FILE_REQUEST_CODE)
+        } catch (e: Exception) {
+            result.error("SAVE_FILE_ERROR", e.message, null)
+        }
+    }
+
+    private fun handleOpenFile(result: MethodChannel.Result) {
+        try {
+            pendingResult = result
+            
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "application/json"
+            }
+            
+            startActivityForResult(intent, OPEN_FILE_REQUEST_CODE)
+        } catch (e: Exception) {
+            result.error("OPEN_FILE_ERROR", e.message, null)
         }
     }
 }

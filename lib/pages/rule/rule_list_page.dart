@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/rule.dart';
@@ -12,6 +9,7 @@ import '../../widgets/rule_import_result_dialog.dart';
 import '../../widgets/rule_stats_card.dart';
 import '../../widgets/rule_card.dart';
 import 'rule_edit_page.dart';
+import 'package:flutter/services.dart';
 
 class RuleListPage extends StatefulWidget {
   const RuleListPage({super.key});
@@ -189,16 +187,20 @@ class _RuleListPageState extends State<RuleListPage>
 
   Future<void> _handleImport() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
+      final jsonStr = await const MethodChannel(
+              'com.mobilellm.awattackapplier/overlay_service')
+          .invokeMethod<String>('openFile');
 
-      if (result == null) return;
+      if (jsonStr == null) {
+        if (!mounted) return;
+        await RuleImportResultDialog.show(
+          context: context,
+          mergeResults: [RuleMergeResult.conflict(errorMessage: '导入已取消')],
+        );
+        return;
+      }
 
-      final file = File(result.files.single.path!);
-      final content = await file.readAsString();
-      final ruleImport = RuleImport.fromJson(content);
+      final ruleImport = RuleImport.fromJson(jsonStr);
       final rules = ruleImport.rules;
 
       if (rules.isEmpty) {
@@ -256,21 +258,28 @@ class _RuleListPageState extends State<RuleListPage>
         return;
       }
 
-      final json = jsonEncode(rules);
-      final result = await FilePicker.platform.saveFile(
-        dialogTitle: '导出规则',
-        fileName: 'rules.json',
-      );
+      final jsonStr = RuleImport(
+        version: RuleImport.currentVersion,
+        rules: rules,
+      ).toJson();
 
-      if (result == null) return;
-
-      final file = File(result);
-      await file.writeAsString(json);
+      final result = await const MethodChannel(
+              'com.mobilellm.awattackapplier/overlay_service')
+          .invokeMethod<bool>('saveFile', {
+        'content': jsonStr,
+        'fileName': 'rules.json',
+      });
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('导出成功')),
-      );
+      if (result == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('规则导出成功')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('规则导出已取消')),
+        );
+      }
 
       setState(() {
         _isExpanded = false;
@@ -278,7 +287,7 @@ class _RuleListPageState extends State<RuleListPage>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('导出失败：$e')),
+        SnackBar(content: Text('规则导出失败：$e')),
       );
 
       setState(() {
