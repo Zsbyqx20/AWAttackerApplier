@@ -32,9 +32,9 @@ A configurable dynamic attacker app designed for Android World.
 
 ### What's going on NEXT?
 
-- [x] Support JSON rule file import directly from Android File System.
+- [x] Support JSON rule file import & export directly from Android File System.
 - [ ] Support CN/EN locales
 - [ ] Support **configurable popup window rendering rules** with customizable styles and layouts
-- [ ] Organize rules with customizable tags
+- [x] Organize rules with customizable tags
 - [ ] Quick filter and search by tags
-- [ ] Support rule format validation and version compatibility checks
+- [x] Support rule format validation and version compatibility checks
