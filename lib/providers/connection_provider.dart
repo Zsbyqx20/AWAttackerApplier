@@ -302,6 +302,10 @@ class ConnectionProvider extends ChangeNotifier {
             debugPrint('✅ 悬浮窗位置已更新并缓存: $overlayId');
           } else {
             debugPrint('❌ 创建悬浮窗失败: ${overlayResult.error}');
+            // 清理旧的缓存和悬浮窗
+            popOverlayCache(overlayId);
+            await _overlayService.removeOverlay(overlayId);
+            debugPrint('🧹 已清理旧的悬浮窗和缓存: $overlayId');
           }
         }
       }
