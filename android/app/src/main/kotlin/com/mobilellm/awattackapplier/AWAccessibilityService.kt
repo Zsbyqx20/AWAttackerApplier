@@ -29,7 +29,7 @@ class AWAccessibilityService : AccessibilityService() {
         // "com.android.launcher",
         // "com.android.launcher2",
         // "com.android.launcher3",
-        // "com.google.android.googlequicksearchbox",
+        "com.google.android.googlequicksearchbox",
         "com.mobilellm.awattackapplier"
     )
 
@@ -368,22 +368,29 @@ object UiAutomatorHelper {
     private const val TAG = "UiAutomatorHelper"
 
     fun findNodeBySelector(rootNode: AccessibilityNodeInfo, selectorCode: String): AccessibilityNodeInfo? {
+        val instanceIdx = extractInstanceIndex(selectorCode)
+        val baseSelector = removeInstanceSelector(selectorCode)
         
         return when {
-            selectorCode.contains(".text(") -> {
-                val text = extractSelectorValue(selectorCode, "text")
-                Log.d(TAG, "使用文本查找: '$text'")
-                findNodeByText(rootNode, text)
+            baseSelector.contains(".text(") -> {
+                val text = extractSelectorValue(baseSelector, "text")
+                Log.d(TAG, "使用文本查找: '$text', 实例索引: $instanceIdx")
+                findNodeByText(rootNode, text, instanceIdx)
             }
-            selectorCode.contains(".description(") -> {
-                val desc = extractSelectorValue(selectorCode, "description")
-                Log.d(TAG, "使用描述查找: '$desc'")
-                findNodeByDescription(rootNode, desc)
+            baseSelector.contains(".description(") -> {
+                val desc = extractSelectorValue(baseSelector, "description")
+                Log.d(TAG, "使用描述查找: '$desc', 实例索引: $instanceIdx")
+                findNodeByDescription(rootNode, desc, instanceIdx)
             }
-            selectorCode.contains(".resourceId(") -> {
-                val id = extractSelectorValue(selectorCode, "resourceId")
-                Log.d(TAG, "使用资源ID查找: '$id'")
-                findNodeById(rootNode, id)
+            baseSelector.contains(".resourceId(") -> {
+                val id = extractSelectorValue(baseSelector, "resourceId")
+                Log.d(TAG, "使用资源ID查找: '$id', 实例索引: $instanceIdx")
+                findNodeById(rootNode, id, instanceIdx)
+            }
+            baseSelector.contains(".className(") -> {
+                val className = extractSelectorValue(baseSelector, "className")
+                Log.d(TAG, "使用类名查找: '$className', 实例索引: $instanceIdx")
+                findNodeByClassName(rootNode, className, instanceIdx)
             }
             else -> {
                 Log.e(TAG, "不支持的选择器类型: $selectorCode")
@@ -392,57 +399,178 @@ object UiAutomatorHelper {
         }
     }
 
+    private fun extractInstanceIndex(code: String): Int {
+        val regex = """.instance\((-?\d+)\)""".toRegex()
+        return regex.find(code)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+    }
+
+    private fun removeInstanceSelector(code: String): String {
+        return code.replace(""".instance\(\d+\)""".toRegex(), "")
+    }
+
     private fun extractSelectorValue(code: String, type: String): String {
         val regex = """.$type\("([^"]+)"\)""".toRegex()
         val value = regex.find(code)?.groupValues?.get(1) ?: ""
         return value
     }
 
-    private fun findNodeByText(rootNode: AccessibilityNodeInfo, text: String): AccessibilityNodeInfo? {
+    private fun getActualIndex(index: Int, size: Int): Int {
+        return when {
+            size == 0 -> -1
+            index >= 0 -> index
+            -index <= size -> size + index
+            else -> -1
+        }
+    }
+
+    private fun findNodeByText(rootNode: AccessibilityNodeInfo, text: String, instanceIdx: Int = 0): AccessibilityNodeInfo? {
         try {
             val nodes = rootNode.findAccessibilityNodeInfosByText(text)
-            return nodes.firstOrNull()?.also {
+            val actualIdx = getActualIndex(instanceIdx, nodes.size)
+            if (actualIdx == -1) {
+                Log.d(TAG, "文本节点索引越界: index=$instanceIdx, size=${nodes.size}")
+                nodes.forEach { it.recycle() }
+                return null
+            }
+            
+            val result = nodes[actualIdx].also {
                 val bounds = Rect()
                 it.getBoundsInScreen(bounds)
+                Log.d(TAG, "找到文本节点 [${actualIdx + 1}/${nodes.size}]: '$text'")
             }
+            // 回收未使用的节点
+            nodes.forEachIndexed { index, node ->
+                if (index != actualIdx) {
+                    node.recycle()
+                }
+            }
+            return result
         } catch (e: Exception) {
             Log.e(TAG, "通过文本查找节点时出错: ${e.message}")
             return null
         }
     }
 
-    private fun findNodeByDescription(rootNode: AccessibilityNodeInfo, description: String): AccessibilityNodeInfo? {
+    private fun findNodeById(rootNode: AccessibilityNodeInfo, id: String, instanceIdx: Int = 0): AccessibilityNodeInfo? {
         try {
-            if (rootNode.contentDescription?.toString() == description) {
-                Log.d(TAG, "在根节点找到匹配的描述")
-                return rootNode
+            val nodes = rootNode.findAccessibilityNodeInfosByViewId(id)
+            val actualIdx = getActualIndex(instanceIdx, nodes.size)
+            if (actualIdx == -1) {
+                Log.d(TAG, "ID节点索引越界: index=$instanceIdx, size=${nodes.size}")
+                nodes.forEach { it.recycle() }
+                return null
             }
             
-            var result: AccessibilityNodeInfo? = null
-            for (i in 0 until rootNode.childCount) {
-                val child = rootNode.getChild(i)
-                result = child?.let { findNodeByDescription(it, description) }
-                if (result != null) {
-                    Log.d(TAG, "在子节点中找到匹配的描述")
-                    break
+            val result = nodes[actualIdx].also {
+                val bounds = Rect()
+                it.getBoundsInScreen(bounds)
+                Log.d(TAG, "找到ID节点 [${actualIdx + 1}/${nodes.size}]: '$id'")
+            }
+            // 回收未使用的节点
+            nodes.forEachIndexed { index, node ->
+                if (index != actualIdx) {
+                    node.recycle()
                 }
             }
             return result
         } catch (e: Exception) {
-            Log.e(TAG, "通过描述查找节点时出错: ${e.message}")
+            Log.e(TAG, "通过ID查找节点时出错: ${e.message}")
             return null
         }
     }
 
-    private fun findNodeById(rootNode: AccessibilityNodeInfo, id: String): AccessibilityNodeInfo? {
+    private fun findNodeByClassName(rootNode: AccessibilityNodeInfo, className: String, instanceIdx: Int = 0): AccessibilityNodeInfo? {
+        val nodes = mutableListOf<AccessibilityNodeInfo>()
         try {
-            val nodes = rootNode.findAccessibilityNodeInfosByViewId(id)
-            return nodes.firstOrNull()?.also {
-                val bounds = Rect()
-                it.getBoundsInScreen(bounds)
+            fun collectNodes(node: AccessibilityNodeInfo) {
+                if (node.className?.toString() == className) {
+                    nodes.add(node)
+                }
+                
+                for (i in 0 until node.childCount) {
+                    node.getChild(i)?.let { child ->
+                        collectNodes(child)
+                        // 如果不是目标节点，立即回收
+                        if (child.className?.toString() != className) {
+                            child.recycle()
+                        }
+                    }
+                }
             }
+            
+            collectNodes(rootNode)
+            
+            val actualIdx = getActualIndex(instanceIdx, nodes.size)
+            if (actualIdx == -1) {
+                Log.d(TAG, "类名节点索引越界: index=$instanceIdx, size=${nodes.size}")
+                nodes.forEach { it.recycle() }
+                return null
+            }
+            
+            val result = nodes[actualIdx].also {
+                Log.d(TAG, "找到类名节点 [${actualIdx + 1}/${nodes.size}]: '$className'")
+            }
+            
+            // 回收未使用的节点
+            nodes.forEachIndexed { index, node ->
+                if (index != actualIdx) {
+                    node.recycle()
+                }
+            }
+            
+            return result
         } catch (e: Exception) {
-            Log.e(TAG, "通过ID查找节点时出错: ${e.message}")
+            Log.e(TAG, "通过类名查找节点时出错: ${e.message}")
+            // 确保异常情况下也能回收所有节点
+            nodes.forEach { it.recycle() }
+            return null
+        }
+    }
+
+    private fun findNodeByDescription(rootNode: AccessibilityNodeInfo, description: String, instanceIdx: Int = 0): AccessibilityNodeInfo? {
+        val nodes = mutableListOf<AccessibilityNodeInfo>()
+        try {
+            fun collectNodes(node: AccessibilityNodeInfo) {
+                if (node.contentDescription?.toString() == description) {
+                    nodes.add(node)
+                }
+                
+                for (i in 0 until node.childCount) {
+                    node.getChild(i)?.let { child ->
+                        collectNodes(child)
+                        // 如果不是目标节点，立即回收
+                        if (child.contentDescription?.toString() != description) {
+                            child.recycle()
+                        }
+                    }
+                }
+            }
+            
+            collectNodes(rootNode)
+            
+            val actualIdx = getActualIndex(instanceIdx, nodes.size)
+            if (actualIdx == -1) {
+                Log.d(TAG, "描述节点索引越界: index=$instanceIdx, size=${nodes.size}")
+                nodes.forEach { it.recycle() }
+                return null
+            }
+            
+            val result = nodes[actualIdx].also {
+                Log.d(TAG, "找到描述节点 [${actualIdx + 1}/${nodes.size}]: '$description'")
+            }
+            
+            // 回收未使用的节点
+            nodes.forEachIndexed { index, node ->
+                if (index != actualIdx) {
+                    node.recycle()
+                }
+            }
+            
+            return result
+        } catch (e: Exception) {
+            Log.e(TAG, "通过描述查找节点时出错: ${e.message}")
+            // 确保异常情况下也能回收所有节点
+            nodes.forEach { it.recycle() }
             return null
         }
     }
