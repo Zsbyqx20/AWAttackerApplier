@@ -32,7 +32,6 @@ class _RuleEditPageState extends State<RuleEditPage>
   List<OverlayStyle> _overlayStyles = [];
   List<String> _tags = [];
   int _currentTabIndex = 0;
-  bool _isValid = false;
 
   OverlayStyle get _currentStyle => _overlayStyles[_currentTabIndex];
 
@@ -83,17 +82,14 @@ class _RuleEditPageState extends State<RuleEditPage>
     // 添加监听器
     _nameController.addListener(() {
       _validationProvider.validateField('name', _nameController.text);
-      _updateSaveButtonState();
     });
     _packageNameController.addListener(() {
       _validationProvider.validateField(
           'packageName', _packageNameController.text);
-      _updateSaveButtonState();
     });
     _activityNameController.addListener(() {
       _validationProvider.validateField(
           'activityName', _activityNameController.text);
-      _updateSaveButtonState();
     });
   }
 
@@ -107,13 +103,6 @@ class _RuleEditPageState extends State<RuleEditPage>
     for (final style in _overlayStyles) {
       _validationProvider.validateField('overlayStyle', style);
     }
-    _updateSaveButtonState();
-  }
-
-  void _updateSaveButtonState() {
-    setState(() {
-      _isValid = _validationProvider.state.isValid;
-    });
   }
 
   void _addOverlayStyle() {
