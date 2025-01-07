@@ -17,8 +17,14 @@ import org.json.JSONObject
 import androidx.annotation.NonNull
 import androidx.core.content.ContextCompat
 import android.graphics.Rect
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
 
-class MainActivity: FlutterActivity() {
+class MainActivity : FlutterActivity(), CoroutineScope {
+    private val job = SupervisorJob()
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
+
     companion object {
         private const val TAG = "MainActivity"
         private const val OVERLAY_PERMISSION_REQUEST_CODE = 1
@@ -276,125 +282,136 @@ class MainActivity: FlutterActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        job.cancel()
         methodChannel = null
     }
 
     private fun handleFindElements(call: MethodCall, result: MethodChannel.Result) {
-        try {
-            val selectorCodes = call.argument<List<String>>("selectorCodes")
-            if (selectorCodes == null) {
-                result.error("INVALID_ARGUMENT", "Selector codes cannot be null", null)
-                return
-            }
+        launch {
+            try {
+                val selectorCodes = call.argument<List<String>>("selectorCodes")
+                if (selectorCodes == null) {
+                    result.error("INVALID_ARGUMENT", "Selector codes cannot be null", null)
+                    return@launch
+                }
 
-            val service = AWAccessibilityService.getInstance()
-            if (service == null) {
-                result.error("SERVICE_NOT_RUNNING", "Accessibility service is not running", null)
-                return
-            }
+                val service = AWAccessibilityService.getInstance()
+                if (service == null) {
+                    result.error("SERVICE_NOT_RUNNING", "Accessibility service is not running", null)
+                    return@launch
+                }
 
-            val elements = service.findElements(selectorCodes)
-            result.success(elements.map { it.toMapResult() })
-        } catch (e: Exception) {
-            result.error("FIND_ERROR", e.message, null)
+                val elements = service.findElements(selectorCodes)
+                result.success(elements.map { it.toMapResult() })
+            } catch (e: Exception) {
+                result.error("FIND_ERROR", e.message, null)
+            }
         }
     }
 
     private fun handleFindElement(call: MethodCall, result: MethodChannel.Result) {
-        try {
-            val selectorCode = call.argument<String>("selectorCode")
-            if (selectorCode == null) {
-                result.error("INVALID_ARGUMENT", "Selector code cannot be null", null)
-                return
-            }
+        launch {
+            try {
+                val selectorCode = call.argument<String>("selectorCode")
+                if (selectorCode == null) {
+                    result.error("INVALID_ARGUMENT", "Selector code cannot be null", null)
+                    return@launch
+                }
 
-            val service = AWAccessibilityService.getInstance()
-            if (service == null) {
-                result.error("SERVICE_NOT_RUNNING", "Accessibility service is not running", null)
-                return
-            }
+                val service = AWAccessibilityService.getInstance()
+                if (service == null) {
+                    result.error("SERVICE_NOT_RUNNING", "Accessibility service is not running", null)
+                    return@launch
+                }
 
-            val element = service.findElementByUiSelector(selectorCode)?.let {
-                val bounds = Rect()
-                it.getBoundsInScreen(bounds)
-                AWAccessibilityService.ElementResult(
-                    success = true,
-                    coordinates = mapOf(
-                        "x" to bounds.left,
-                        "y" to bounds.top
-                    ),
-                    size = mapOf(
-                        "width" to bounds.width(),
-                        "height" to bounds.height()
-                    ),
-                    visible = it.isVisibleToUser
+                val element = service.findElementByUiSelector(selectorCode)?.let {
+                    val bounds = Rect()
+                    it.getBoundsInScreen(bounds)
+                    AWAccessibilityService.ElementResult(
+                        success = true,
+                        coordinates = mapOf(
+                            "x" to bounds.left,
+                            "y" to bounds.top
+                        ),
+                        size = mapOf(
+                            "width" to bounds.width(),
+                            "height" to bounds.height()
+                        ),
+                        visible = it.isVisibleToUser
+                    )
+                } ?: AWAccessibilityService.ElementResult(
+                    success = false,
+                    message = "Element not found"
                 )
-            } ?: AWAccessibilityService.ElementResult(
-                success = false,
-                message = "Element not found"
-            )
 
-            result.success(element.toMapResult())
-        } catch (e: Exception) {
-            result.error("FIND_ERROR", e.message, null)
+                result.success(element.toMapResult())
+            } catch (e: Exception) {
+                result.error("FIND_ERROR", e.message, null)
+            }
         }
     }
 
     private fun createOverlay(call: MethodCall, result: MethodChannel.Result) {
-        try {
-            val id = call.argument<String>("id") ?: throw IllegalArgumentException("Missing id")
-            val style = call.argument<Map<String, Any>>("style")
-                ?: throw IllegalArgumentException("Missing style")
-            
-            // 使用 AccessibilityService 的实例创建悬浮窗
-            val accessibilityService = AWAccessibilityService.getInstance()
-            if (accessibilityService == null) {
-                result.error("SERVICE_NOT_RUNNING", "AccessibilityService is not running", null)
-                return
+        launch {
+            try {
+                val id = call.argument<String>("id") ?: throw IllegalArgumentException("Missing id")
+                val style = call.argument<Map<String, Any>>("style")
+                    ?: throw IllegalArgumentException("Missing style")
+                
+                // 使用 AccessibilityService 的实例创建悬浮窗
+                val accessibilityService = AWAccessibilityService.getInstance()
+                if (accessibilityService == null) {
+                    result.error("SERVICE_NOT_RUNNING", "AccessibilityService is not running", null)
+                    return@launch
+                }
+                
+                val windowHelper = WindowManagerHelper.getInstance(this@MainActivity)
+                windowHelper.createOverlay(id, style)
+                result.success(mapOf("success" to true))
+            } catch (e: Exception) {
+                Log.e(TAG, "创建悬浮窗时发生错误", e)
+                result.error("CREATE_FAILED", e.message, null)
             }
-            
-            val windowHelper = WindowManagerHelper.getInstance(this)
-            windowHelper.createOverlay(id, style)
-            result.success(mapOf("success" to true))
-        } catch (e: Exception) {
-            Log.e(TAG, "创建悬浮窗时发生错误", e)
-            result.error("CREATE_FAILED", e.message, null)
         }
     }
 
     private fun handleSaveFile(call: MethodCall, result: MethodChannel.Result) {
-        try {
-            val content = call.argument<String>("content")
-                ?: throw IllegalArgumentException("Missing content")
-            val fileName = call.argument<String>("fileName") ?: "rules.json"
-            
-            pendingResult = result
-            pendingFileContent = content
-            
-            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "application/json"
-                putExtra(Intent.EXTRA_TITLE, fileName)
+        launch {
+            try {
+                val content = call.argument<String>("content")
+                    ?: throw IllegalArgumentException("Missing content")
+                val fileName = call.argument<String>("fileName") ?: "rules.json"
+                
+                pendingResult = result
+                pendingFileContent = content
+                
+                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "application/json"
+                    putExtra(Intent.EXTRA_TITLE, fileName)
+                }
+                
+                startActivityForResult(intent, CREATE_FILE_REQUEST_CODE)
+            } catch (e: Exception) {
+                result.error("SAVE_FILE_ERROR", e.message, null)
             }
-            
-            startActivityForResult(intent, CREATE_FILE_REQUEST_CODE)
-        } catch (e: Exception) {
-            result.error("SAVE_FILE_ERROR", e.message, null)
         }
     }
 
     private fun handleOpenFile(result: MethodChannel.Result) {
-        try {
-            pendingResult = result
-            
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "application/json"
+        launch {
+            try {
+                pendingResult = result
+                
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "application/json"
+                }
+                
+                startActivityForResult(intent, OPEN_FILE_REQUEST_CODE)
+            } catch (e: Exception) {
+                result.error("OPEN_FILE_ERROR", e.message, null)
             }
-            
-            startActivityForResult(intent, OPEN_FILE_REQUEST_CODE)
-        } catch (e: Exception) {
-            result.error("OPEN_FILE_ERROR", e.message, null)
         }
     }
 }
