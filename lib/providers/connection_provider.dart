@@ -157,20 +157,18 @@ class ConnectionProvider extends ChangeNotifier {
 
     debugPrint('🔄 处理窗口事件: ${event.type}');
 
-    // 用户交互事件
-    if (event.type == 'VIEW_CLICKED' ||
-        event.type == 'VIEW_LONG_CLICKED' ||
-        event.type == 'VIEW_TEXT_CHANGED') {
-      _handleUserInteraction(event);
-    }
     // 窗口状态变化事件（已经过哈希值验证）
-    else if (event.type == 'WINDOW_STATE_CHANGED') {
+    if (event.type == 'WINDOW_STATE_CHANGED') {
       _handleWindowStateChanged(event);
+    }
+    // 内容变化事件（替代原来的用户交互事件）
+    else if (event.type == 'CONTENT_CHANGED') {
+      _handleContentChanged(event);
     }
   }
 
-  void _handleUserInteraction(WindowEvent event) async {
-    debugPrint('👆 收到用户交互事件: ${event.packageName}/${event.activityName}');
+  void _handleContentChanged(WindowEvent event) async {
+    debugPrint('📄 收到内容变化事件: ${event.packageName}/${event.activityName}');
 
     // 获取匹配的规则
     final matchedRules = _ruleProvider.rules.where((rule) {
