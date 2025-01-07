@@ -41,6 +41,10 @@ class RuleRepository {
 
   Future<Rule> addRule(Rule rule) async {
     final rules = await loadRules();
+    // 检查是否已存在相同ID的规则
+    if (rules.any((r) => r.id == rule.id)) {
+      throw Exception('规则ID已存在');
+    }
     rules.add(rule);
     await _saveRules(rules);
     return rule;
@@ -49,21 +53,33 @@ class RuleRepository {
   Future<void> updateRule(Rule rule) async {
     final rules = await loadRules();
     final index = rules.indexWhere((r) => r.id == rule.id);
-    if (index != -1) {
-      rules[index] = rule;
-      await _saveRules(rules);
+    if (index == -1) {
+      throw Exception('规则不存在');
     }
+    rules[index] = rule;
+    await _saveRules(rules);
   }
 
   Future<void> deleteRule(String ruleId) async {
     final rules = await loadRules();
-    rules.removeWhere((rule) => rule.id == ruleId);
+    final index = rules.indexWhere((r) => r.id == ruleId);
+    if (index == -1) {
+      throw Exception('规则不存在');
+    }
+    rules.removeAt(index);
     await _saveRules(rules);
   }
 
   Future<void> _saveRules(List<Rule> rules) async {
-    final String rulesJson =
-        jsonEncode(rules.map((rule) => rule.toJson()).toList());
-    await _prefs.setString(_storageKey, rulesJson);
+    try {
+      final String rulesJson =
+          jsonEncode(rules.map((rule) => rule.toJson()).toList());
+      await _prefs.setString(_storageKey, rulesJson);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error saving rules: $e');
+      }
+      rethrow;
+    }
   }
 }

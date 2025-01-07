@@ -315,17 +315,18 @@ class RuleProvider extends ChangeNotifier {
       if (mergeResult.isMergeable) {
         // 更新现有规则
         final mergedRule = mergeResult.mergedRule!;
-        await _repository.updateRule(mergedRule);
         final index = _rules.indexWhere((r) => r.id == mergedRule.id);
         if (index != -1) {
           _rules[index] = mergedRule;
+          await _repository.updateRule(mergedRule);
         }
       } else {
         // 添加新规则
-        final savedRule = await _repository.addRule(rule);
-        _rules.add(savedRule);
+        _rules.add(rule);
+        await _repository.addRule(rule);
       }
 
+      clearAllValidations();
       notifyListeners();
     } catch (e) {
       if (e is RuleImportException) {
@@ -353,10 +354,12 @@ class RuleProvider extends ChangeNotifier {
         );
       }
 
-      await _repository.updateRule(rule);
+      // 先更新内存中的规则
       final index = _rules.indexWhere((r) => r.id == rule.id);
       if (index != -1) {
         _rules[index] = rule;
+        // 再保存到存储
+        await _repository.updateRule(rule);
         clearAllValidations();
         notifyListeners();
       }
