@@ -54,7 +54,6 @@ class AccessibilityService extends ChangeNotifier {
   }
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
-    debugPrint('🎯 收到方法调用: ${call.method}');
     switch (call.method) {
       case 'onWindowEvent':
         debugPrint('📨 收到窗口事件: ${call.arguments}');

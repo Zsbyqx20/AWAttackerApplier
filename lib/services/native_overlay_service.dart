@@ -184,7 +184,6 @@ class NativeOverlayService implements IOverlayService {
 
       debugPrint('🔍 当前活动的悬浮窗: ${_activeOverlayIds.join(', ')}');
       final result = await _channel.invokeMethod<bool>('removeAllOverlays');
-      debugPrint('📥 原生层返回结果: $result');
 
       if (result == true) {
         debugPrint('✅ 所有悬浮窗已成功移除');

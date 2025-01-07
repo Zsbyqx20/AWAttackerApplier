@@ -85,8 +85,6 @@ class OverlayStyle {
   }
 
   Map<String, dynamic> toJson() {
-    debugPrint('Converting backgroundColor: ${backgroundColor.toString()}');
-    debugPrint('Converting textColor: ${textColor.toString()}');
     return {
       'x': x,
       'y': y,
