@@ -10,6 +10,7 @@ import '../utils/rule_field_validator.dart';
 import '../models/rule_validation_result.dart';
 import '../models/rule_merge_result.dart';
 import '../utils/rule_merger.dart';
+import '../extensions/rule_extensions.dart';
 
 class RuleProvider extends ChangeNotifier {
   final RuleRepository _repository;
@@ -305,26 +306,22 @@ class RuleProvider extends ChangeNotifier {
         throw RuleImportException('规则验证失败');
       }
 
-      // 检查冲突
-      final mergeResult = checkRuleConflict(rule);
+      // 生成新规则的哈希值
+      final newHashId = rule.generateHashId();
 
-      if (mergeResult.isConflict) {
-        throw RuleImportException(mergeResult.errorMessage ?? '规则存在冲突');
+      // 检查是否存在相同内容的规则
+      final hasDuplicate = _rules.any((r) => r.generateHashId() == newHashId);
+
+      if (hasDuplicate) {
+        throw RuleImportException(
+          '规则已存在: ${rule.packageName}/${rule.activityName}',
+          code: 'DUPLICATE_RULE',
+        );
       }
 
-      if (mergeResult.isMergeable) {
-        // 更新现有规则
-        final mergedRule = mergeResult.mergedRule!;
-        final index = _rules.indexWhere((r) => r.id == mergedRule.id);
-        if (index != -1) {
-          _rules[index] = mergedRule;
-          await _repository.updateRule(mergedRule);
-        }
-      } else {
-        // 添加新规则
-        _rules.add(rule);
-        await _repository.addRule(rule);
-      }
+      // 添加新规则
+      _rules.add(rule);
+      await _repository.addRule(rule);
 
       clearAllValidations();
       notifyListeners();
@@ -343,11 +340,14 @@ class RuleProvider extends ChangeNotifier {
         throw RuleImportException('规则验证失败');
       }
 
-      // 检查重复（排除自身）
-      if (_rules.any((r) =>
-          r.id != rule.id &&
-          r.packageName == rule.packageName &&
-          r.activityName == rule.activityName)) {
+      // 生成新规则的哈希值
+      final newHashId = rule.generateHashId();
+
+      // 检查是否存在相同内容的其他规则（排除自身）
+      final hasDuplicate =
+          _rules.any((r) => r.id != rule.id && r.generateHashId() == newHashId);
+
+      if (hasDuplicate) {
         throw RuleImportException.invalidFieldValue(
           'rule',
           '规则已存在: ${rule.packageName}/${rule.activityName}',
@@ -358,11 +358,15 @@ class RuleProvider extends ChangeNotifier {
       final index = _rules.indexWhere((r) => r.id == rule.id);
       if (index != -1) {
         _rules[index] = rule;
-        // 再保存到存储
-        await _repository.updateRule(rule);
-        clearAllValidations();
-        notifyListeners();
+      } else {
+        _rules.add(rule);
       }
+
+      // 再保存到存储
+      await _repository.updateRule(rule);
+
+      clearAllValidations();
+      notifyListeners();
     } catch (e) {
       _error = e.toString();
       if (kDebugMode) {
