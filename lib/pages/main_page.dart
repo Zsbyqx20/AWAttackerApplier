@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'server_config_page.dart';
+
 import 'rule/rule_list_page.dart';
+import 'server_config_page.dart';
 import 'tag/tag_list_page.dart';
 
 class MainPage extends StatefulWidget {

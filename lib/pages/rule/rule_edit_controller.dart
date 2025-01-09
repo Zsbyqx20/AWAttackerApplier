@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../models/rule.dart';
+
 import '../../models/overlay_style.dart';
+import '../../models/rule.dart';
 import '../../providers/rule_provider.dart';
 
 class RuleEditController extends ChangeNotifier {

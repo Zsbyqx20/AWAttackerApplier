@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/overlay_style.dart';
-import '../models/overlay_result.dart';
+
 import '../exceptions/overlay_exception.dart';
+import '../models/overlay_result.dart';
+import '../models/overlay_style.dart';
 import 'interfaces/i_overlay_service.dart';
 import 'native_overlay_service.dart';
 

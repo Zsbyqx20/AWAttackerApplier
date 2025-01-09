@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'providers/rule_provider.dart';
+
+import 'pages/main_page.dart';
 import 'providers/connection_provider.dart';
+import 'providers/rule_provider.dart';
 import 'providers/rule_validation_provider.dart';
 import 'repositories/rule_repository.dart';
 import 'repositories/storage_repository.dart';
-import 'pages/main_page.dart';
 import 'services/background_service.dart';
 
 void main() async {

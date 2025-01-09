@@ -1,8 +1,10 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:awattackerapplier/models/rule.dart';
-import 'package:awattackerapplier/models/overlay_style.dart';
-import 'package:awattackerapplier/utils/rule_merger.dart';
 import 'package:flutter/material.dart';
+
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:awattackerapplier/models/overlay_style.dart';
+import 'package:awattackerapplier/models/rule.dart';
+import 'package:awattackerapplier/utils/rule_merger.dart';
 
 void main() {
   group('RuleMerger', () {

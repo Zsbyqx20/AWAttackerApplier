@@ -1,14 +1,15 @@
 import 'package:flutter/foundation.dart';
+
+import '../exceptions/rule_import_exception.dart';
+import '../exceptions/tag_activation_exception.dart';
 import '../models/rule.dart';
+import '../models/rule_import.dart';
+import '../models/rule_merge_result.dart';
+import '../models/rule_validation_result.dart';
+import '../providers/rule_validation_provider.dart';
 import '../repositories/rule_repository.dart';
 import '../repositories/storage_repository.dart';
-import '../exceptions/tag_activation_exception.dart';
-import '../models/rule_import.dart';
-import '../exceptions/rule_import_exception.dart';
-import '../models/rule_validation_result.dart';
-import '../models/rule_merge_result.dart';
 import '../utils/rule_merger.dart';
-import '../providers/rule_validation_provider.dart';
 
 class RuleProvider extends ChangeNotifier {
   final RuleRepository _repository;

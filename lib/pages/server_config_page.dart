@@ -1,7 +1,10 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'package:provider/provider.dart';
+
 import '../models/permission_status.dart';
 import '../providers/connection_provider.dart';
 import '../widgets/permission_card.dart';

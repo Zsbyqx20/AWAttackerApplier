@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../models/rule.dart';
 import '../models/rule_merge_result.dart';
-import '../utils/rule_merger.dart';
 import '../utils/rule_field_validator.dart';
+import '../utils/rule_merger.dart';
 
 class RuleImportPreviewDialog extends StatelessWidget {
   final List<Rule> rules;

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../providers/rule_provider.dart';
-import '../../widgets/tag_stats_card.dart';
 import '../../widgets/confirm_dialog.dart';
+import '../../widgets/tag_stats_card.dart';
 
 class TagListPage extends StatefulWidget {
   const TagListPage({super.key});

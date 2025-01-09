@@ -1,8 +1,10 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:awattackerapplier/providers/rule_validation_provider.dart';
-import 'package:awattackerapplier/models/rule.dart';
-import 'package:awattackerapplier/models/overlay_style.dart';
 import 'package:flutter/material.dart';
+
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:awattackerapplier/models/overlay_style.dart';
+import 'package:awattackerapplier/models/rule.dart';
+import 'package:awattackerapplier/providers/rule_validation_provider.dart';
 
 void main() {
   group('RuleValidationProvider', () {

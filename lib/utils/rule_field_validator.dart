@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/rule_validation_result.dart';
-import '../models/overlay_style.dart';
-import 'rule_import_validator.dart';
+
 import '../exceptions/rule_import_exception.dart';
+import '../models/overlay_style.dart';
+import '../models/rule_validation_result.dart';
+import 'rule_import_validator.dart';
 
 /// 规则字段验证器
 class RuleFieldValidator {

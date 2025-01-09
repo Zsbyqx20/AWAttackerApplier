@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:awattackerapplier/utils/overlay_converter.dart';
+
 import 'package:awattackerapplier/models/overlay_style.dart';
+import 'package:awattackerapplier/utils/overlay_converter.dart';
 
 void main() {
   group('OverlayConverter', () {

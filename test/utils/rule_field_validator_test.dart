@@ -1,7 +1,9 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:awattackerapplier/utils/rule_field_validator.dart';
+
+import 'package:flutter_test/flutter_test.dart';
+
 import 'package:awattackerapplier/models/overlay_style.dart';
+import 'package:awattackerapplier/utils/rule_field_validator.dart';
 
 void main() {
   group('RuleFieldValidator', () {

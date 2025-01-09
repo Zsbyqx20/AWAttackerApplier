@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/services.dart';
+
 import 'package:flutter/foundation.dart';
-import '../models/window_event.dart';
+import 'package:flutter/services.dart';
+
 import '../models/element_result.dart';
+import '../models/window_event.dart';
 
 class AccessibilityService extends ChangeNotifier {
   static const _channel =

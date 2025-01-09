@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:awattackerapplier/exceptions/tag_activation_exception.dart';
 
 void main() {

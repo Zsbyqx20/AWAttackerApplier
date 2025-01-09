@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:awattackerapplier/models/rule_validation_state.dart';
+
 import 'package:awattackerapplier/models/rule_validation_result.dart';
+import 'package:awattackerapplier/models/rule_validation_state.dart';
 
 void main() {
   group('RuleValidationState', () {

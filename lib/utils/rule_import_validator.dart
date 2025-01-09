@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../exceptions/rule_import_exception.dart';
 import '../models/overlay_style.dart';
 

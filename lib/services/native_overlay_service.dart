@@ -1,9 +1,11 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
+
 import 'package:flutter/foundation.dart';
-import '../models/overlay_style.dart';
-import '../models/overlay_result.dart';
+import 'package:flutter/services.dart';
+
 import '../exceptions/overlay_exception.dart';
+import '../models/overlay_result.dart';
+import '../models/overlay_style.dart';
 import '../utils/overlay_converter.dart';
 import 'interfaces/i_overlay_service.dart';
 

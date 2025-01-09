@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/rule.dart';
 
 class RuleStatsCard extends StatelessWidget {

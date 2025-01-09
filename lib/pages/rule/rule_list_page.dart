@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../models/rule.dart';
-import '../../models/rule_merge_result.dart';
 import '../../models/rule_import.dart';
+import '../../models/rule_merge_result.dart';
 import '../../providers/rule_provider.dart';
+import '../../widgets/rule_card.dart';
 import '../../widgets/rule_import_preview_dialog.dart';
 import '../../widgets/rule_import_result_dialog.dart';
 import '../../widgets/rule_stats_card.dart';
-import '../../widgets/rule_card.dart';
 import 'rule_edit_page.dart';
-import 'package:flutter/services.dart';
 
 class RuleListPage extends StatefulWidget {
   const RuleListPage({super.key});

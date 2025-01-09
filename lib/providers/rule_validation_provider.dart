@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
-import '../models/rule_validation_state.dart';
-import '../models/rule_validation_result.dart';
-import '../utils/rule_field_validator.dart';
+
 import '../models/rule.dart';
+import '../models/rule_validation_result.dart';
+import '../models/rule_validation_state.dart';
+import '../utils/rule_field_validator.dart';
 
 /// 规则验证状态管理器
 class RuleValidationProvider extends ChangeNotifier {

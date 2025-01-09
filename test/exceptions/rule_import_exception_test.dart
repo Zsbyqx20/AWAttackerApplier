@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:awattackerapplier/exceptions/rule_import_exception.dart';
 
 void main() {

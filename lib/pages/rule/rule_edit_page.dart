@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
+
 import '../../models/overlay_style.dart';
 import '../../models/rule.dart';
 import '../../providers/rule_provider.dart';
 import '../../providers/rule_validation_provider.dart';
-import '../../widgets/text_input_field.dart';
 import '../../widgets/style_editor.dart';
 import '../../widgets/tag_chips.dart';
+import '../../widgets/text_input_field.dart';
 import '../../widgets/validation_error_widget.dart';
 
 class RuleEditPage extends StatefulWidget {

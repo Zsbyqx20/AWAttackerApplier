@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../models/overlay_style.dart';
-import 'text_input_field.dart';
 import 'color_picker_field.dart';
+import 'text_input_field.dart';
 
 class StyleEditor extends StatelessWidget {
   final OverlayStyle style;

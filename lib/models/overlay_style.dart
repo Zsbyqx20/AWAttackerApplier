@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../utils/overlay_converter.dart';
+
 import '../exceptions/rule_import_exception.dart';
+import '../utils/overlay_converter.dart';
 
 class OverlayStyle {
   final double x;

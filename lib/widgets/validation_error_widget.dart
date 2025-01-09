@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/rule_validation_result.dart';
 
 /// 验证错误提示组件

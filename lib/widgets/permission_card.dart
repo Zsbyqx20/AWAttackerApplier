@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/permission_status.dart';
 
 class PermissionCard extends StatefulWidget {

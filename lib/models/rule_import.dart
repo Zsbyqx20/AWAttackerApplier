@@ -1,7 +1,8 @@
 import 'dart:convert';
+
 import '../exceptions/rule_import_exception.dart';
-import 'rule.dart';
 import 'overlay_style.dart';
+import 'rule.dart';
 
 /// 规则导入结果
 class RuleImportResult {

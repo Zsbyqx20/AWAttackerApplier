@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/rule_merge_result.dart';
 
 class RuleImportResultDialog extends StatelessWidget {

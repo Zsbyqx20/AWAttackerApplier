@@ -1,11 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
-import '../models/window_event.dart';
-import '../models/rule.dart';
-import '../models/overlay_style.dart';
-import '../services/overlay_service.dart';
-import '../services/accessibility_service.dart';
+
 import '../exceptions/overlay_exception.dart';
+import '../models/overlay_style.dart';
+import '../models/rule.dart';
+import '../models/window_event.dart';
+import '../services/accessibility_service.dart';
+import '../services/overlay_service.dart';
 import 'rule_provider.dart';
 
 enum ConnectionStatus {

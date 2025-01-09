@@ -1,6 +1,6 @@
-import '../../models/overlay_style.dart';
-import '../../models/overlay_result.dart';
 import '../../exceptions/overlay_exception.dart';
+import '../../models/overlay_result.dart';
+import '../../models/overlay_style.dart';
 
 /// 悬浮窗服务接口
 /// 定义了所有悬浮窗操作的基本方法

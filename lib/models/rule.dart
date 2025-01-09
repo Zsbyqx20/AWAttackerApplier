@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+
 import 'overlay_style.dart';
 
 class Rule {

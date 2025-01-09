@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/overlay_style.dart';
 
 class OverlayWindow extends StatelessWidget {

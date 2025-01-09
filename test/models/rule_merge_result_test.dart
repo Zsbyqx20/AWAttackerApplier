@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:awattackerapplier/models/rule.dart';
-import 'package:awattackerapplier/models/rule_merge_result.dart';
 import 'package:awattackerapplier/models/rule_conflict_type.dart';
+import 'package:awattackerapplier/models/rule_merge_result.dart';
 
 void main() {
   group('RuleMergeResult', () {
