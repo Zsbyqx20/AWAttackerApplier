@@ -37,7 +37,9 @@ dependencies:
   flutter_background_service: ^5.0.5
   flutter_background_service_android: ^6.2.2
   dart_code_metrics: ^4.19.2
-  crypto: ^3.0.3
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.19.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -98,6 +100,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+  generate: true
 
 import_sorter:
   emojis: false

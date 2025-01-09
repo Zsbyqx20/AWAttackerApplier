@@ -1,0 +1,237 @@
+{
+    "@@locale": "en",
+    "appTitle": "AWAttackApplier",
+    "@appTitle": {
+        "description": "The application name"
+    },
+    "save": "Save",
+    "@save": {
+        "description": "Save button text"
+    },
+    "cancel": "Cancel",
+    "@cancel": {
+        "description": "Cancel button text"
+    },
+    "delete": "Delete",
+    "@delete": {
+        "description": "Delete button text"
+    },
+    "edit": "Edit",
+    "@edit": {
+        "description": "Edit button text"
+    },
+    "add": "Add",
+    "@add": {
+        "description": "Add button text"
+    },
+    "confirm": "Confirm",
+    "@confirm": {
+        "description": "Confirm button text"
+    },
+    "warning": "Warning",
+    "@warning": {
+        "description": "Warning dialog title"
+    },
+    "error": "Error",
+    "@error": {
+        "description": "Error dialog title"
+    },
+    "success": "Success",
+    "@success": {
+        "description": "Success dialog title"
+    },
+    "unknown": "Unknown",
+    "@unknown": {
+        "description": "Text for unknown or undefined values"
+    },
+    "ruleEditTitle": "Edit Rule",
+    "@ruleEditTitle": {
+        "description": "Title for rule editing page"
+    },
+    "ruleAddTitle": "Add Rule",
+    "@ruleAddTitle": {
+        "description": "Title for rule creation page"
+    },
+    "ruleName": "Rule Name",
+    "@ruleName": {
+        "description": "Label for rule name field"
+    },
+    "ruleNameHint": "Enter rule name",
+    "@ruleNameHint": {
+        "description": "Hint text for rule name input field"
+    },
+    "packageName": "Package Name",
+    "@packageName": {
+        "description": "Label for package name field"
+    },
+    "packageNameHint": "Enter package name",
+    "@packageNameHint": {
+        "description": "Hint text for package name input field"
+    },
+    "activityName": "Activity Name",
+    "@activityName": {
+        "description": "Label for activity name field"
+    },
+    "activityNameHint": "Enter activity name",
+    "@activityNameHint": {
+        "description": "Hint text for activity name input field"
+    },
+    "tags": "Tags",
+    "@tags": {
+        "description": "Label for tags field"
+    },
+    "basicInfo": "Basic Information",
+    "@basicInfo": {
+        "description": "Section title for basic information"
+    },
+    "overlayStyleTitle": "Overlay Style",
+    "@overlayStyleTitle": {
+        "description": "Title for overlay style section"
+    },
+    "addStyle": "Add Style",
+    "@addStyle": {
+        "description": "Button text for adding a new style"
+    },
+    "removeStyle": "Remove Style",
+    "@removeStyle": {
+        "description": "Button text for removing a style"
+    },
+    "styleNumber": "Style {number}",
+    "@styleNumber": {
+        "description": "Tab title for style number",
+        "placeholders": {
+            "number": {
+                "type": "int",
+                "example": "1"
+            }
+        }
+    },
+    "text": "Text",
+    "@text": {
+        "description": "Label for text field"
+    },
+    "textHint": "Enter text",
+    "@textHint": {
+        "description": "Hint text for text input field"
+    },
+    "fontSize": "Font Size",
+    "@fontSize": {
+        "description": "Label for font size field"
+    },
+    "backgroundColor": "Background Color",
+    "@backgroundColor": {
+        "description": "Label for background color field"
+    },
+    "textColor": "Text Color",
+    "@textColor": {
+        "description": "Label for text color field"
+    },
+    "position": "Position",
+    "@position": {
+        "description": "Label for position fields"
+    },
+    "size": "Size",
+    "@size": {
+        "description": "Label for size fields"
+    },
+    "alignment": "Alignment",
+    "@alignment": {
+        "description": "Label for alignment fields"
+    },
+    "padding": "Padding",
+    "@padding": {
+        "description": "Label for padding fields"
+    },
+    "uiAutomatorCode": "UI Automator Code",
+    "@uiAutomatorCode": {
+        "description": "Label for UI Automator code field"
+    },
+    "uiAutomatorCodeHint": "Enter UI Automator code",
+    "@uiAutomatorCodeHint": {
+        "description": "Hint text for UI Automator code input field"
+    },
+    "validationErrorEmpty": "{field} cannot be empty",
+    "@validationErrorEmpty": {
+        "description": "Error message for empty field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Name"
+            }
+        }
+    },
+    "validationErrorInvalid": "Invalid {field}",
+    "@validationErrorInvalid": {
+        "description": "Error message for invalid field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Email"
+            }
+        }
+    },
+    "validationErrorDuplicate": "{field} already exists",
+    "@validationErrorDuplicate": {
+        "description": "Error message for duplicate field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Rule"
+            }
+        }
+    },
+    "validationErrorFormat": "Invalid {field} format",
+    "@validationErrorFormat": {
+        "description": "Error message for format validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Date"
+            }
+        }
+    },
+    "noRules": "No rules found",
+    "@noRules": {
+        "description": "Message shown when no rules are available"
+    },
+    "addRule": "Add Rule",
+    "@addRule": {
+        "description": "Button text for adding a new rule"
+    },
+    "deleteRuleConfirm": "Are you sure you want to delete this rule?",
+    "@deleteRuleConfirm": {
+        "description": "Confirmation message for rule deletion"
+    },
+    "deleteRuleSuccess": "Rule deleted successfully",
+    "@deleteRuleSuccess": {
+        "description": "Success message for rule deletion"
+    },
+    "deleteRuleError": "Failed to delete rule",
+    "@deleteRuleError": {
+        "description": "Error message for rule deletion"
+    },
+    "importRules": "Import Rules",
+    "@importRules": {
+        "description": "Button text for importing rules"
+    },
+    "exportRules": "Export Rules",
+    "@exportRules": {
+        "description": "Button text for exporting rules"
+    },
+    "importSuccess": "Rules imported successfully",
+    "@importSuccess": {
+        "description": "Success message for rules import"
+    },
+    "importError": "Failed to import rules",
+    "@importError": {
+        "description": "Error message for rules import"
+    },
+    "exportSuccess": "Rules exported successfully",
+    "@exportSuccess": {
+        "description": "Success message for rules export"
+    },
+    "exportError": "Failed to export rules",
+    "@exportError": {
+        "description": "Error message for rules export"
+    }
+}

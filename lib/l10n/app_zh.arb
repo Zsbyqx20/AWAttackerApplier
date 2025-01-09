@@ -1,0 +1,237 @@
+{
+    "@@locale": "zh",
+    "appTitle": "AWAttackApplier",
+    "@appTitle": {
+        "description": "The application name"
+    },
+    "save": "保存",
+    "@save": {
+        "description": "Save button text"
+    },
+    "cancel": "取消",
+    "@cancel": {
+        "description": "Cancel button text"
+    },
+    "delete": "删除",
+    "@delete": {
+        "description": "Delete button text"
+    },
+    "edit": "编辑",
+    "@edit": {
+        "description": "Edit button text"
+    },
+    "add": "添加",
+    "@add": {
+        "description": "Add button text"
+    },
+    "confirm": "确认",
+    "@confirm": {
+        "description": "Confirm button text"
+    },
+    "warning": "警告",
+    "@warning": {
+        "description": "Warning dialog title"
+    },
+    "error": "错误",
+    "@error": {
+        "description": "Error dialog title"
+    },
+    "success": "成功",
+    "@success": {
+        "description": "Success dialog title"
+    },
+    "unknown": "未知",
+    "@unknown": {
+        "description": "Text for unknown or undefined values"
+    },
+    "ruleEditTitle": "编辑规则",
+    "@ruleEditTitle": {
+        "description": "Title for rule editing page"
+    },
+    "ruleAddTitle": "添加规则",
+    "@ruleAddTitle": {
+        "description": "Title for rule creation page"
+    },
+    "ruleName": "规则名称",
+    "@ruleName": {
+        "description": "Label for rule name field"
+    },
+    "ruleNameHint": "请输入规则名称",
+    "@ruleNameHint": {
+        "description": "Hint text for rule name input field"
+    },
+    "packageName": "包名",
+    "@packageName": {
+        "description": "Label for package name field"
+    },
+    "packageNameHint": "请输入包名",
+    "@packageNameHint": {
+        "description": "Hint text for package name input field"
+    },
+    "activityName": "活动名",
+    "@activityName": {
+        "description": "Label for activity name field"
+    },
+    "activityNameHint": "请输入活动名",
+    "@activityNameHint": {
+        "description": "Hint text for activity name input field"
+    },
+    "tags": "标签",
+    "@tags": {
+        "description": "Label for tags field"
+    },
+    "basicInfo": "基本信息",
+    "@basicInfo": {
+        "description": "Section title for basic information"
+    },
+    "overlayStyleTitle": "悬浮窗样式",
+    "@overlayStyleTitle": {
+        "description": "Title for overlay style section"
+    },
+    "addStyle": "添加样式",
+    "@addStyle": {
+        "description": "Button text for adding a new style"
+    },
+    "removeStyle": "删除样式",
+    "@removeStyle": {
+        "description": "Button text for removing a style"
+    },
+    "styleNumber": "样式 {number}",
+    "@styleNumber": {
+        "description": "Tab title for style number",
+        "placeholders": {
+            "number": {
+                "type": "int",
+                "example": "1"
+            }
+        }
+    },
+    "text": "文本",
+    "@text": {
+        "description": "Label for text field"
+    },
+    "textHint": "请输入文本",
+    "@textHint": {
+        "description": "Hint text for text input field"
+    },
+    "fontSize": "字体大小",
+    "@fontSize": {
+        "description": "Label for font size field"
+    },
+    "backgroundColor": "背景颜色",
+    "@backgroundColor": {
+        "description": "Label for background color field"
+    },
+    "textColor": "文字颜色",
+    "@textColor": {
+        "description": "Label for text color field"
+    },
+    "position": "位置",
+    "@position": {
+        "description": "Label for position fields"
+    },
+    "size": "大小",
+    "@size": {
+        "description": "Label for size fields"
+    },
+    "alignment": "对齐方式",
+    "@alignment": {
+        "description": "Label for alignment fields"
+    },
+    "padding": "内边距",
+    "@padding": {
+        "description": "Label for padding fields"
+    },
+    "uiAutomatorCode": "UI Automator 代码",
+    "@uiAutomatorCode": {
+        "description": "Label for UI Automator code field"
+    },
+    "uiAutomatorCodeHint": "请输入 UI Automator 代码",
+    "@uiAutomatorCodeHint": {
+        "description": "Hint text for UI Automator code input field"
+    },
+    "validationErrorEmpty": "{field}不能为空",
+    "@validationErrorEmpty": {
+        "description": "Error message for empty field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Name"
+            }
+        }
+    },
+    "validationErrorInvalid": "无效的{field}",
+    "@validationErrorInvalid": {
+        "description": "Error message for invalid field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Email"
+            }
+        }
+    },
+    "validationErrorDuplicate": "{field}已存在",
+    "@validationErrorDuplicate": {
+        "description": "Error message for duplicate field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Rule"
+            }
+        }
+    },
+    "validationErrorFormat": "{field}格式无效",
+    "@validationErrorFormat": {
+        "description": "Error message for format validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Date"
+            }
+        }
+    },
+    "noRules": "没有找到规则",
+    "@noRules": {
+        "description": "Message shown when no rules are available"
+    },
+    "addRule": "添加规则",
+    "@addRule": {
+        "description": "Button text for adding a new rule"
+    },
+    "deleteRuleConfirm": "确定要删除这条规则吗？",
+    "@deleteRuleConfirm": {
+        "description": "Confirmation message for rule deletion"
+    },
+    "deleteRuleSuccess": "规则删除成功",
+    "@deleteRuleSuccess": {
+        "description": "Success message for rule deletion"
+    },
+    "deleteRuleError": "规则删除失败",
+    "@deleteRuleError": {
+        "description": "Error message for rule deletion"
+    },
+    "importRules": "导入规则",
+    "@importRules": {
+        "description": "Button text for importing rules"
+    },
+    "exportRules": "导出规则",
+    "@exportRules": {
+        "description": "Button text for exporting rules"
+    },
+    "importSuccess": "规则导入成功",
+    "@importSuccess": {
+        "description": "Success message for rules import"
+    },
+    "importError": "规则导入失败",
+    "@importError": {
+        "description": "Error message for rules import"
+    },
+    "exportSuccess": "规则导出成功",
+    "@exportSuccess": {
+        "description": "Success message for rules export"
+    },
+    "exportError": "规则导出失败",
+    "@exportError": {
+        "description": "Error message for rules export"
+    }
+}
