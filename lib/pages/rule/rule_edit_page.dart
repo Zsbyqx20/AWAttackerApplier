@@ -268,7 +268,6 @@ class _RuleEditPageState extends State<RuleEditPage>
     // 如果验证通过，保存并返回
     if (_validationProvider.state.isValid) {
       final rule = Rule(
-        id: widget.rule?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text,
         packageName: _packageNameController.text,
         activityName: _activityNameController.text,

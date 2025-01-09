@@ -41,6 +41,10 @@ class RuleRepository {
 
   Future<Rule> addRule(Rule rule) async {
     final rules = await loadRules();
+    // 检查是否已存在相同的规则
+    if (rules.contains(rule)) {
+      throw Exception('规则已存在');
+    }
     rules.add(rule);
     await _saveRules(rules);
     return rule;
@@ -49,7 +53,7 @@ class RuleRepository {
   Future<void> updateRule(Rule rule) async {
     try {
       final rules = await loadRules();
-      final index = rules.indexWhere((r) => r.id == rule.id);
+      final index = rules.indexWhere((r) => r == rule);
       if (index == -1) {
         // 如果找不到规则，添加新规则
         rules.add(rule);
@@ -66,9 +70,9 @@ class RuleRepository {
     }
   }
 
-  Future<void> deleteRule(String ruleId) async {
+  Future<void> deleteRule(Rule rule) async {
     final rules = await loadRules();
-    final index = rules.indexWhere((r) => r.id == ruleId);
+    final index = rules.indexWhere((r) => r == rule);
     if (index == -1) {
       throw Exception('规则不存在');
     }
