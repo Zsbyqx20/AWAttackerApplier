@@ -163,6 +163,19 @@ class AccessibilityService extends ChangeNotifier {
     }
   }
 
+  /// 更新规则匹配状态
+  Future<void> updateRuleMatchStatus(bool hasMatch) async {
+    if (!_initialized) return;
+    try {
+      await _channel.invokeMethod('updateRuleMatchStatus', {
+        'hasMatch': hasMatch,
+      });
+      debugPrint('✅ 已更新规则匹配状态: $hasMatch');
+    } catch (e) {
+      debugPrint('❌ 更新规则匹配状态失败: $e');
+    }
+  }
+
   @override
   void dispose() {
     _windowEventController.close();

@@ -162,6 +162,11 @@ class MainActivity : FlutterActivity(), CoroutineScope {
                 "openFile" -> {
                     handleOpenFile(result)
                 }
+                "updateRuleMatchStatus" -> {
+                    val hasMatch = call.argument<Boolean>("hasMatch") ?: false
+                    AWAccessibilityService.getInstance()?.updateRuleMatchStatus(hasMatch)
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }

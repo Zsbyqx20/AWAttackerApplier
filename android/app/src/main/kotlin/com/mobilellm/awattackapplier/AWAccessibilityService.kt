@@ -10,6 +10,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import org.json.JSONObject
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
+import java.util.concurrent.atomic.AtomicBoolean
 
 class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     private val job = SupervisorJob()
@@ -18,6 +19,15 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
 
     // 当前搜索的协程作用域
     private var searchScope: CoroutineScope? = null
+    
+    // 添加绘制锁
+    private val drawingLock = AtomicBoolean(true)
+    
+    // 添加规则匹配状态标志
+    private var hasMatchedRule = false
+
+    // 添加获取绘制锁状态的方法
+    fun isDrawingAllowed(): Boolean = drawingLock.get()
 
     companion object {
         private const val TAG = "AWAccessibilityService"
@@ -62,7 +72,8 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     private fun cancelSearch() {
         searchScope?.cancel()
         searchScope = null
-        Log.d(TAG, "取消当前的查找操作")
+        drawingLock.set(false)  // 禁止绘制
+        Log.d(TAG, "取消当前的查找操作，已禁止绘制")
     }
 
     private fun getRelativeActivityName(fullName: String?, packageName: String?): String? {
@@ -178,6 +189,9 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     private fun handleWindowStateChanged(event: AccessibilityEvent) {
         // 取消当前正在进行的查找操作
         cancelSearch()
+        
+        // 重置规则匹配状态
+        hasMatchedRule = false
 
         val currentPackage = event.packageName?.toString()
         val currentActivity = event.className?.toString()
@@ -309,7 +323,15 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
 
     // 批量查找元素
     suspend fun findElements(selectorCodes: List<String>): List<ElementResult> = withContext(Dispatchers.Default) {
-        Log.d(TAG, "开始批量查找元素，共 ${selectorCodes.size} 个选择器")
+        if (hasMatchedRule) {
+            Log.d(TAG, "开始批量查找元素，允许绘制")
+            drawingLock.set(true)  // 允许绘制
+        } else {
+            Log.d(TAG, "当前窗口没有匹配规则，保持禁止绘制状态")
+            return@withContext selectorCodes.map { 
+                ElementResult(success = false, message = "No matching rule for current window") 
+            }
+        }
         
         // 创建新的搜索作用域
         searchScope?.cancel()
@@ -440,6 +462,16 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     }
 
     fun getWindowManagerHelper(): WindowManagerHelper = WindowManagerHelper.getInstance(this)
+
+    // 添加更新规则匹配状态的方法
+    fun updateRuleMatchStatus(hasMatch: Boolean) {
+        hasMatchedRule = hasMatch
+        if (!hasMatch) {
+            drawingLock.set(false)
+            getWindowManagerHelper().removeAllOverlays()
+        }
+        Log.d(TAG, "更新规则匹配状态: hasMatch=$hasMatch")
+    }
 
     private fun getEventTypeName(eventType: Int): String {
         return when (eventType) {
