@@ -233,5 +233,13 @@
     "exportError": "Failed to export rules",
     "@exportError": {
         "description": "Error message for rules export"
+    },
+    "width": "Width",
+    "@width": {
+        "description": "Label for width field"
+    },
+    "height": "Height",
+    "@height": {
+        "description": "Label for height field"
     }
 }
