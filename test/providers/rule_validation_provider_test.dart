@@ -151,7 +151,6 @@ void main() {
     group('整个规则的验证', () {
       test('验证有效的规则', () {
         final rule = Rule(
-          id: '1',
           name: 'ValidName',
           packageName: 'com.example.app',
           activityName: '.MainActivity',
@@ -187,7 +186,6 @@ void main() {
 
       test('验证无效的规则', () {
         final rule = Rule(
-          id: '1',
           name: '', // 无效的名称
           packageName: '', // 无效的包名
           activityName: 'MainActivity', // 无效的活动名（没有以点号开头）

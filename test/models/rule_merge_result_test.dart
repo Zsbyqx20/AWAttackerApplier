@@ -9,7 +9,6 @@ void main() {
 
     setUp(() {
       testRule = Rule(
-        id: 'test_id',
         name: 'Test Rule',
         packageName: 'com.test',
         activityName: '.TestActivity',

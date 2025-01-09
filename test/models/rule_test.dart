@@ -23,7 +23,6 @@ void main() {
 
     test('使用必需参数创建实例', () {
       final rule = Rule(
-        id: 'test_id',
         name: 'Test Rule',
         packageName: 'com.example.app',
         activityName: '.MainActivity',
@@ -31,7 +30,6 @@ void main() {
         overlayStyles: [testStyle],
       );
 
-      expect(rule.id, equals('test_id'));
       expect(rule.name, equals('Test Rule'));
       expect(rule.packageName, equals('com.example.app'));
       expect(rule.activityName, equals('.MainActivity'));
@@ -43,7 +41,6 @@ void main() {
 
     test('使用所有参数创建实例', () {
       final rule = Rule(
-        id: 'test_id',
         name: 'Test Rule',
         packageName: 'com.example.app',
         activityName: '.MainActivity',
@@ -52,7 +49,6 @@ void main() {
         tags: ['tag1', 'tag2'],
       );
 
-      expect(rule.id, equals('test_id'));
       expect(rule.name, equals('Test Rule'));
       expect(rule.packageName, equals('com.example.app'));
       expect(rule.activityName, equals('.MainActivity'));
@@ -64,7 +60,6 @@ void main() {
 
     test('使用 copyWith 创建更新后的实例', () {
       final original = Rule(
-        id: 'test_id',
         name: 'Test Rule',
         packageName: 'com.example.app',
         activityName: '.MainActivity',
@@ -79,7 +74,6 @@ void main() {
         tags: ['tag3'],
       );
 
-      expect(copied.id, equals(original.id));
       expect(copied.name, equals('Updated Rule'));
       expect(copied.packageName, equals(original.packageName));
       expect(copied.activityName, equals(original.activityName));
@@ -88,10 +82,99 @@ void main() {
       expect(copied.tags, equals(['tag3']));
     });
 
+    group('相等性和哈希值', () {
+      test('内容相同的规则应该相等', () {
+        final rule1 = Rule(
+          name: 'Test Rule',
+          packageName: 'com.example.app',
+          activityName: '.MainActivity',
+          isEnabled: true,
+          overlayStyles: [testStyle],
+          tags: ['tag1', 'tag2'],
+        );
+
+        final rule2 = Rule(
+          name: 'Test Rule',
+          packageName: 'com.example.app',
+          activityName: '.MainActivity',
+          isEnabled: true,
+          overlayStyles: [testStyle],
+          tags: ['tag1', 'tag2'],
+        );
+
+        expect(rule1, equals(rule2));
+        expect(rule1.hashCode, equals(rule2.hashCode));
+      });
+
+      test('内容不同的规则不应该相等', () {
+        final rule1 = Rule(
+          name: 'Test Rule 1',
+          packageName: 'com.example.app',
+          activityName: '.MainActivity',
+          isEnabled: true,
+          overlayStyles: [testStyle],
+        );
+
+        final rule2 = Rule(
+          name: 'Test Rule 2',
+          packageName: 'com.example.app',
+          activityName: '.MainActivity',
+          isEnabled: true,
+          overlayStyles: [testStyle],
+        );
+
+        expect(rule1, isNot(equals(rule2)));
+        expect(rule1.hashCode, isNot(equals(rule2.hashCode)));
+      });
+
+      test('启用状态不同的规则不应该相等', () {
+        final rule1 = Rule(
+          name: 'Test Rule',
+          packageName: 'com.example.app',
+          activityName: '.MainActivity',
+          isEnabled: true,
+          overlayStyles: [testStyle],
+        );
+
+        final rule2 = Rule(
+          name: 'Test Rule',
+          packageName: 'com.example.app',
+          activityName: '.MainActivity',
+          isEnabled: false,
+          overlayStyles: [testStyle],
+        );
+
+        expect(rule1, isNot(equals(rule2)));
+        expect(rule1.hashCode, isNot(equals(rule2.hashCode)));
+      });
+
+      test('标签顺序不同但内容相同的规则应该相等', () {
+        final rule1 = Rule(
+          name: 'Test Rule',
+          packageName: 'com.example.app',
+          activityName: '.MainActivity',
+          isEnabled: true,
+          overlayStyles: [testStyle],
+          tags: ['tag1', 'tag2'],
+        );
+
+        final rule2 = Rule(
+          name: 'Test Rule',
+          packageName: 'com.example.app',
+          activityName: '.MainActivity',
+          isEnabled: true,
+          overlayStyles: [testStyle],
+          tags: ['tag2', 'tag1'],
+        );
+
+        expect(rule1, equals(rule2));
+        expect(rule1.hashCode, equals(rule2.hashCode));
+      });
+    });
+
     group('JSON 序列化', () {
       test('toJson 正确转换所有属性', () {
         final rule = Rule(
-          id: 'test_id',
           name: 'Test Rule',
           packageName: 'com.example.app',
           activityName: '.MainActivity',
@@ -102,7 +185,6 @@ void main() {
 
         final json = rule.toJson();
 
-        expect(json['id'], equals('test_id'));
         expect(json['name'], equals('Test Rule'));
         expect(json['packageName'], equals('com.example.app'));
         expect(json['activityName'], equals('.MainActivity'));
@@ -121,7 +203,6 @@ void main() {
 
       test('fromJson 创建包含正确值的实例', () {
         final json = {
-          'id': 'test_id',
           'name': 'Test Rule',
           'packageName': 'com.example.app',
           'activityName': '.MainActivity',
@@ -152,7 +233,6 @@ void main() {
 
         final rule = Rule.fromJson(json);
 
-        expect(rule.id, equals('test_id'));
         expect(rule.name, equals('Test Rule'));
         expect(rule.packageName, equals('com.example.app'));
         expect(rule.activityName, equals('.MainActivity'));
@@ -170,7 +250,6 @@ void main() {
 
       test('fromJson 处理缺失的标签', () {
         final json = {
-          'id': 'test_id',
           'name': 'Test Rule',
           'packageName': 'com.example.app',
           'activityName': '.MainActivity',

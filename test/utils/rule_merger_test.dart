@@ -33,7 +33,6 @@ void main() {
       );
 
       existingRule = Rule(
-        id: 'existing_id',
         name: 'Existing Rule',
         packageName: 'com.test',
         activityName: '.TestActivity',
@@ -43,7 +42,6 @@ void main() {
       );
 
       newRule = Rule(
-        id: 'new_id',
         name: 'New Rule',
         packageName: 'com.test',
         activityName: '.TestActivity',
@@ -91,7 +89,6 @@ void main() {
       final rules = [
         existingRule,
         existingRule.copyWith(
-          id: 'other_id',
           packageName: 'com.other',
         ),
       ];
@@ -99,7 +96,6 @@ void main() {
       final newRules = [
         newRule,
         newRule.copyWith(
-          id: 'different_id',
           packageName: 'com.different',
         ),
       ];
