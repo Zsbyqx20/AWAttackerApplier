@@ -3,24 +3,39 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/rule_provider.dart';
 import 'providers/connection_provider.dart';
+import 'providers/rule_validation_provider.dart';
 import 'repositories/rule_repository.dart';
+import 'repositories/storage_repository.dart';
 import 'pages/main_page.dart';
 import 'services/background_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化存储库
   final prefs = await SharedPreferences.getInstance();
   final ruleRepository = RuleRepository(prefs);
-  final ruleProvider = RuleProvider(ruleRepository);
+  final storageRepository = StorageRepository();
+
+  // 初始化 Provider
+  final ruleValidationProvider = RuleValidationProvider();
+  final ruleProvider = RuleProvider(
+    ruleRepository,
+    storageRepository,
+    ruleValidationProvider,
+  );
   final connectionProvider = ConnectionProvider(ruleProvider);
+
+  // 加载规则
   await ruleProvider.loadRules();
 
-  // 初始化后台服务
+  // 启动后台服务
   await BackgroundService.initializeService();
 
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: ruleValidationProvider),
         ChangeNotifierProvider.value(value: ruleProvider),
         ChangeNotifierProvider.value(value: connectionProvider),
       ],

@@ -1,33 +1,35 @@
 import 'package:flutter/foundation.dart';
 import '../models/rule.dart';
-import '../models/overlay_style.dart';
 import '../repositories/rule_repository.dart';
 import '../repositories/storage_repository.dart';
 import '../exceptions/tag_activation_exception.dart';
 import '../models/rule_import.dart';
 import '../exceptions/rule_import_exception.dart';
-import '../utils/rule_field_validator.dart';
 import '../models/rule_validation_result.dart';
 import '../models/rule_merge_result.dart';
 import '../utils/rule_merger.dart';
+import '../providers/rule_validation_provider.dart';
 
 class RuleProvider extends ChangeNotifier {
   final RuleRepository _repository;
   final StorageRepository _storageRepository;
+  final RuleValidationProvider _validationProvider;
+
   List<Rule> _rules = [];
   Set<String> _activeTags = {};
-  bool _isLoading = false;
   String? _error;
-  final Map<String, RuleValidationResult> _validationResults = {};
+  bool _isLoading = false;
 
-  RuleProvider(this._repository) : _storageRepository = StorageRepository();
+  RuleProvider(
+    this._repository,
+    this._storageRepository,
+    this._validationProvider,
+  );
 
-  List<Rule> get rules => List.unmodifiable(_rules);
-  Set<String> get activeTags => Set.unmodifiable(_activeTags);
-  bool get isLoading => _isLoading;
+  List<Rule> get rules => _rules;
+  Set<String> get activeTags => _activeTags;
   String? get error => _error;
-  Map<String, RuleValidationResult> get validationResults =>
-      Map.unmodifiable(_validationResults);
+  bool get isLoading => _isLoading;
 
   // 获取所有已使用的标签
   Set<String> get allTags {
@@ -165,99 +167,19 @@ class RuleProvider extends ChangeNotifier {
     }
   }
 
-  /// 验证单个字段
-  RuleValidationResult validateField(String fieldName, dynamic value) {
-    RuleValidationResult result;
-
-    try {
-      switch (fieldName) {
-        case 'name':
-          result = RuleFieldValidator.validateName(value as String?);
-          break;
-        case 'packageName':
-          result = RuleFieldValidator.validatePackageName(value as String?);
-          break;
-        case 'activityName':
-          result = RuleFieldValidator.validateActivityName(value as String?);
-          break;
-        case 'tags':
-          result = RuleFieldValidator.validateTags(value as List<String>?);
-          break;
-        case 'overlayStyle':
-          result =
-              RuleFieldValidator.validateOverlayStyle(value as OverlayStyle?);
-          break;
-        default:
-          result = RuleValidationResult.fieldError(
-            fieldName,
-            '未知字段',
-            code: 'UNKNOWN_FIELD',
-          );
-      }
-
-      _validationResults[fieldName] = result;
-      notifyListeners();
-      return result;
-    } catch (e) {
-      if (e is RuleImportException) {
-        result = RuleValidationResult.fromException(e);
-      } else {
-        result = RuleValidationResult.fieldError(
-          fieldName,
-          e.toString(),
-          code: 'VALIDATION_ERROR',
-        );
-      }
-      _validationResults[fieldName] = result;
-      notifyListeners();
-      return result;
-    }
-  }
-
-  /// 清除字段验证结果
-  void clearFieldValidation(String fieldName) {
-    _validationResults.remove(fieldName);
-    notifyListeners();
-  }
-
-  /// 清除所有验证结果
-  void clearAllValidations() {
-    _validationResults.clear();
-    notifyListeners();
-  }
-
   /// 验证整个规则
   bool validateRule(Rule rule) {
     try {
-      // 验证规则名称
-      final nameResult = validateField('name', rule.name);
-      if (!nameResult.isValid) return false;
-
-      // 验证包名
-      final packageResult = validateField('packageName', rule.packageName);
-      if (!packageResult.isValid) return false;
-
-      // 验证活动名
-      final activityResult = validateField('activityName', rule.activityName);
-      if (!activityResult.isValid) return false;
-
-      // 验证标签
-      final tagsResult = validateField('tags', rule.tags);
-      if (!tagsResult.isValid) return false;
-
-      // 验证悬浮窗样式
-      for (final style in rule.overlayStyles) {
-        final styleResult = validateField('overlayStyle', style);
-        if (!styleResult.isValid) return false;
-      }
-
-      return true;
+      _validationProvider.validateRule(rule);
+      return _validationProvider.state.isValid;
     } catch (e) {
       if (e is RuleImportException) {
-        _validationResults[e.code ?? 'UNKNOWN'] =
+        // 保持原有的错误处理逻辑
+        _validationProvider.state.fieldResults[e.code ?? 'UNKNOWN'] =
             RuleValidationResult.fromException(e);
       } else {
-        _validationResults['UNKNOWN'] = RuleValidationResult.fieldError(
+        _validationProvider.state.fieldResults['UNKNOWN'] =
+            RuleValidationResult.fieldError(
           'rule',
           e.toString(),
           code: 'VALIDATION_ERROR',
@@ -266,23 +188,6 @@ class RuleProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-  }
-
-  /// 获取字段验证结果
-  RuleValidationResult? getFieldValidation(String fieldName) {
-    return _validationResults[fieldName];
-  }
-
-  /// 检查字段是否有效
-  bool isFieldValid(String fieldName) {
-    final result = _validationResults[fieldName];
-    return result?.isValid ?? true;
-  }
-
-  /// 获取字段错误信息
-  String? getFieldError(String fieldName) {
-    final result = _validationResults[fieldName];
-    return result?.isValid == false ? result?.errorMessage : null;
   }
 
   /// 检查规则是否存在冲突
@@ -316,7 +221,7 @@ class RuleProvider extends ChangeNotifier {
       await _repository.addRule(rule);
       _rules.add(rule);
 
-      clearAllValidations();
+      _validationProvider.clearAllValidations();
       notifyListeners();
     } catch (e) {
       if (e is RuleImportException) {
@@ -440,7 +345,7 @@ class RuleProvider extends ChangeNotifier {
       // 验证所有规则
       for (final rule in newRules) {
         if (!validateRule(rule)) {
-          final errorMessage = _validationResults.values
+          final errorMessage = _validationProvider.state.fieldResults.values
               .where((r) => !r.isValid)
               .map((r) => r.toString())
               .join('\n');
