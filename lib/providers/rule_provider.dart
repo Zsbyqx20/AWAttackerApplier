@@ -10,7 +10,6 @@ import '../utils/rule_field_validator.dart';
 import '../models/rule_validation_result.dart';
 import '../models/rule_merge_result.dart';
 import '../utils/rule_merger.dart';
-import '../extensions/rule_extensions.dart';
 
 class RuleProvider extends ChangeNotifier {
   final RuleRepository _repository;
@@ -87,7 +86,7 @@ class RuleProvider extends ChangeNotifier {
         if (!rule.isEnabled) {
           final updatedRule = rule.copyWith(isEnabled: true);
           await _repository.updateRule(updatedRule);
-          final index = _rules.indexWhere((r) => r.id == rule.id);
+          final index = _rules.indexOf(rule);
           if (index != -1) {
             _rules[index] = updatedRule;
           }
@@ -101,7 +100,7 @@ class RuleProvider extends ChangeNotifier {
     }
   }
 
-  // 反激活标签
+  // 取消激活标签
   Future<void> deactivateTag(String tag) async {
     if (!_activeTags.contains(tag)) {
       throw TagActivationException.notActive(tag);
@@ -112,12 +111,11 @@ class RuleProvider extends ChangeNotifier {
       await _storageRepository.saveActiveTags(_activeTags);
 
       // 更新包含该标签的规则状态
-      // 只有当规则的所有标签都未激活时，才禁用规则
       for (final rule in _rules.where((r) => r.tags.contains(tag))) {
-        if (rule.isEnabled && !rule.tags.any((t) => _activeTags.contains(t))) {
+        if (rule.isEnabled) {
           final updatedRule = rule.copyWith(isEnabled: false);
           await _repository.updateRule(updatedRule);
-          final index = _rules.indexWhere((r) => r.id == rule.id);
+          final index = _rules.indexOf(rule);
           if (index != -1) {
             _rules[index] = updatedRule;
           }
@@ -155,7 +153,7 @@ class RuleProvider extends ChangeNotifier {
 
     try {
       _rules = await _repository.loadRules();
-      await loadActiveTags(); // 同时加载激活的标签
+      notifyListeners();
     } catch (e) {
       _error = e.toString();
       if (kDebugMode) {
@@ -306,13 +304,8 @@ class RuleProvider extends ChangeNotifier {
         throw RuleImportException('规则验证失败');
       }
 
-      // 生成新规则的哈希值
-      final newHashId = rule.generateHashId();
-
       // 检查是否存在相同内容的规则
-      final hasDuplicate = _rules.any((r) => r.generateHashId() == newHashId);
-
-      if (hasDuplicate) {
+      if (_rules.contains(rule)) {
         throw RuleImportException(
           '规则已存在: ${rule.packageName}/${rule.activityName}',
           code: 'DUPLICATE_RULE',
@@ -320,8 +313,8 @@ class RuleProvider extends ChangeNotifier {
       }
 
       // 添加新规则
-      _rules.add(rule);
       await _repository.addRule(rule);
+      _rules.add(rule);
 
       clearAllValidations();
       notifyListeners();
@@ -333,6 +326,7 @@ class RuleProvider extends ChangeNotifier {
     }
   }
 
+  // 更新规则
   Future<void> updateRule(Rule rule) async {
     try {
       // 验证规则
@@ -340,32 +334,14 @@ class RuleProvider extends ChangeNotifier {
         throw RuleImportException('规则验证失败');
       }
 
-      // 生成新规则的哈希值
-      final newHashId = rule.generateHashId();
+      // 先删除具有相同包名和活动名的规则
+      _rules.removeWhere((r) =>
+          r.packageName == rule.packageName &&
+          r.activityName == rule.activityName);
 
-      // 检查是否存在相同内容的其他规则（排除自身）
-      final hasDuplicate =
-          _rules.any((r) => r.id != rule.id && r.generateHashId() == newHashId);
-
-      if (hasDuplicate) {
-        throw RuleImportException.invalidFieldValue(
-          'rule',
-          '规则已存在: ${rule.packageName}/${rule.activityName}',
-        );
-      }
-
-      // 先更新内存中的规则
-      final index = _rules.indexWhere((r) => r.id == rule.id);
-      if (index != -1) {
-        _rules[index] = rule;
-      } else {
-        _rules.add(rule);
-      }
-
-      // 再保存到存储
+      // 添加更新后的规则
+      _rules.add(rule);
       await _repository.updateRule(rule);
-
-      clearAllValidations();
       notifyListeners();
     } catch (e) {
       _error = e.toString();
@@ -376,15 +352,14 @@ class RuleProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteRule(String ruleId) async {
+  // 删除规则
+  Future<void> deleteRule(Rule rule) async {
     try {
-      // 获取要删除的规则
-      final ruleToDelete = _rules.firstWhere((r) => r.id == ruleId);
-      final tagsToCheck = ruleToDelete.tags.toSet();
+      final tagsToCheck = List<String>.from(rule.tags);
 
       // 删除规则
-      await _repository.deleteRule(ruleId);
-      _rules = await _repository.loadRules();
+      await _repository.deleteRule(rule);
+      _rules.remove(rule);
 
       // 检查每个标签是否还被其他规则使用
       for (final tag in tagsToCheck) {
@@ -414,7 +389,7 @@ class RuleProvider extends ChangeNotifier {
     try {
       final updatedRule = rule.copyWith(isEnabled: !rule.isEnabled);
       await _repository.updateRule(updatedRule);
-      final index = _rules.indexWhere((r) => r.id == rule.id);
+      final index = _rules.indexOf(rule);
       if (index != -1) {
         _rules[index] = updatedRule;
         notifyListeners();
@@ -428,10 +403,10 @@ class RuleProvider extends ChangeNotifier {
     }
   }
 
-  // 从所有规则中删除指定标签
+  /// 从所有规则中删除指定标签
   Future<void> deleteTag(String tag) async {
     try {
-      // 如果标签处于激活状态，先反激活
+      // 如果标签处于激活状态，先取消激活
       if (_activeTags.contains(tag)) {
         await deactivateTag(tag);
       }
@@ -441,7 +416,7 @@ class RuleProvider extends ChangeNotifier {
         final updatedTags = rule.tags.where((t) => t != tag).toList();
         final updatedRule = rule.copyWith(tags: updatedTags);
         await _repository.updateRule(updatedRule);
-        final index = _rules.indexWhere((r) => r.id == rule.id);
+        final index = _rules.indexOf(rule);
         if (index != -1) {
           _rules[index] = updatedRule;
         }
@@ -496,7 +471,7 @@ class RuleProvider extends ChangeNotifier {
           // 更新现有规则
           final mergedRule = result.mergedRule!;
           await _repository.updateRule(mergedRule);
-          final index = _rules.indexWhere((r) => r.id == mergedRule.id);
+          final index = _rules.indexOf(mergedRule);
           if (index != -1) {
             _rules[index] = mergedRule;
           }

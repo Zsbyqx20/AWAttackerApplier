@@ -110,6 +110,12 @@ class WindowManagerHelper private constructor(private val context: Context) {
 
     fun createOverlay(id: String, params: Map<String, Any>) {
         try {
+            // 添加绘制检查
+            if (context is AWAccessibilityService && !context.isDrawingAllowed()) {
+                Log.d(TAG, "当前不允许绘制，忽略创建悬浮窗请求: $id")
+                return
+            }
+
             // 如果已存在，先移除
             removeOverlay(id)
             
@@ -178,6 +184,12 @@ class WindowManagerHelper private constructor(private val context: Context) {
     }
     
     fun updateOverlay(id: String, params: Map<String, Any>) {
+        // 添加绘制检查
+        if (context is AWAccessibilityService && !context.isDrawingAllowed()) {
+            Log.d(TAG, "当前不允许绘制，忽略更新悬浮窗请求: $id")
+            return
+        }
+
         activeWindows[id]?.let { textView ->
             // 更新TextView属性
             textView.apply {

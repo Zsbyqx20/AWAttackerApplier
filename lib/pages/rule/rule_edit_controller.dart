@@ -86,7 +86,6 @@ class RuleEditController extends ChangeNotifier {
     }
 
     final rule = Rule(
-      id: initialRule?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: nameController.text,
       packageName: packageNameController.text,
       activityName: activityNameController.text,

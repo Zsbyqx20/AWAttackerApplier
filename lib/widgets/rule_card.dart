@@ -153,7 +153,7 @@ class RuleCard extends StatelessWidget {
                             icon: Icons.delete_outline,
                           );
                           if (confirmed == true && context.mounted) {
-                            context.read<RuleProvider>().deleteRule(rule.id);
+                            context.read<RuleProvider>().deleteRule(rule);
                           }
                         },
                         icon: Icon(

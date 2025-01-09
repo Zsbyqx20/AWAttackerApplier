@@ -172,7 +172,6 @@ class RuleImport {
     }
 
     return Rule(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
       packageName: packageName,
       activityName: activityName,

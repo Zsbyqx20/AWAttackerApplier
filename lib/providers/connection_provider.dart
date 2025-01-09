@@ -178,11 +178,15 @@ class ConnectionProvider extends ChangeNotifier {
     }).toList();
 
     if (matchedRules.isEmpty) {
-      debugPrint('❌ 没有找到匹配的规则');
+      debugPrint('❌ 没有找到匹配的规则，清理现有悬浮窗');
+      _overlayPositionCache.clear(); // 清除位置缓存
+      await _overlayService.removeAllOverlays();
+      await _accessibilityService.updateRuleMatchStatus(false);
       return;
     }
 
     debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则，开始检查元素');
+    await _accessibilityService.updateRuleMatchStatus(true);
     await _sendBatchQuickSearch(matchedRules);
   }
 
@@ -200,10 +204,12 @@ class ConnectionProvider extends ChangeNotifier {
       debugPrint('❌ 没有找到匹配的规则，清理现有悬浮窗');
       _overlayPositionCache.clear(); // 清除位置缓存
       await _overlayService.removeAllOverlays();
+      await _accessibilityService.updateRuleMatchStatus(false);
       return;
     }
 
     debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则，开始检查元素');
+    await _accessibilityService.updateRuleMatchStatus(true);
     await _sendBatchQuickSearch(matchedRules);
   }
 
