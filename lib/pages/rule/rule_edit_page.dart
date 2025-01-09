@@ -267,14 +267,21 @@ class _RuleEditPageState extends State<RuleEditPage>
 
     // 如果验证通过，保存并返回
     if (_validationProvider.state.isValid) {
-      final rule = Rule(
-        name: _nameController.text,
-        packageName: _packageNameController.text,
-        activityName: _activityNameController.text,
-        isEnabled: widget.rule?.isEnabled ?? false,
-        overlayStyles: _overlayStyles,
-        tags: _tags,
-      );
+      final rule = widget.rule?.copyWith(
+            name: _nameController.text,
+            packageName: _packageNameController.text,
+            activityName: _activityNameController.text,
+            overlayStyles: _overlayStyles,
+            tags: _tags,
+          ) ??
+          Rule(
+            name: _nameController.text,
+            packageName: _packageNameController.text,
+            activityName: _activityNameController.text,
+            isEnabled: false,
+            overlayStyles: _overlayStyles,
+            tags: _tags,
+          );
       Navigator.of(context).pop(rule);
       return;
     }

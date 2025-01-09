@@ -334,12 +334,15 @@ class RuleProvider extends ChangeNotifier {
         throw RuleImportException('规则验证失败');
       }
 
+      // 先删除具有相同包名和活动名的规则
+      _rules.removeWhere((r) =>
+          r.packageName == rule.packageName &&
+          r.activityName == rule.activityName);
+
+      // 添加更新后的规则
+      _rules.add(rule);
       await _repository.updateRule(rule);
-      final index = _rules.indexOf(rule);
-      if (index != -1) {
-        _rules[index] = rule;
-        notifyListeners();
-      }
+      notifyListeners();
     } catch (e) {
       _error = e.toString();
       if (kDebugMode) {
