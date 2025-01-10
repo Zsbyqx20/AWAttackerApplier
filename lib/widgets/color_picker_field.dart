@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class UpperCaseTextFormatter extends TextInputFormatter {
   @override
@@ -46,6 +47,7 @@ class ColorPickerField extends StatelessWidget {
   }
 
   Future<void> _showColorPicker(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final String currentHex =
         '${(color.r * 255).toInt().toRadixString(16).padLeft(2, '0')}'
         '${(color.g * 255).toInt().toRadixString(16).padLeft(2, '0')}'
@@ -60,7 +62,7 @@ class ColorPickerField extends StatelessWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(
-            label.isNotEmpty ? label : '选择颜色',
+            label.isNotEmpty ? label : l10n.selectColor,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 16,
@@ -83,8 +85,8 @@ class ColorPickerField extends StatelessWidget {
               TextField(
                 controller: hexController,
                 decoration: InputDecoration(
-                  labelText: 'HEX颜色值',
-                  hintText: '例如：FF0000',
+                  labelText: l10n.hexColorValue,
+                  hintText: l10n.hexColorHint,
                   prefixText: '#',
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -130,7 +132,7 @@ class ColorPickerField extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                '取消',
+                l10n.cancel,
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -150,7 +152,7 @@ class ColorPickerField extends StatelessWidget {
                 }
               },
               child: Text(
-                '确定',
+                l10n.confirm,
                 style: TextStyle(
                   fontSize: 14,
                   color: Theme.of(context).colorScheme.primary,

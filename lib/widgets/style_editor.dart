@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../models/overlay_style.dart';
+import 'color_picker_field.dart';
 import 'text_input_field.dart';
 
 class StyleEditor extends StatelessWidget {
@@ -48,13 +50,13 @@ class StyleEditor extends StatelessWidget {
           onChanged: onTextChanged,
         ),
         const SizedBox(height: 16),
-        _buildFontSizeSlider(context),
+        _buildFontSizeField(context),
         const SizedBox(height: 16),
         _buildColorPickers(context),
         const SizedBox(height: 16),
         _buildPositionFields(context),
         const SizedBox(height: 16),
-        _buildAlignmentControls(context),
+        _buildAlignmentFields(context),
         const SizedBox(height: 16),
         _buildPaddingFields(context),
         const SizedBox(height: 16),
@@ -68,7 +70,7 @@ class StyleEditor extends StatelessWidget {
     );
   }
 
-  Widget _buildFontSizeSlider(BuildContext context) {
+  Widget _buildFontSizeField(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,21 +112,10 @@ class StyleEditor extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => _showColorPicker(
-                  context,
-                  style.backgroundColor,
-                  onBackgroundColorChanged,
-                  l10n.backgroundColor,
-                ),
-                child: Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: style.backgroundColor,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                ),
+              ColorPickerField(
+                label: l10n.backgroundColor,
+                color: style.backgroundColor,
+                onColorChanged: onBackgroundColorChanged,
               ),
             ],
           ),
@@ -143,21 +134,10 @@ class StyleEditor extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => _showColorPicker(
-                  context,
-                  style.textColor,
-                  onTextColorChanged,
-                  l10n.textColor,
-                ),
-                child: Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: style.textColor,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                ),
+              ColorPickerField(
+                label: l10n.textColor,
+                color: style.textColor,
+                onColorChanged: onTextColorChanged,
               ),
             ],
           ),
@@ -232,7 +212,7 @@ class StyleEditor extends StatelessWidget {
     );
   }
 
-  Widget _buildAlignmentControls(BuildContext context) {
+  Widget _buildAlignmentFields(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,207 +380,4 @@ class StyleEditor extends StatelessWidget {
       ),
     );
   }
-
-  Future<void> _showColorPicker(
-    BuildContext context,
-    Color initialColor,
-    ValueChanged<Color> onColorChanged,
-    String title,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    final result = await showDialog<Color>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: initialColor,
-            onColorChanged: onColorChanged,
-            pickerAreaHeightPercent: 0.8,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(initialColor),
-            child: Text(l10n.confirm),
-          ),
-        ],
-      ),
-    );
-
-    if (result != null) {
-      onColorChanged(result);
-    }
-  }
-}
-
-class ColorPicker extends StatefulWidget {
-  final Color pickerColor;
-  final ValueChanged<Color> onColorChanged;
-  final double pickerAreaHeightPercent;
-
-  const ColorPicker({
-    super.key,
-    required this.pickerColor,
-    required this.onColorChanged,
-    this.pickerAreaHeightPercent = 1.0,
-  });
-
-  @override
-  State<ColorPicker> createState() => _ColorPickerState();
-}
-
-class _ColorPickerState extends State<ColorPicker> {
-  late HSVColor _currentHsvColor;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentHsvColor = HSVColor.fromColor(widget.pickerColor);
-  }
-
-  void _onColorChanged(HSVColor color) {
-    setState(() => _currentHsvColor = color);
-    widget.onColorChanged(_currentHsvColor.toColor());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 280,
-          height: 280 * widget.pickerAreaHeightPercent,
-          child: CustomPaint(
-            painter: _ColorPickerPainter(
-              _currentHsvColor,
-              (color) => _onColorChanged(color),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 12,
-          child: CustomPaint(
-            painter: _HueSliderPainter(
-              _currentHsvColor.hue,
-              (hue) => _onColorChanged(
-                _currentHsvColor.withHue(hue),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          height: 40,
-          decoration: BoxDecoration(
-            color: _currentHsvColor.toColor(),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ColorPickerPainter extends CustomPainter {
-  final HSVColor color;
-  final ValueChanged<HSVColor> onColorChanged;
-
-  _ColorPickerPainter(this.color, this.onColorChanged);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final gradient = LinearGradient(
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-      colors: [
-        HSVColor.fromAHSV(1.0, color.hue, 0.0, 1.0).toColor(),
-        HSVColor.fromAHSV(1.0, color.hue, 1.0, 1.0).toColor(),
-      ],
-    );
-    canvas.drawRect(
-      rect,
-      Paint()..shader = gradient.createShader(rect),
-    );
-
-    final valueGradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        Colors.white,
-        Colors.black,
-      ],
-    );
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = valueGradient.createShader(rect)
-        ..blendMode = BlendMode.multiply,
-    );
-
-    final currentPoint = Offset(
-      size.width * color.saturation,
-      size.height * (1 - color.value),
-    );
-    canvas.drawCircle(
-      currentPoint,
-      8,
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_ColorPickerPainter oldDelegate) =>
-      color != oldDelegate.color;
-
-  @override
-  bool hitTest(Offset position) => true;
-}
-
-class _HueSliderPainter extends CustomPainter {
-  final double hue;
-  final ValueChanged<double> onHueChanged;
-
-  _HueSliderPainter(this.hue, this.onHueChanged);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final colors = List.generate(
-      360,
-      (index) => HSVColor.fromAHSV(1.0, index.toDouble(), 1.0, 1.0).toColor(),
-    );
-    final gradient = LinearGradient(colors: colors);
-    canvas.drawRect(
-      rect,
-      Paint()..shader = gradient.createShader(rect),
-    );
-
-    final currentPoint = Offset(size.width * (hue / 360), size.height / 2);
-    canvas.drawCircle(
-      currentPoint,
-      6,
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_HueSliderPainter oldDelegate) => hue != oldDelegate.hue;
-
-  @override
-  bool hitTest(Offset position) => true;
 }

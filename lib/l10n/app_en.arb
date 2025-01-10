@@ -10,7 +10,7 @@
     },
     "cancel": "Cancel",
     "@cancel": {
-        "description": "Cancel button text"
+        "description": "Text for cancel button"
     },
     "delete": "Delete",
     "@delete": {
@@ -26,7 +26,7 @@
     },
     "confirm": "Confirm",
     "@confirm": {
-        "description": "Confirm button text"
+        "description": "Text for confirm button"
     },
     "warning": "Warning",
     "@warning": {
@@ -341,5 +341,17 @@
                 "example": "5"
             }
         }
+    },
+    "selectColor": "Select Color",
+    "@selectColor": {
+        "description": "Title for color picker dialog when no label is provided"
+    },
+    "hexColorValue": "HEX Color Value",
+    "@hexColorValue": {
+        "description": "Label for hex color input field"
+    },
+    "hexColorHint": "Example: FF0000",
+    "@hexColorHint": {
+        "description": "Hint text for hex color input field"
     }
 }
