@@ -375,5 +375,37 @@
     "grantPermission": "Grant Permission",
     "@grantPermission": {
         "description": "Button text for granting permission"
+    },
+    "ruleStats": "Rule Stats",
+    "@ruleStats": {
+        "description": "Title for rule stats card"
+    },
+    "ruleStatsTotal": "Total",
+    "@ruleStatsTotal": {
+        "description": "Label for total rules count"
+    },
+    "ruleStatsEnabled": "Enabled",
+    "@ruleStatsEnabled": {
+        "description": "Label for enabled rules count"
+    },
+    "ruleStatsOverlays": "Overlays",
+    "@ruleStatsOverlays": {
+        "description": "Label for overlays count"
+    },
+    "tagStats": "Tag Stats",
+    "@tagStats": {
+        "description": "Title for tag stats card"
+    },
+    "tagStatsCount": "Count",
+    "@tagStatsCount": {
+        "description": "Label for tags count"
+    },
+    "tagStatsActive": "Active",
+    "@tagStatsActive": {
+        "description": "Label for active tags count"
+    },
+    "tagStatsRules": "Rules",
+    "@tagStatsRules": {
+        "description": "Label for rules count"
     }
 }

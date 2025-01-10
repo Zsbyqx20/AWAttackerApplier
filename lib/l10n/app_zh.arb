@@ -369,5 +369,37 @@
     "grantPermission": "授权",
     "@grantPermission": {
         "description": "Button text for granting permission"
+    },
+    "ruleStats": "规则统计",
+    "@ruleStats": {
+        "description": "Title for rule stats card"
+    },
+    "ruleStatsTotal": "规则总数",
+    "@ruleStatsTotal": {
+        "description": "Label for total rules count"
+    },
+    "ruleStatsEnabled": "已启用",
+    "@ruleStatsEnabled": {
+        "description": "Label for enabled rules count"
+    },
+    "ruleStatsOverlays": "悬浮窗",
+    "@ruleStatsOverlays": {
+        "description": "Label for overlays count"
+    },
+    "tagStats": "标签统计",
+    "@tagStats": {
+        "description": "Title for tag stats card"
+    },
+    "tagStatsCount": "标签数",
+    "@tagStatsCount": {
+        "description": "Label for tags count"
+    },
+    "tagStatsActive": "已激活",
+    "@tagStatsActive": {
+        "description": "Label for active tags count"
+    },
+    "tagStatsRules": "标记规则",
+    "@tagStatsRules": {
+        "description": "Label for rules count"
     }
 }

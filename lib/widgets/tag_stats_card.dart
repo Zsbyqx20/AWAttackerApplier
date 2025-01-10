@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../models/rule.dart';
@@ -23,6 +23,7 @@ class TagStatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<RuleProvider>();
     final theme = Theme.of(context);
 
@@ -46,9 +47,9 @@ class TagStatsCard extends StatelessWidget {
                   color: theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  '标签统计',
-                  style: TextStyle(
+                Text(
+                  l10n.tagStats,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -62,7 +63,7 @@ class TagStatsCard extends StatelessWidget {
                   child: _StatCard(
                     icon: Icons.local_offer_outlined,
                     value: '${_getAllTags().length}',
-                    label: '标签数',
+                    label: l10n.tagStatsCount,
                     valueColor: Colors.grey[800],
                   ),
                 ),
@@ -71,7 +72,7 @@ class TagStatsCard extends StatelessWidget {
                   child: _StatCard(
                     icon: Icons.bookmark_outline,
                     value: '${rules.where((r) => r.tags.isNotEmpty).length}',
-                    label: '标记规则',
+                    label: l10n.tagStatsRules,
                     valueColor: Colors.grey[800],
                   ),
                 ),
@@ -80,7 +81,7 @@ class TagStatsCard extends StatelessWidget {
                   child: _StatCard(
                     icon: Icons.local_activity_outlined,
                     value: '${provider.activeTags.length}',
-                    label: '已激活',
+                    label: l10n.tagStatsActive,
                     valueColor: provider.activeTags.isNotEmpty
                         ? theme.colorScheme.primary
                         : Colors.grey[800],
