@@ -5,90 +5,105 @@ import 'package:awattackerapplier/exceptions/rule_import_exception.dart';
 void main() {
   group('RuleImportException', () {
     test('invalidFormat factory creates correct exception', () {
-      final exception = RuleImportException.invalidFormat('格式错误详情');
-      expect(exception.message, equals('JSON格式无效'));
+      final exception =
+          RuleImportException.invalidFormat('Format error details');
+      expect(exception.message, equals('Invalid JSON format'));
       expect(exception.code, equals('INVALID_FORMAT'));
-      expect(exception.details, equals('格式错误详情'));
-      expect(exception.toString(),
-          equals('JSON格式无效 [错误码: INVALID_FORMAT]\n详情: 格式错误详情'));
+      expect(exception.details, equals('Format error details'));
+      expect(
+          exception.toString(),
+          equals(
+              'Invalid JSON format [INVALID_FORMAT]\nDetails: Format error details'));
     });
 
     test('incompatibleVersion factory creates correct exception', () {
       final exception = RuleImportException.incompatibleVersion('1.0.0');
-      expect(exception.message, equals('不兼容的版本'));
+      expect(exception.message, equals('Incompatible version'));
       expect(exception.code, equals('INCOMPATIBLE_VERSION'));
-      expect(exception.details, equals('导入文件版本: 1.0.0'));
-      expect(exception.toString(),
-          equals('不兼容的版本 [错误码: INCOMPATIBLE_VERSION]\n详情: 导入文件版本: 1.0.0'));
+      expect(exception.details, equals('Import file version: 1.0.0'));
+      expect(
+          exception.toString(),
+          equals(
+              'Incompatible version [INCOMPATIBLE_VERSION]\nDetails: Import file version: 1.0.0'));
     });
 
     test('missingField factory creates correct exception', () {
       final exception = RuleImportException.missingField('name');
-      expect(exception.message, equals('缺少必需字段'));
+      expect(exception.message, equals('Missing required field'));
       expect(exception.code, equals('MISSING_FIELD'));
-      expect(exception.details, equals('字段名: name'));
-      expect(exception.toString(),
-          equals('缺少必需字段 [错误码: MISSING_FIELD]\n详情: 字段名: name'));
+      expect(exception.details, equals('Field name: name'));
+      expect(
+          exception.toString(),
+          equals(
+              'Missing required field [MISSING_FIELD]\nDetails: Field name: name'));
     });
 
     test('invalidFieldType factory creates correct exception', () {
       final exception = RuleImportException.invalidFieldType('age', 'number');
-      expect(exception.message, equals('字段类型错误'));
+      expect(exception.message, equals('Invalid field type'));
       expect(exception.code, equals('INVALID_FIELD_TYPE'));
-      expect(exception.details, equals('字段 age 应为 number 类型'));
-      expect(exception.toString(),
-          equals('字段类型错误 [错误码: INVALID_FIELD_TYPE]\n详情: 字段 age 应为 number 类型'));
+      expect(exception.details, equals('Field age should be number type'));
+      expect(
+          exception.toString(),
+          equals(
+              'Invalid field type [INVALID_FIELD_TYPE]\nDetails: Field age should be number type'));
     });
 
     test('invalidFieldValue factory creates correct exception', () {
-      final exception = RuleImportException.invalidFieldValue('email', '格式无效');
-      expect(exception.message, equals('字段值无效'));
+      final exception =
+          RuleImportException.invalidFieldValue('email', 'Invalid format');
+      expect(exception.message, equals('Invalid field value'));
       expect(exception.code, equals('INVALID_FIELD_VALUE'));
-      expect(exception.details, equals('字段 email: 格式无效'));
-      expect(exception.toString(),
-          equals('字段值无效 [错误码: INVALID_FIELD_VALUE]\n详情: 字段 email: 格式无效'));
+      expect(exception.details, equals('Field email: Invalid format'));
+      expect(
+          exception.toString(),
+          equals(
+              'Invalid field value [INVALID_FIELD_VALUE]\nDetails: Field email: Invalid format'));
     });
 
     test('emptyFile factory creates correct exception', () {
       final exception = RuleImportException.emptyFile();
-      expect(exception.message, equals('导入文件为空'));
+      expect(exception.message, equals('Import file is empty'));
       expect(exception.code, equals('EMPTY_FILE'));
       expect(exception.details, isNull);
-      expect(exception.toString(), equals('导入文件为空 [错误码: EMPTY_FILE]'));
+      expect(exception.toString(), equals('Import file is empty [EMPTY_FILE]'));
     });
 
     test('noRules factory creates correct exception', () {
       final exception = RuleImportException.noRules();
-      expect(exception.message, equals('导入文件不包含任何规则'));
+      expect(
+          exception.message, equals('Import file does not contain any rules'));
       expect(exception.code, equals('NO_RULES'));
       expect(exception.details, isNull);
-      expect(exception.toString(), equals('导入文件不包含任何规则 [错误码: NO_RULES]'));
+      expect(exception.toString(),
+          equals('Import file does not contain any rules [NO_RULES]'));
     });
 
     test('custom constructor creates correct exception', () {
-      final exception =
-          RuleImportException('自定义错误', code: 'CUSTOM_ERROR', details: '详细信息');
-      expect(exception.message, equals('自定义错误'));
+      final exception = RuleImportException('Custom error',
+          code: 'CUSTOM_ERROR', details: 'Detailed information');
+      expect(exception.message, equals('Custom error'));
       expect(exception.code, equals('CUSTOM_ERROR'));
-      expect(exception.details, equals('详细信息'));
-      expect(
-          exception.toString(), equals('自定义错误 [错误码: CUSTOM_ERROR]\n详情: 详细信息'));
+      expect(exception.details, equals('Detailed information'));
+      expect(exception.toString(),
+          equals('Custom error [CUSTOM_ERROR]\nDetails: Detailed information'));
     });
 
     test('toString without code and details', () {
-      final exception = RuleImportException('简单错误');
-      expect(exception.message, equals('简单错误'));
+      final exception = RuleImportException('Simple error');
+      expect(exception.message, equals('Simple error'));
       expect(exception.code, isNull);
       expect(exception.details, isNull);
-      expect(exception.toString(), equals('简单错误'));
+      expect(exception.toString(), equals('Simple error'));
     });
 
     test('toString with code but no details', () {
-      final exception = RuleImportException('带代码错误', code: 'ERROR_CODE');
-      expect(exception.message, equals('带代码错误'));
+      final exception =
+          RuleImportException('With code error', code: 'ERROR_CODE');
+      expect(exception.message, equals('With code error'));
       expect(exception.code, equals('ERROR_CODE'));
       expect(exception.details, isNull);
-      expect(exception.toString(), equals('带代码错误 [错误码: ERROR_CODE]'));
+      expect(exception.toString(), equals('With code error [ERROR_CODE]'));
     });
   });
 }

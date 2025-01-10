@@ -60,16 +60,17 @@ void main() {
       test('从异常创建验证结果 - 包含字段名', () {
         final exception = RuleImportException.invalidFieldValue(
           'email',
-          '无效的邮箱格式',
+          'Invalid email format',
         );
 
         final result = RuleValidationResult.fromException(exception);
 
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('email'));
-        expect(result.errorMessage, equals('字段值无效'));
+        expect(result.errorMessage, equals('Invalid field value'));
         expect(result.errorCode, equals('INVALID_FIELD_VALUE'));
-        expect(result.errorDetails, equals('字段 email: 无效的邮箱格式'));
+        expect(
+            result.errorDetails, equals('Field email: Invalid email format'));
       });
 
       test('从异常创建验证结果 - 不包含字段名', () {
@@ -98,31 +99,32 @@ void main() {
       test('包含字段名的错误结果字符串表示', () {
         final result = RuleValidationResult.fieldError(
           'testField',
-          '字段错误',
+          'Field error',
           code: 'TEST_ERROR',
-          details: '错误详情',
+          details: 'Error details',
         );
         expect(
           result.toString(),
-          equals('Field testField: 字段错误 [错误码: TEST_ERROR]\n详情: 错误详情'),
+          equals(
+              'Field testField: Field error [TEST_ERROR]\nDetails: Error details'),
         );
       });
 
       test('不包含字段名的错误结果字符串表示', () {
         final result = RuleValidationResult(
           isValid: false,
-          errorMessage: '一般错误',
+          errorMessage: 'General error',
           errorCode: 'GENERAL_ERROR',
         );
-        expect(result.toString(), equals('一般错误 [错误码: GENERAL_ERROR]'));
+        expect(result.toString(), equals('General error [GENERAL_ERROR]'));
       });
 
       test('只包含错误消息的结果字符串表示', () {
         final result = RuleValidationResult(
           isValid: false,
-          errorMessage: '简单错误',
+          errorMessage: 'Simple error',
         );
-        expect(result.toString(), equals('简单错误'));
+        expect(result.toString(), equals('Simple error'));
       });
     });
   });

@@ -38,8 +38,9 @@ void main() {
             throwsA(predicate((e) =>
                 e is RuleImportException &&
                 e.code == 'INVALID_FIELD_VALUE' &&
-                e.message == '字段值无效' &&
-                e.details == '字段 activityName: 活动名必须以点号(.)开头')),
+                e.message == 'Invalid field value' &&
+                e.details ==
+                    'Field activityName: Activity name must start with a dot (.)')),
           );
         }
       });
@@ -54,11 +55,13 @@ void main() {
         for (final activityName in invalidActivityNames) {
           expect(
             () => RuleImportValidator.validateActivityName(activityName),
-            throwsA(predicate((e) =>
-                e is RuleImportException &&
-                e.code == 'INVALID_FIELD_VALUE' &&
-                e.message == '字段值无效' &&
-                e.details!.startsWith('字段 activityName:'))),
+            throwsA(
+              predicate((e) =>
+                  e is RuleImportException &&
+                  e.code == 'INVALID_FIELD_VALUE' &&
+                  e.message == 'Invalid field value' &&
+                  e.details!.startsWith('Field activityName:')),
+            ),
           );
         }
       });
@@ -69,8 +72,9 @@ void main() {
           throwsA(predicate((e) =>
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
-              e.message == '字段值无效' &&
-              e.details == '字段 activityName: 活动名必须以点号(.)开头')),
+              e.message == 'Invalid field value' &&
+              e.details ==
+                  'Field activityName: Activity name must start with a dot (.)')),
         );
       });
     });
@@ -105,8 +109,8 @@ void main() {
             throwsA(predicate((e) =>
                 e is RuleImportException &&
                 e.code == 'INVALID_FIELD_VALUE' &&
-                e.message == '字段值无效' &&
-                e.details!.startsWith('字段 packageName:'))),
+                e.message == 'Invalid field value' &&
+                e.details!.startsWith('Field packageName:'))),
           );
         }
       });
@@ -141,8 +145,8 @@ void main() {
             throwsA(predicate((e) =>
                 e is RuleImportException &&
                 e.code == 'INVALID_FIELD_VALUE' &&
-                e.message == '字段值无效' &&
-                e.details == '字段 tags: 标签不能为空')),
+                e.message == 'Invalid field value' &&
+                e.details == 'Field tags: Tag cannot be empty')),
           );
         }
       });
@@ -154,8 +158,9 @@ void main() {
           throwsA(predicate((e) =>
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
-              e.message == '字段值无效' &&
-              e.details == '字段 tags: 标签长度不能超过50个字符')),
+              e.message == 'Invalid field value' &&
+              e.details ==
+                  'Field tags: Tag length cannot exceed 50 characters')),
         );
       });
     });
@@ -191,8 +196,8 @@ void main() {
           throwsA(predicate((e) =>
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
-              e.message == '字段值无效' &&
-              e.details == '字段 text: 文本不能为空')),
+              e.message == 'Invalid field value' &&
+              e.details == 'Field text: Text cannot be empty')),
         );
       });
 
@@ -210,8 +215,8 @@ void main() {
           throwsA(predicate((e) =>
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
-              e.message == '字段值无效' &&
-              e.details == '字段 fontSize: 字体大小必须大于0')),
+              e.message == 'Invalid field value' &&
+              e.details == 'Field fontSize: Font size must be greater than 0')),
         );
 
         final negativeStyle = invalidStyle.copyWith(fontSize: -1);
@@ -220,8 +225,8 @@ void main() {
           throwsA(predicate((e) =>
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
-              e.message == '字段值无效' &&
-              e.details == '字段 fontSize: 字体大小必须大于0')),
+              e.message == 'Invalid field value' &&
+              e.details == 'Field fontSize: Font size must be greater than 0')),
         );
       });
 
@@ -239,8 +244,9 @@ void main() {
           throwsA(predicate((e) =>
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
-              e.message == '字段值无效' &&
-              e.details == '字段 uiAutomatorCode: UI Automator代码不能为空')),
+              e.message == 'Invalid field value' &&
+              e.details ==
+                  'Field uiAutomatorCode: UI Automator code cannot be empty')),
         );
       });
 
@@ -259,8 +265,8 @@ void main() {
           throwsA(predicate((e) =>
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
-              e.message == '字段值无效' &&
-              e.details == '字段 padding: 内边距不能为负数')),
+              e.message == 'Invalid field value' &&
+              e.details == 'Field padding: Padding cannot be negative')),
         );
 
         // 测试其他方向的负数内边距
@@ -276,8 +282,8 @@ void main() {
             throwsA(predicate((e) =>
                 e is RuleImportException &&
                 e.code == 'INVALID_FIELD_VALUE' &&
-                e.message == '字段值无效' &&
-                e.details == '字段 padding: 内边距不能为负数')),
+                e.message == 'Invalid field value' &&
+                e.details == 'Field padding: Padding cannot be negative')),
           );
         }
       });
@@ -297,8 +303,9 @@ void main() {
           throwsA(predicate((e) =>
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
-              e.message == '字段值无效' &&
-              e.details == '字段 backgroundColor: 颜色不能完全透明')),
+              e.message == 'Invalid field value' &&
+              e.details ==
+                  'Field backgroundColor: Color cannot be fully transparent')),
         );
 
         // 测试完全透明的文本色
@@ -315,8 +322,9 @@ void main() {
           throwsA(predicate((e) =>
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
-              e.message == '字段值无效' &&
-              e.details == '字段 textColor: 颜色不能完全透明')),
+              e.message == 'Invalid field value' &&
+              e.details ==
+                  'Field textColor: Color cannot be fully transparent')),
         );
       });
     });

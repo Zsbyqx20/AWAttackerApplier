@@ -8,8 +8,8 @@ class RuleImportException implements Exception {
   @override
   String toString() {
     final buffer = StringBuffer(message);
-    if (code != null) buffer.write(' [错误码: $code]');
-    if (details != null) buffer.write('\n详情: $details');
+    if (code != null) buffer.write(' [$code]');
+    if (details != null) buffer.write('\nDetails: $details');
     return buffer.toString();
   }
 

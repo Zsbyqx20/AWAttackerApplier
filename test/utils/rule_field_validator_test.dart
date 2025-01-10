@@ -25,7 +25,7 @@ void main() {
         final result = RuleFieldValidator.validateName('');
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('name'));
-        expect(result.errorMessage, equals('规则名称不能为空'));
+        expect(result.errorMessage, equals('Rule name cannot be empty'));
       });
 
       test('应当拒绝超长的规则名称', () {
@@ -33,14 +33,15 @@ void main() {
         final result = RuleFieldValidator.validateName(longName);
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('name'));
-        expect(result.errorMessage, equals('规则名称不能超过50个字符'));
+        expect(result.errorMessage,
+            equals('Rule name cannot exceed 50 characters'));
       });
 
       test('应当拒绝null规则名称', () {
         final result = RuleFieldValidator.validateName(null);
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('name'));
-        expect(result.errorMessage, equals('规则名称不能为空'));
+        expect(result.errorMessage, equals('Rule name cannot be empty'));
       });
     });
 
@@ -78,14 +79,14 @@ void main() {
         final result = RuleFieldValidator.validatePackageName('');
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('packageName'));
-        expect(result.errorMessage, equals('包名不能为空'));
+        expect(result.errorMessage, equals('Package name cannot be empty'));
       });
 
       test('应当拒绝null包名', () {
         final result = RuleFieldValidator.validatePackageName(null);
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('packageName'));
-        expect(result.errorMessage, equals('包名不能为空'));
+        expect(result.errorMessage, equals('Package name cannot be empty'));
       });
     });
 
@@ -114,8 +115,11 @@ void main() {
           final result = RuleFieldValidator.validateActivityName(activityName);
           expect(result.isValid, isFalse);
           expect(result.fieldName, equals('activityName'));
-          expect(result.errorMessage, equals('字段值无效'));
-          expect(result.errorDetails, equals('字段 activityName: 活动名必须以点号(.)开头'));
+          expect(result.errorMessage, equals('Invalid field value'));
+          expect(
+              result.errorDetails,
+              equals(
+                  'Field activityName: Activity name must start with a dot (.)'));
         }
       });
 
@@ -123,14 +127,14 @@ void main() {
         final result = RuleFieldValidator.validateActivityName('');
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('activityName'));
-        expect(result.errorMessage, equals('活动名不能为空'));
+        expect(result.errorMessage, equals('Activity name cannot be empty'));
       });
 
       test('应当拒绝null活动名', () {
         final result = RuleFieldValidator.validateActivityName(null);
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('activityName'));
-        expect(result.errorMessage, equals('活动名不能为空'));
+        expect(result.errorMessage, equals('Activity name cannot be empty'));
       });
     });
 
@@ -152,8 +156,8 @@ void main() {
         final result = RuleFieldValidator.validateTag('');
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('tags'));
-        expect(result.errorMessage, equals('字段值无效'));
-        expect(result.errorDetails, equals('字段 tags: 标签不能为空'));
+        expect(result.errorMessage, equals('Invalid field value'));
+        expect(result.errorDetails, equals('Field tags: Tag cannot be empty'));
       });
 
       test('应当拒绝超长标签', () {
@@ -161,8 +165,9 @@ void main() {
         final result = RuleFieldValidator.validateTag(longTag);
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('tags'));
-        expect(result.errorMessage, equals('字段值无效'));
-        expect(result.errorDetails, equals('字段 tags: 标签长度不能超过50个字符'));
+        expect(result.errorMessage, equals('Invalid field value'));
+        expect(result.errorDetails,
+            equals('Field tags: Tag length cannot exceed 50 characters'));
       });
     });
 
@@ -201,8 +206,9 @@ void main() {
           final result = RuleFieldValidator.validateTags(tags);
           expect(result.isValid, isFalse);
           expect(result.fieldName, equals('tags'));
-          expect(result.errorMessage, equals('字段值无效'));
-          expect(result.errorDetails, equals('字段 tags: 标签不能为空'));
+          expect(result.errorMessage, equals('Invalid field value'));
+          expect(
+              result.errorDetails, equals('Field tags: Tag cannot be empty'));
         }
       });
     });
@@ -226,7 +232,7 @@ void main() {
         final result = RuleFieldValidator.validateOverlayStyle(null);
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('overlayStyle'));
-        expect(result.errorMessage, equals('悬浮窗样式不能为空'));
+        expect(result.errorMessage, equals('Overlay style cannot be empty'));
       });
 
       test('应当拒绝空文本', () {
@@ -241,8 +247,8 @@ void main() {
         final result = RuleFieldValidator.validateOverlayStyle(invalidStyle);
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('text'));
-        expect(result.errorMessage, equals('字段值无效'));
-        expect(result.errorDetails, equals('字段 text: 文本不能为空'));
+        expect(result.errorMessage, equals('Invalid field value'));
+        expect(result.errorDetails, equals('Field text: Text cannot be empty'));
       });
 
       test('应当拒绝非正字体大小', () {
@@ -257,8 +263,9 @@ void main() {
         final result = RuleFieldValidator.validateOverlayStyle(invalidStyle);
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('fontSize'));
-        expect(result.errorMessage, equals('字段值无效'));
-        expect(result.errorDetails, equals('字段 fontSize: 字体大小必须大于0'));
+        expect(result.errorMessage, equals('Invalid field value'));
+        expect(result.errorDetails,
+            equals('Field fontSize: Font size must be greater than 0'));
       });
 
       test('应当拒绝完全透明的颜色', () {
@@ -274,8 +281,9 @@ void main() {
             RuleFieldValidator.validateOverlayStyle(transparentStyle);
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('backgroundColor'));
-        expect(result.errorMessage, equals('字段值无效'));
-        expect(result.errorDetails, equals('字段 backgroundColor: 颜色不能完全透明'));
+        expect(result.errorMessage, equals('Invalid field value'));
+        expect(result.errorDetails,
+            equals('Field backgroundColor: Color cannot be fully transparent'));
       });
     });
 
@@ -300,15 +308,16 @@ void main() {
         );
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('testColor'));
-        expect(result.errorMessage, equals('字段值无效'));
-        expect(result.errorDetails, equals('字段 testColor: 颜色不能完全透明'));
+        expect(result.errorMessage, equals('Invalid field value'));
+        expect(result.errorDetails,
+            equals('Field testColor: Color cannot be fully transparent'));
       });
 
       test('应当拒绝null颜色', () {
         final result = RuleFieldValidator.validateColor(null, 'testColor');
         expect(result.isValid, isFalse);
         expect(result.fieldName, equals('testColor'));
-        expect(result.errorMessage, equals('颜色不能为空'));
+        expect(result.errorMessage, equals('Color cannot be empty'));
       });
     });
   });
