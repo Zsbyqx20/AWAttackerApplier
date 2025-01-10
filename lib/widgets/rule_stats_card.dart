@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../models/rule.dart';
 
 class RuleStatsCard extends StatelessWidget {
@@ -12,6 +14,7 @@ class RuleStatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       elevation: 1,
       color: Colors.white,
@@ -32,9 +35,9 @@ class RuleStatsCard extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  '规则统计',
-                  style: TextStyle(
+                Text(
+                  l10n.ruleStats,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -48,7 +51,7 @@ class RuleStatsCard extends StatelessWidget {
                   child: _StatCard(
                     icon: Icons.rule_folder_outlined,
                     value: '${rules.length}',
-                    label: '规则总数',
+                    label: l10n.ruleStatsTotal,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -56,7 +59,7 @@ class RuleStatsCard extends StatelessWidget {
                   child: _StatCard(
                     icon: Icons.toggle_on_outlined,
                     value: '${rules.where((r) => r.isEnabled).length}',
-                    label: '已启用',
+                    label: l10n.ruleStatsEnabled,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -65,7 +68,7 @@ class RuleStatsCard extends StatelessWidget {
                     icon: Icons.layers_outlined,
                     value:
                         '${rules.fold<int>(0, (sum, rule) => sum + rule.overlayStyles.length)}',
-                    label: '悬浮窗',
+                    label: l10n.ruleStatsOverlays,
                   ),
                 ),
               ],

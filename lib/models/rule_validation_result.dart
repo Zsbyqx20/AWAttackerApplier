@@ -27,7 +27,7 @@ class RuleValidationResult {
     String? fieldName;
     if (exception.details is String) {
       final detailsStr = exception.details as String;
-      final match = RegExp(r'字段 ([^:]+):').firstMatch(detailsStr);
+      final match = RegExp(r'Field ([^:]+):').firstMatch(detailsStr);
       if (match != null && match.groupCount >= 1) {
         fieldName = match.group(1);
       }
@@ -68,10 +68,10 @@ class RuleValidationResult {
     }
     buffer.write(errorMessage);
     if (errorCode != null) {
-      buffer.write(' [错误码: $errorCode]');
+      buffer.write(' [$errorCode]');
     }
     if (errorDetails != null) {
-      buffer.write('\n详情: $errorDetails');
+      buffer.write('\nDetails: $errorDetails');
     }
     return buffer.toString();
   }

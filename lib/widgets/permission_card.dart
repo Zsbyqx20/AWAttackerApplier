@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../models/permission_status.dart';
 
 class PermissionCard extends StatefulWidget {
@@ -40,6 +42,7 @@ class _PermissionCardState extends State<PermissionCard> {
   Widget _buildPermissionItem(PermissionStatus status) {
     final theme = Theme.of(context);
     final isRequesting = _isRequesting[status.type] == true;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       children: [
@@ -85,7 +88,7 @@ class _PermissionCardState extends State<PermissionCard> {
                         ),
                       ),
                       child: Text(
-                        status.type == PermissionType.overlay ? '授权' : '设置',
+                        l10n.grantPermission,
                       ),
                     )
               : Icon(

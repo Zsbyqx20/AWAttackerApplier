@@ -22,7 +22,7 @@ class RuleMerger {
     if (hasConflict) {
       return RuleMergeResult.conflict(
         errorMessage:
-            '规则 "${newRule.name}" 与现有规则 "${existingRule.name}" 存在完全冲突',
+            'Rule "${newRule.name}" conflicts with existing rule "${existingRule.name}"',
       );
     }
 

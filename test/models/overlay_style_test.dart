@@ -161,7 +161,8 @@ void main() {
           () => OverlayStyle.fromJson({}),
           throwsA(isA<RuleImportException>()
               .having((e) => e.code, 'code', equals('MISSING_FIELD'))
-              .having((e) => e.message, 'message', equals('缺少必需字段'))),
+              .having((e) => e.message, 'message',
+                  equals('Missing required field'))),
         );
       });
 
@@ -189,7 +190,8 @@ void main() {
           () => OverlayStyle.fromJson(json),
           throwsA(isA<RuleImportException>()
               .having((e) => e.code, 'code', equals('INVALID_FIELD_VALUE'))
-              .having((e) => e.message, 'message', equals('字段值无效'))),
+              .having(
+                  (e) => e.message, 'message', equals('Invalid field value'))),
         );
       });
     });

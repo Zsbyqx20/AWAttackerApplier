@@ -120,7 +120,7 @@ void main() {
 
         expect(provider.state.isValid, isFalse);
         expect(provider.isFieldValid('unknownField'), isFalse);
-        expect(provider.getFieldError('unknownField'), equals('未知字段'));
+        expect(provider.getFieldError('unknownField'), equals('Unknown field'));
       });
     });
 

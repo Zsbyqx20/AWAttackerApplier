@@ -22,28 +22,29 @@ class ValidationErrorWidget extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
-    final defaultStyle = TextStyle(
-      color: theme.colorScheme.error,
-      fontSize: 12,
-    );
 
     return Padding(
-      padding: padding,
+      padding: const EdgeInsets.only(top: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.error_outline,
-            color: theme.colorScheme.error,
-            size: 14,
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              validationResult!.errorMessage ?? '验证错误',
-              style: textStyle ?? defaultStyle,
+          if (validationResult!.errorCode != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                validationResult!.errorCode!,
+                style: TextStyle(
+                  color: theme.colorScheme.error,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

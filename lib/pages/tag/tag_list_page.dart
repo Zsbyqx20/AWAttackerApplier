@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/rule_provider.dart';
@@ -73,12 +74,13 @@ class _TagListPageState extends State<TagListPage> {
   void _handleTagActivation(BuildContext context, RuleProvider provider,
       String tag, bool active) async {
     if (active) {
+      final l10n = AppLocalizations.of(context)!;
       final affectedRules = provider.rules.where((r) => r.tags.contains(tag));
       final confirmed = await ConfirmDialog.show(
         context: context,
-        title: '激活标签',
-        content: '激活标签"$tag"将影响${affectedRules.length}条规则，是否继续？',
-        confirmText: '激活',
+        title: l10n.activateTag,
+        content: l10n.activateTagConfirm(tag, affectedRules.length),
+        confirmText: l10n.activate,
         icon: Icons.local_offer_outlined,
         confirmColor: Theme.of(context).colorScheme.primary,
       );
@@ -132,6 +134,7 @@ class _TagListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tagColor = _getTagColor(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       elevation: 1,
@@ -170,9 +173,9 @@ class _TagListItem extends StatelessWidget {
           confirmDismiss: (_) async {
             final confirmed = await ConfirmDialog.show(
               context: context,
-              title: '删除标签',
-              content: '删除标签"$tag"将从$ruleCount条规则中移除，是否继续？',
-              confirmText: '删除',
+              title: l10n.deleteTag,
+              content: l10n.deleteTagConfirm(tag, ruleCount),
+              confirmText: l10n.delete,
               icon: Icons.delete_outline,
             );
             if (confirmed == true) {
@@ -216,7 +219,7 @@ class _TagListItem extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '使用于 $ruleCount 条规则',
+                          l10n.usedInRules(ruleCount),
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],

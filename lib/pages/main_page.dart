@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import 'rule/rule_list_page.dart';
 import 'server_config_page.dart';
 import 'tag/tag_list_page.dart';
@@ -32,14 +34,15 @@ class _MainPageState extends State<MainPage>
 
   void _handleTabChange() {
     if (_tabController.index > 0) {
+      final l10n = AppLocalizations.of(context)!;
       if (!_hasOverlayPermission) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('请先授予悬浮窗权限')),
+          SnackBar(content: Text(l10n.overlayPermissionRequired)),
         );
         _tabController.animateTo(0);
       } else if (!_hasAccessibilityPermission) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('请先授予无障碍服务权限')),
+          SnackBar(content: Text(l10n.accessibilityPermissionRequired)),
         );
         _tabController.animateTo(0);
       }
@@ -60,6 +63,8 @@ class _MainPageState extends State<MainPage>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -75,9 +80,9 @@ class _MainPageState extends State<MainPage>
           tabs: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: const Tab(
-                icon: Icon(Icons.settings_outlined),
-                text: '配置',
+              child: Tab(
+                icon: const Icon(Icons.settings_outlined),
+                text: l10n.configTab,
                 height: 60,
               ),
             ),
@@ -89,7 +94,7 @@ class _MainPageState extends State<MainPage>
                         !_hasOverlayPermission || !_hasAccessibilityPermission
                             ? Colors.grey[400]
                             : null),
-                text: '规则',
+                text: l10n.rulesTab,
                 height: 60,
               ),
             ),
@@ -101,7 +106,7 @@ class _MainPageState extends State<MainPage>
                         !_hasOverlayPermission || !_hasAccessibilityPermission
                             ? Colors.grey[400]
                             : null),
-                text: '标签',
+                text: l10n.tagsTab,
                 height: 60,
               ),
             ),

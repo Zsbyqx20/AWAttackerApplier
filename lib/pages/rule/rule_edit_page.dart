@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/overlay_style.dart';
@@ -303,12 +304,13 @@ class _RuleEditPageState extends State<RuleEditPage>
     };
 
     // 获取字段的显示名称
+    final l10n = AppLocalizations.of(context)!;
     final fieldDisplayNames = {
-      'name': '规则名称',
-      'packageName': '包名',
-      'activityName': '活动名',
-      'tags': '标签',
-      'overlayStyle': '悬浮窗样式',
+      'name': l10n.ruleName,
+      'packageName': l10n.packageName,
+      'activityName': l10n.activityName,
+      'tags': l10n.tags,
+      'overlayStyle': l10n.overlayStyleTitle,
     };
 
     final errorFieldKey = fieldKeys[firstErrorField];
@@ -331,7 +333,7 @@ class _RuleEditPageState extends State<RuleEditPage>
         .write('${fieldDisplayNames[firstErrorField] ?? firstErrorField}: ');
 
     // 添加错误消息
-    errorMessage.write(validationResult?.errorMessage ?? '验证失败');
+    errorMessage.write(validationResult?.errorMessage ?? l10n.error);
 
     // 如果有错误代码，添加错误代码
     if (validationResult?.errorCode != null) {
@@ -355,9 +357,9 @@ class _RuleEditPageState extends State<RuleEditPage>
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        duration: const Duration(seconds: 4), // 增加显示时间，让用户有足够时间阅读
+        duration: const Duration(seconds: 4),
         action: SnackBarAction(
-          label: '知道了',
+          label: l10n.confirm,
           textColor: Colors.white,
           onPressed: () {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -389,19 +391,21 @@ class _RuleEditPageState extends State<RuleEditPage>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ruleProvider = context.watch<RuleProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text(widget.rule == null ? '添加规则' : '编辑规则'),
+        title:
+            Text(widget.rule == null ? l10n.ruleAddTitle : l10n.ruleEditTitle),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         actions: [
           TextButton(
-            onPressed: _saveRule, // 移除条件判断，始终允许点击
+            onPressed: _saveRule,
             child: Text(
-              '保存',
+              l10n.save,
               style: TextStyle(
                 fontSize: 16,
                 color: theme.colorScheme.primary,
@@ -424,15 +428,15 @@ class _RuleEditPageState extends State<RuleEditPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionTitle('基本信息'),
+                    _buildSectionTitle(l10n.basicInfo),
                     const SizedBox(height: 16),
                     ValidationErrorContainer(
                       key: _nameFieldKey,
                       validationResult:
                           _validationProvider.getFieldValidation('name'),
                       child: TextInputField(
-                        label: '规则名称',
-                        hint: '请输入规则名称',
+                        label: l10n.ruleName,
+                        hint: l10n.ruleNameHint,
                         controller: _nameController,
                         onChanged: (value) => setState(() {}),
                       ),
@@ -443,8 +447,8 @@ class _RuleEditPageState extends State<RuleEditPage>
                       validationResult:
                           _validationProvider.getFieldValidation('packageName'),
                       child: TextInputField(
-                        label: '包名',
-                        hint: '请输入包名',
+                        label: l10n.packageName,
+                        hint: l10n.packageNameHint,
                         controller: _packageNameController,
                         onChanged: (value) => setState(() {}),
                       ),
@@ -455,8 +459,8 @@ class _RuleEditPageState extends State<RuleEditPage>
                       validationResult: _validationProvider
                           .getFieldValidation('activityName'),
                       child: TextInputField(
-                        label: '活动名',
-                        hint: '请输入活动名',
+                        label: l10n.activityName,
+                        hint: l10n.activityNameHint,
                         controller: _activityNameController,
                         onChanged: (value) => setState(() {}),
                       ),
@@ -470,7 +474,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '标签',
+                            l10n.tags,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[700],
@@ -500,7 +504,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildSectionTitle('悬浮窗样式'),
+                        _buildSectionTitle(l10n.overlayStyleTitle),
                         Row(
                           children: [
                             IconButton(
@@ -509,7 +513,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                                 Icons.remove_circle_outline,
                                 color: Colors.red[400],
                               ),
-                              tooltip: '删除当前样式',
+                              tooltip: l10n.removeStyle,
                               splashRadius: 24,
                             ),
                             IconButton(
@@ -518,7 +522,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                                 Icons.add_circle_outline,
                                 color: theme.colorScheme.primary,
                               ),
-                              tooltip: '添加新样式',
+                              tooltip: l10n.addStyle,
                               splashRadius: 24,
                             ),
                           ],
@@ -566,7 +570,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                               width: 80,
                               height: 36,
                               alignment: Alignment.center,
-                              child: Text('样式 ${index + 1}'),
+                              child: Text(l10n.styleNumber(index + 1)),
                             ),
                           ),
                         ),

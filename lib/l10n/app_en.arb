@@ -1,0 +1,519 @@
+{
+    "@@locale": "en",
+    "appTitle": "AWAttackApplier",
+    "@appTitle": {
+        "description": "The application name"
+    },
+    "save": "Save",
+    "@save": {
+        "description": "Save button text"
+    },
+    "cancel": "Cancel",
+    "@cancel": {
+        "description": "Text for cancel button"
+    },
+    "delete": "Delete",
+    "@delete": {
+        "description": "Delete button text"
+    },
+    "edit": "Edit",
+    "@edit": {
+        "description": "Edit button text"
+    },
+    "add": "Add",
+    "@add": {
+        "description": "Add button text"
+    },
+    "confirm": "Confirm",
+    "@confirm": {
+        "description": "Text for confirm button"
+    },
+    "warning": "Warning",
+    "@warning": {
+        "description": "Warning dialog title"
+    },
+    "error": "Error",
+    "@error": {
+        "description": "Error dialog title"
+    },
+    "success": "Success",
+    "@success": {
+        "description": "Success dialog title"
+    },
+    "unknown": "Unknown",
+    "@unknown": {
+        "description": "Text for unknown or undefined values"
+    },
+    "ruleEditTitle": "Edit Rule",
+    "@ruleEditTitle": {
+        "description": "Title for rule editing page"
+    },
+    "ruleAddTitle": "Add Rule",
+    "@ruleAddTitle": {
+        "description": "Title for rule creation page"
+    },
+    "ruleName": "Rule Name",
+    "@ruleName": {
+        "description": "Label for rule name field"
+    },
+    "ruleNameHint": "Enter rule name",
+    "@ruleNameHint": {
+        "description": "Hint text for rule name input field"
+    },
+    "packageName": "Package Name",
+    "@packageName": {
+        "description": "Label for package name field"
+    },
+    "packageNameHint": "Enter package name",
+    "@packageNameHint": {
+        "description": "Hint text for package name input field"
+    },
+    "activityName": "Activity Name",
+    "@activityName": {
+        "description": "Label for activity name field"
+    },
+    "activityNameHint": "Enter activity name",
+    "@activityNameHint": {
+        "description": "Hint text for activity name input field"
+    },
+    "tags": "Tags",
+    "@tags": {
+        "description": "Label for tags field"
+    },
+    "basicInfo": "Basic Information",
+    "@basicInfo": {
+        "description": "Section title for basic information"
+    },
+    "overlayStyleTitle": "Overlay Style",
+    "@overlayStyleTitle": {
+        "description": "Title for overlay style section"
+    },
+    "addStyle": "Add Style",
+    "@addStyle": {
+        "description": "Button text for adding a new style"
+    },
+    "removeStyle": "Remove Style",
+    "@removeStyle": {
+        "description": "Button text for removing a style"
+    },
+    "styleNumber": "Style {number}",
+    "@styleNumber": {
+        "description": "Tab title for style number",
+        "placeholders": {
+            "number": {
+                "type": "int",
+                "example": "1"
+            }
+        }
+    },
+    "text": "Text",
+    "@text": {
+        "description": "Label for text field"
+    },
+    "textHint": "Enter text",
+    "@textHint": {
+        "description": "Hint text for text input field"
+    },
+    "fontSize": "Font Size",
+    "@fontSize": {
+        "description": "Label for font size field"
+    },
+    "backgroundColor": "Background Color",
+    "@backgroundColor": {
+        "description": "Label for background color field"
+    },
+    "textColor": "Text Color",
+    "@textColor": {
+        "description": "Label for text color field"
+    },
+    "position": "Position",
+    "@position": {
+        "description": "Label for position fields"
+    },
+    "size": "Size",
+    "@size": {
+        "description": "Label for size fields"
+    },
+    "alignment": "Alignment",
+    "@alignment": {
+        "description": "Label for alignment fields"
+    },
+    "padding": "Padding",
+    "@padding": {
+        "description": "Label for padding fields"
+    },
+    "uiAutomatorCode": "UI Automator Code",
+    "@uiAutomatorCode": {
+        "description": "Label for UI Automator code field"
+    },
+    "uiAutomatorCodeHint": "Enter UI Automator code",
+    "@uiAutomatorCodeHint": {
+        "description": "Hint text for UI Automator code input field"
+    },
+    "validationErrorEmpty": "{field} cannot be empty",
+    "@validationErrorEmpty": {
+        "description": "Error message for empty field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Name"
+            }
+        }
+    },
+    "validationErrorInvalid": "Invalid {field}",
+    "@validationErrorInvalid": {
+        "description": "Error message for invalid field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Email"
+            }
+        }
+    },
+    "validationErrorDuplicate": "{field} already exists",
+    "@validationErrorDuplicate": {
+        "description": "Error message for duplicate field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Rule"
+            }
+        }
+    },
+    "validationErrorFormat": "Invalid {field} format",
+    "@validationErrorFormat": {
+        "description": "Error message for format validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Date"
+            }
+        }
+    },
+    "noRules": "No rules",
+    "@noRules": {
+        "description": "Message shown when no rules are available"
+    },
+    "addRule": "Add Rule",
+    "@addRule": {
+        "description": "Button text for adding a new rule"
+    },
+    "deleteRuleConfirm": "Are you sure you want to delete rule \"{name}\"?\nThis action cannot be undone.",
+    "@deleteRuleConfirm": {
+        "description": "Confirmation message for rule deletion",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "My Rule"
+            }
+        }
+    },
+    "deleteRuleSuccess": "Rule deleted successfully",
+    "@deleteRuleSuccess": {
+        "description": "Success message for rule deletion"
+    },
+    "deleteRuleError": "Failed to delete rule",
+    "@deleteRuleError": {
+        "description": "Error message for rule deletion"
+    },
+    "importRules": "Import Rules",
+    "@importRules": {
+        "description": "Button text for importing rules"
+    },
+    "exportRules": "Export Rules",
+    "@exportRules": {
+        "description": "Button text for exporting rules"
+    },
+    "importSuccess": "Rules imported successfully",
+    "@importSuccess": {
+        "description": "Success message for rules import"
+    },
+    "importError": "Failed to import rules",
+    "@importError": {
+        "description": "Error message for rules import"
+    },
+    "exportSuccess": "Rules exported successfully",
+    "@exportSuccess": {
+        "description": "Success message for rules export"
+    },
+    "exportError": "Failed to export rules",
+    "@exportError": {
+        "description": "Error message for rules export"
+    },
+    "width": "Width",
+    "@width": {
+        "description": "Label for width field"
+    },
+    "height": "Height",
+    "@height": {
+        "description": "Label for height field"
+    },
+    "ruleImportCancelled": "Import cancelled",
+    "@ruleImportCancelled": {
+        "description": "Message shown when rule import is cancelled"
+    },
+    "noRulesToImport": "No rules to import",
+    "@noRulesToImport": {
+        "description": "Message shown when no rules are found in import file"
+    },
+    "noRulesToExport": "No rules to export",
+    "@noRulesToExport": {
+        "description": "Message shown when trying to export with no rules"
+    },
+    "exportCancelled": "Export cancelled",
+    "@exportCancelled": {
+        "description": "Message shown when rule export is cancelled"
+    },
+    "exportErrorWithException": "Export failed: {error}",
+    "@exportErrorWithException": {
+        "description": "Message shown when rule export fails",
+        "placeholders": {
+            "error": {
+                "type": "String",
+                "example": "File access denied"
+            }
+        }
+    },
+    "emptyRuleList": "No rules yet",
+    "@emptyRuleList": {
+        "description": "Message shown when rule list is empty"
+    },
+    "configTab": "Settings",
+    "@configTab": {
+        "description": "Text for settings tab in main page"
+    },
+    "rulesTab": "Rules",
+    "@rulesTab": {
+        "description": "Text for rules tab in main page"
+    },
+    "tagsTab": "Tags",
+    "@tagsTab": {
+        "description": "Text for tags tab in main page"
+    },
+    "overlayPermissionRequired": "Please grant overlay permission first",
+    "@overlayPermissionRequired": {
+        "description": "Message shown when overlay permission is required"
+    },
+    "accessibilityPermissionRequired": "Please grant accessibility permission first",
+    "@accessibilityPermissionRequired": {
+        "description": "Message shown when accessibility permission is required"
+    },
+    "activateTag": "Activate Tag",
+    "@activateTag": {
+        "description": "Title for tag activation dialog"
+    },
+    "activateTagConfirm": "Activating tag \"{tag}\" will affect {count} rules, continue?",
+    "@activateTagConfirm": {
+        "description": "Confirmation message for tag activation",
+        "placeholders": {
+            "tag": {
+                "type": "String",
+                "example": "important"
+            },
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "activate": "Activate",
+    "@activate": {
+        "description": "Button text for activation"
+    },
+    "deleteTag": "Delete Tag",
+    "@deleteTag": {
+        "description": "Title for tag deletion dialog"
+    },
+    "deleteTagConfirm": "Deleting tag \"{tag}\" will remove it from {count} rules, continue?",
+    "@deleteTagConfirm": {
+        "description": "Confirmation message for tag deletion",
+        "placeholders": {
+            "tag": {
+                "type": "String",
+                "example": "important"
+            },
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "usedInRules": "Used in {count} rules",
+    "@usedInRules": {
+        "description": "Text showing how many rules use this tag",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "selectColor": "Select Color",
+    "@selectColor": {
+        "description": "Title for color picker dialog when no label is provided"
+    },
+    "hexColorValue": "HEX Color Value",
+    "@hexColorValue": {
+        "description": "Label for hex color input field"
+    },
+    "hexColorHint": "Example: FF0000",
+    "@hexColorHint": {
+        "description": "Hint text for hex color input field"
+    },
+    "dialogDefaultCancel": "Cancel",
+    "@dialogDefaultCancel": {
+        "description": "Default text for dialog cancel button"
+    },
+    "dialogDefaultConfirm": "Confirm",
+    "@dialogDefaultConfirm": {
+        "description": "Default text for dialog confirm button"
+    },
+    "deleteRule": "Delete Rule",
+    "@deleteRule": {
+        "description": "Title for rule deletion dialog"
+    },
+    "grantPermission": "Grant",
+    "@grantPermission": {
+        "description": "Button text for granting permission"
+    },
+    "ruleStats": "Rule Stats",
+    "@ruleStats": {
+        "description": "Title for rule stats card"
+    },
+    "ruleStatsTotal": "Total",
+    "@ruleStatsTotal": {
+        "description": "Label for total rules count"
+    },
+    "ruleStatsEnabled": "Enabled",
+    "@ruleStatsEnabled": {
+        "description": "Label for enabled rules count"
+    },
+    "ruleStatsOverlays": "Overlays",
+    "@ruleStatsOverlays": {
+        "description": "Label for overlays count"
+    },
+    "tagStats": "Tag Stats",
+    "@tagStats": {
+        "description": "Title for tag stats card"
+    },
+    "tagStatsCount": "Count",
+    "@tagStatsCount": {
+        "description": "Label for tags count"
+    },
+    "tagStatsActive": "Active",
+    "@tagStatsActive": {
+        "description": "Label for active tags count"
+    },
+    "tagStatsRules": "Rules",
+    "@tagStatsRules": {
+        "description": "Label for rules count"
+    },
+    "tagChipsLimitHint": "Can only add up to {maxTags} tags",
+    "@tagChipsLimitHint": {
+        "description": "Hint text for tag chips limit",
+        "placeholders": {
+            "maxTags": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "tagChipsHint": "Press space or enter to add",
+    "@tagChipsHint": {
+        "description": "Hint text for tag chips input"
+    },
+    "ruleCardEnabled": "Enabled",
+    "@ruleCardEnabled": {
+        "description": "Text for rule card enabled status"
+    },
+    "ruleCardDisabled": "Disabled",
+    "@ruleCardDisabled": {
+        "description": "Text for rule card disabled status"
+    },
+    "startService": "Start Service",
+    "@startService": {
+        "description": "Button text for starting service"
+    },
+    "stopService": "Stop Service",
+    "@stopService": {
+        "description": "Button text for stopping service"
+    },
+    "overlayPermissionStatus": "Overlay Permission",
+    "@overlayPermissionStatus": {
+        "description": "Title for overlay permission status"
+    },
+    "accessibilityPermissionStatus": "Accessibility Permission",
+    "@accessibilityPermissionStatus": {
+        "description": "Title for accessibility permission status"
+    },
+    "permissionGranted": "Granted",
+    "@permissionGranted": {
+        "description": "Text for permission granted"
+    },
+    "permissionNotGranted": "Not Granted",
+    "@permissionNotGranted": {
+        "description": "Text for permission not granted"
+    },
+    "ruleImportPreviewDialogTitle": "Import Preview",
+    "@ruleImportPreviewDialogTitle": {
+        "description": "Title for rule import preview dialog"
+    },
+    "ruleImportPreviewDialogConflict": "Conflict",
+    "@ruleImportPreviewDialogConflict": {
+        "description": "Title for rule import preview conflict dialog"
+    },
+    "ruleImportPreviewDialogActivityNameInvalidHint": "Activity name must start with a dot (.)",
+    "@ruleImportPreviewDialogActivityNameInvalidHint": {
+        "description": "Hint text for rule import preview activity name invalid"
+    },
+    "ruleImportPreviewDialogRuleImportStatus": "Total {total} rules, selected {selected}",
+    "@ruleImportPreviewDialogRuleImportStatus": {
+        "description": "Text for rule import preview rule import status",
+        "placeholders": {
+            "total": {
+                "type": "int",
+                "example": "5"
+            },
+            "selected": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "ruleImportPreviewDialogSelectAll": "Select All",
+    "@ruleImportPreviewDialogSelectAll": {
+        "description": "Button text for selecting all rules"
+    },
+    "ruleImportPreviewDialogCancelAll": "Cancel All",
+    "@ruleImportPreviewDialogCancelAll": {
+        "description": "Button text for canceling all rules selection"
+    },
+    "ruleImportPreviewDialogImport": "Import",
+    "@ruleImportPreviewDialogImport": {
+        "description": "Button text for importing rules"
+    },
+    "ruleImportPreviewDialogImportError": "Import failed",
+    "@ruleImportPreviewDialogImportError": {
+        "description": "Error message for rule import preview import"
+    },
+    "ruleImportPreviewDialogImportActivityName": "Activity Name",
+    "@ruleImportPreviewDialogImportActivityName": {
+        "description": "Label for rule import preview import activity name"
+    },
+    "ruleImportPreviewDialogImportActivityFormatError": "Format error",
+    "@ruleImportPreviewDialogImportActivityFormatError": {
+        "description": "Error message for rule import preview import activity format error"
+    },
+    "ruleImportPreviewDialogImportActivityFormatConflict": "Conflict",
+    "@ruleImportPreviewDialogImportActivityFormatConflict": {
+        "description": "Error message for rule import preview import activity format conflict"
+    },
+    "ruleImportPreviewDialogImportMergeable": "Mergeable",
+    "@ruleImportPreviewDialogImportMergeable": {
+        "description": "Text for rule import preview import mergeable"
+    },
+    "ruleImportPreviewDialogImportUnknownError": "Unknown error",
+    "@ruleImportPreviewDialogImportUnknownError": {
+        "description": "Error message for rule import preview import unknown error"
+    }
+}

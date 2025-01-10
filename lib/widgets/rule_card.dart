@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../models/rule.dart';
@@ -21,6 +22,7 @@ class RuleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final provider = context.watch<RuleProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -87,7 +89,9 @@ class RuleCard extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      rule.isEnabled ? '已启用' : '已禁用',
+                                      rule.isEnabled
+                                          ? l10n.ruleCardEnabled
+                                          : l10n.ruleCardDisabled,
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: rule.isEnabled
@@ -149,9 +153,9 @@ class RuleCard extends StatelessWidget {
                         onPressed: () async {
                           final confirmed = await ConfirmDialog.show(
                             context: context,
-                            title: '删除规则',
-                            content: '确定要删除规则"${rule.name}"吗？\n删除后将无法恢复。',
-                            confirmText: '删除',
+                            title: l10n.deleteRule,
+                            content: l10n.deleteRuleConfirm(rule.name),
+                            confirmText: l10n.delete,
                             icon: Icons.delete_outline,
                           );
                           if (confirmed == true && context.mounted) {

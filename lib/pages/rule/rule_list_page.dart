@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/rule.dart';
@@ -45,6 +46,8 @@ class _RuleListPageState extends State<RuleListPage>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Consumer<RuleProvider>(
       builder: (context, provider, child) {
         final rules = provider.rules;
@@ -59,8 +62,8 @@ class _RuleListPageState extends State<RuleListPage>
               ),
               const SizedBox(height: 16),
               if (rules.isEmpty)
-                const Center(
-                  child: Text('没有规则'),
+                Center(
+                  child: Text(l10n.noRules),
                 )
               else
                 ListView.builder(
@@ -96,18 +99,21 @@ class _RuleListPageState extends State<RuleListPage>
                         ),
                         child: Padding(
                           padding: const EdgeInsets.only(right: 4),
-                          child: FloatingActionButton.extended(
-                            heroTag: 'add',
-                            elevation: 4,
-                            backgroundColor: const Color(0xFFE3F2FD),
-                            foregroundColor: const Color(0xFF1565C0),
-                            onPressed: () {
-                              setState(() => _isExpanded = false);
-                              _controller.reverse();
-                              _handleAdd();
-                            },
-                            icon: const Icon(Icons.add_box),
-                            label: const Text('添加规则'),
+                          child: SizedBox(
+                            width: 140,
+                            child: FloatingActionButton.extended(
+                              heroTag: 'add',
+                              elevation: 4,
+                              backgroundColor: const Color(0xFFE3F2FD),
+                              foregroundColor: const Color(0xFF1565C0),
+                              onPressed: () {
+                                setState(() => _isExpanded = false);
+                                _controller.reverse();
+                                _handleAdd();
+                              },
+                              icon: const Icon(Icons.add_box),
+                              label: Text(l10n.addRule),
+                            ),
                           ),
                         ),
                       ),
@@ -120,18 +126,21 @@ class _RuleListPageState extends State<RuleListPage>
                         ),
                         child: Padding(
                           padding: const EdgeInsets.only(right: 4),
-                          child: FloatingActionButton.extended(
-                            heroTag: 'import',
-                            elevation: 4,
-                            backgroundColor: const Color(0xFFE8EAF6),
-                            foregroundColor: const Color(0xFF3949AB),
-                            onPressed: () {
-                              setState(() => _isExpanded = false);
-                              _controller.reverse();
-                              _handleImport();
-                            },
-                            icon: const Icon(Icons.file_open_outlined),
-                            label: const Text('导入规则'),
+                          child: SizedBox(
+                            width: 140,
+                            child: FloatingActionButton.extended(
+                              heroTag: 'import',
+                              elevation: 4,
+                              backgroundColor: const Color(0xFFE8EAF6),
+                              foregroundColor: const Color(0xFF3949AB),
+                              onPressed: () {
+                                setState(() => _isExpanded = false);
+                                _controller.reverse();
+                                _handleImport();
+                              },
+                              icon: const Icon(Icons.file_open_outlined),
+                              label: Text(l10n.importRules),
+                            ),
                           ),
                         ),
                       ),
@@ -144,18 +153,21 @@ class _RuleListPageState extends State<RuleListPage>
                         ),
                         child: Padding(
                           padding: const EdgeInsets.only(right: 4),
-                          child: FloatingActionButton.extended(
-                            heroTag: 'export',
-                            elevation: 4,
-                            backgroundColor: const Color(0xFFF3E5F5),
-                            foregroundColor: const Color(0xFF6A1B9A),
-                            onPressed: () {
-                              setState(() => _isExpanded = false);
-                              _controller.reverse();
-                              _handleExport();
-                            },
-                            icon: const Icon(Icons.save_alt_outlined),
-                            label: const Text('导出规则'),
+                          child: SizedBox(
+                            width: 140,
+                            child: FloatingActionButton.extended(
+                              heroTag: 'export',
+                              elevation: 4,
+                              backgroundColor: const Color(0xFFF3E5F5),
+                              foregroundColor: const Color(0xFF6A1B9A),
+                              onPressed: () {
+                                setState(() => _isExpanded = false);
+                                _controller.reverse();
+                                _handleExport();
+                              },
+                              icon: const Icon(Icons.save_alt_outlined),
+                              label: Text(l10n.exportRules),
+                            ),
                           ),
                         ),
                       ),
@@ -188,6 +200,7 @@ class _RuleListPageState extends State<RuleListPage>
   }
 
   Future<void> _handleImport() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final jsonStr = await const MethodChannel(
               'com.mobilellm.awattackapplier/overlay_service')
@@ -197,7 +210,9 @@ class _RuleListPageState extends State<RuleListPage>
         if (!mounted) return;
         await RuleImportResultDialog.show(
           context: context,
-          mergeResults: [RuleMergeResult.conflict(errorMessage: '导入已取消')],
+          mergeResults: [
+            RuleMergeResult.conflict(errorMessage: l10n.importError)
+          ],
         );
         return;
       }
@@ -209,7 +224,7 @@ class _RuleListPageState extends State<RuleListPage>
         if (!mounted) return;
         await RuleImportResultDialog.show(
           context: context,
-          mergeResults: [RuleMergeResult.conflict(errorMessage: '没有找到可导入的规则')],
+          mergeResults: [RuleMergeResult.conflict(errorMessage: l10n.noRules)],
         );
         return;
       }
@@ -250,12 +265,13 @@ class _RuleListPageState extends State<RuleListPage>
   }
 
   Future<void> _handleExport() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final rules = context.read<RuleProvider>().rules;
       if (rules.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('没有可导出的规则')),
+          SnackBar(content: Text(l10n.noRules)),
         );
         return;
       }
@@ -275,11 +291,11 @@ class _RuleListPageState extends State<RuleListPage>
       if (!mounted) return;
       if (result == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('规则导出成功')),
+          SnackBar(content: Text(l10n.exportSuccess)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('规则导出已取消')),
+          SnackBar(content: Text(l10n.importError)),
         );
       }
 
@@ -289,7 +305,7 @@ class _RuleListPageState extends State<RuleListPage>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('规则导出失败：$e')),
+        SnackBar(content: Text(l10n.exportErrorWithException(e.toString()))),
       );
 
       setState(() {

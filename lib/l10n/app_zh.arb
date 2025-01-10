@@ -1,0 +1,513 @@
+{
+    "@@locale": "zh",
+    "appTitle": "AWAttackApplier",
+    "@appTitle": {
+        "description": "The application name"
+    },
+    "save": "保存",
+    "@save": {
+        "description": "Save button text"
+    },
+    "cancel": "取消",
+    "@cancel": {
+        "description": "Text for cancel button"
+    },
+    "delete": "删除",
+    "@delete": {
+        "description": "Delete button text"
+    },
+    "edit": "编辑",
+    "@edit": {
+        "description": "Edit button text"
+    },
+    "add": "添加",
+    "@add": {
+        "description": "Add button text"
+    },
+    "confirm": "确定",
+    "@confirm": {
+        "description": "Text for confirm button"
+    },
+    "warning": "警告",
+    "@warning": {
+        "description": "Warning dialog title"
+    },
+    "error": "错误",
+    "@error": {
+        "description": "Error dialog title"
+    },
+    "success": "成功",
+    "@success": {
+        "description": "Success dialog title"
+    },
+    "unknown": "未知",
+    "@unknown": {
+        "description": "Text for unknown or undefined values"
+    },
+    "ruleEditTitle": "编辑规则",
+    "@ruleEditTitle": {
+        "description": "Title for rule editing page"
+    },
+    "ruleAddTitle": "添加规则",
+    "@ruleAddTitle": {
+        "description": "Title for rule creation page"
+    },
+    "ruleName": "规则名称",
+    "@ruleName": {
+        "description": "Label for rule name field"
+    },
+    "ruleNameHint": "请输入规则名称",
+    "@ruleNameHint": {
+        "description": "Hint text for rule name input field"
+    },
+    "packageName": "包名",
+    "@packageName": {
+        "description": "Label for package name field"
+    },
+    "packageNameHint": "请输入包名",
+    "@packageNameHint": {
+        "description": "Hint text for package name input field"
+    },
+    "activityName": "活动名",
+    "@activityName": {
+        "description": "Label for activity name field"
+    },
+    "activityNameHint": "请输入活动名",
+    "@activityNameHint": {
+        "description": "Hint text for activity name input field"
+    },
+    "tags": "标签",
+    "@tags": {
+        "description": "Label for tags field"
+    },
+    "basicInfo": "基本信息",
+    "@basicInfo": {
+        "description": "Section title for basic information"
+    },
+    "overlayStyleTitle": "悬浮窗样式",
+    "@overlayStyleTitle": {
+        "description": "Title for overlay style section"
+    },
+    "addStyle": "添加样式",
+    "@addStyle": {
+        "description": "Button text for adding a new style"
+    },
+    "removeStyle": "删除样式",
+    "@removeStyle": {
+        "description": "Button text for removing a style"
+    },
+    "styleNumber": "样式 {number}",
+    "@styleNumber": {
+        "description": "Tab title for style number",
+        "placeholders": {
+            "number": {
+                "type": "int",
+                "example": "1"
+            }
+        }
+    },
+    "text": "文本",
+    "@text": {
+        "description": "Label for text field"
+    },
+    "textHint": "请输入文本",
+    "@textHint": {
+        "description": "Hint text for text input field"
+    },
+    "fontSize": "字体大小",
+    "@fontSize": {
+        "description": "Label for font size field"
+    },
+    "backgroundColor": "背景颜色",
+    "@backgroundColor": {
+        "description": "Label for background color field"
+    },
+    "textColor": "文字颜色",
+    "@textColor": {
+        "description": "Label for text color field"
+    },
+    "position": "位置",
+    "@position": {
+        "description": "Label for position fields"
+    },
+    "size": "大小",
+    "@size": {
+        "description": "Label for size fields"
+    },
+    "alignment": "对齐方式",
+    "@alignment": {
+        "description": "Label for alignment fields"
+    },
+    "padding": "内边距",
+    "@padding": {
+        "description": "Label for padding fields"
+    },
+    "uiAutomatorCode": "UI Automator 代码",
+    "@uiAutomatorCode": {
+        "description": "Label for UI Automator code field"
+    },
+    "uiAutomatorCodeHint": "请输入 UI Automator 代码",
+    "@uiAutomatorCodeHint": {
+        "description": "Hint text for UI Automator code input field"
+    },
+    "validationErrorEmpty": "{field}不能为空",
+    "@validationErrorEmpty": {
+        "description": "Error message for empty field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Name"
+            }
+        }
+    },
+    "validationErrorInvalid": "无效的{field}",
+    "@validationErrorInvalid": {
+        "description": "Error message for invalid field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Email"
+            }
+        }
+    },
+    "validationErrorDuplicate": "{field}已存在",
+    "@validationErrorDuplicate": {
+        "description": "Error message for duplicate field validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Rule"
+            }
+        }
+    },
+    "validationErrorFormat": "{field}格式无效",
+    "@validationErrorFormat": {
+        "description": "Error message for format validation",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Date"
+            }
+        }
+    },
+    "noRules": "没有规则",
+    "@noRules": {
+        "description": "Message shown when no rules are available"
+    },
+    "addRule": "添加规则",
+    "@addRule": {
+        "description": "Button text for adding a new rule"
+    },
+    "deleteRuleConfirm": "确定要删除这条规则吗？",
+    "@deleteRuleConfirm": {
+        "description": "Confirmation message for rule deletion"
+    },
+    "deleteRuleSuccess": "规则删除成功",
+    "@deleteRuleSuccess": {
+        "description": "Success message for rule deletion"
+    },
+    "deleteRuleError": "规则删除失败",
+    "@deleteRuleError": {
+        "description": "Error message for rule deletion"
+    },
+    "importRules": "导入规则",
+    "@importRules": {
+        "description": "Button text for importing rules"
+    },
+    "exportRules": "导出规则",
+    "@exportRules": {
+        "description": "Button text for exporting rules"
+    },
+    "importSuccess": "规则导入成功",
+    "@importSuccess": {
+        "description": "Success message for rules import"
+    },
+    "importError": "规则导入失败",
+    "@importError": {
+        "description": "Error message for rules import"
+    },
+    "exportSuccess": "规则导出成功",
+    "@exportSuccess": {
+        "description": "Success message for rules export"
+    },
+    "exportError": "规则导出失败",
+    "@exportError": {
+        "description": "Error message for rules export"
+    },
+    "width": "宽度",
+    "@width": {
+        "description": "Label for width field"
+    },
+    "height": "高度",
+    "@height": {
+        "description": "Label for height field"
+    },
+    "ruleImportCancelled": "导入已取消",
+    "@ruleImportCancelled": {
+        "description": "Message shown when rule import is cancelled"
+    },
+    "noRulesToImport": "没有找到可导入的规则",
+    "@noRulesToImport": {
+        "description": "Message shown when no rules are found in import file"
+    },
+    "noRulesToExport": "没有可导出的规则",
+    "@noRulesToExport": {
+        "description": "Message shown when trying to export with no rules"
+    },
+    "exportCancelled": "导出已取消",
+    "@exportCancelled": {
+        "description": "Message shown when rule export is cancelled"
+    },
+    "exportErrorWithException": "导出失败：{error}",
+    "@exportErrorWithException": {
+        "description": "Message shown when rule export fails",
+        "placeholders": {
+            "error": {
+                "type": "String",
+                "example": "File access denied"
+            }
+        }
+    },
+    "emptyRuleList": "暂无规则",
+    "@emptyRuleList": {
+        "description": "Message shown when rule list is empty"
+    },
+    "configTab": "配置",
+    "@configTab": {
+        "description": "Text for settings tab in main page"
+    },
+    "rulesTab": "规则",
+    "@rulesTab": {
+        "description": "Text for rules tab in main page"
+    },
+    "tagsTab": "标签",
+    "@tagsTab": {
+        "description": "Text for tags tab in main page"
+    },
+    "overlayPermissionRequired": "请先授予悬浮窗权限",
+    "@overlayPermissionRequired": {
+        "description": "Message shown when overlay permission is required"
+    },
+    "accessibilityPermissionRequired": "请先授予无障碍服务权限",
+    "@accessibilityPermissionRequired": {
+        "description": "Message shown when accessibility permission is required"
+    },
+    "activateTag": "激活标签",
+    "@activateTag": {
+        "description": "Title for tag activation dialog"
+    },
+    "activateTagConfirm": "激活标签 \"{tag}\" 将影响 {count} 条规则，是否继续？",
+    "@activateTagConfirm": {
+        "description": "Confirmation message for tag activation",
+        "placeholders": {
+            "tag": {
+                "type": "String",
+                "example": "important"
+            },
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "activate": "激活",
+    "@activate": {
+        "description": "Button text for activation"
+    },
+    "deleteTag": "删除标签",
+    "@deleteTag": {
+        "description": "Title for tag deletion dialog"
+    },
+    "deleteTagConfirm": "删除标签 \"{tag}\" 将从 {count} 条规则中移除，是否继续？",
+    "@deleteTagConfirm": {
+        "description": "Confirmation message for tag deletion",
+        "placeholders": {
+            "tag": {
+                "type": "String",
+                "example": "important"
+            },
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "usedInRules": "使用于 {count} 条规则",
+    "@usedInRules": {
+        "description": "Text showing how many rules use this tag",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "selectColor": "选择颜色",
+    "@selectColor": {
+        "description": "Title for color picker dialog when no label is provided"
+    },
+    "hexColorValue": "HEX颜色值",
+    "@hexColorValue": {
+        "description": "Label for hex color input field"
+    },
+    "hexColorHint": "例如：FF0000",
+    "@hexColorHint": {
+        "description": "Hint text for hex color input field"
+    },
+    "dialogDefaultCancel": "取消",
+    "@dialogDefaultCancel": {
+        "description": "Default text for dialog cancel button"
+    },
+    "dialogDefaultConfirm": "确定",
+    "@dialogDefaultConfirm": {
+        "description": "Default text for dialog confirm button"
+    },
+    "deleteRule": "删除规则",
+    "@deleteRule": {
+        "description": "Title for rule deletion dialog"
+    },
+    "grantPermission": "授权",
+    "@grantPermission": {
+        "description": "Button text for granting permission"
+    },
+    "ruleStats": "规则统计",
+    "@ruleStats": {
+        "description": "Title for rule stats card"
+    },
+    "ruleStatsTotal": "规则总数",
+    "@ruleStatsTotal": {
+        "description": "Label for total rules count"
+    },
+    "ruleStatsEnabled": "已启用",
+    "@ruleStatsEnabled": {
+        "description": "Label for enabled rules count"
+    },
+    "ruleStatsOverlays": "悬浮窗",
+    "@ruleStatsOverlays": {
+        "description": "Label for overlays count"
+    },
+    "tagStats": "标签统计",
+    "@tagStats": {
+        "description": "Title for tag stats card"
+    },
+    "tagStatsCount": "标签数",
+    "@tagStatsCount": {
+        "description": "Label for tags count"
+    },
+    "tagStatsActive": "已激活",
+    "@tagStatsActive": {
+        "description": "Label for active tags count"
+    },
+    "tagStatsRules": "标记规则",
+    "@tagStatsRules": {
+        "description": "Label for rules count"
+    },
+    "tagChipsLimitHint": "最多只能添加{maxTags}个标签",
+    "@tagChipsLimitHint": {
+        "description": "Hint text for tag chips limit",
+        "placeholders": {
+            "maxTags": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "tagChipsHint": "输入标签后按空格或回车添加",
+    "@tagChipsHint": {
+        "description": "Hint text for tag chips input"
+    },
+    "ruleCardEnabled": "已启用",
+    "@ruleCardEnabled": {
+        "description": "Text for rule card enabled status"
+    },
+    "ruleCardDisabled": "已禁用",
+    "@ruleCardDisabled": {
+        "description": "Text for rule card disabled status"
+    },
+    "startService": "启动服务",
+    "@startService": {
+        "description": "Button text for starting service"
+    },
+    "stopService": "停止服务",
+    "@stopService": {
+        "description": "Button text for stopping service"
+    },
+    "overlayPermissionStatus": "悬浮窗权限",
+    "@overlayPermissionStatus": {
+        "description": "Title for overlay permission status"
+    },
+    "accessibilityPermissionStatus": "无障碍服务",
+    "@accessibilityPermissionStatus": {
+        "description": "Title for accessibility permission status"
+    },
+    "permissionGranted": "已授权",
+    "@permissionGranted": {
+        "description": "Text for permission granted"
+    },
+    "permissionNotGranted": "未授权",
+    "@permissionNotGranted": {
+        "description": "Text for permission not granted"
+    },
+    "ruleImportPreviewDialogTitle": "导入预览",
+    "@ruleImportPreviewDialogTitle": {
+        "description": "Title for rule import preview dialog"
+    },
+    "ruleImportPreviewDialogConflict": "冲突",
+    "@ruleImportPreviewDialogConflict": {
+        "description": "Title for rule import preview conflict dialog"
+    },
+    "ruleImportPreviewDialogActivityNameInvalidHint": "活动名必须以点号\".\"开头",
+    "@ruleImportPreviewDialogActivityNameInvalidHint": {
+        "description": "Hint text for rule import preview activity name invalid"
+    },
+    "ruleImportPreviewDialogRuleImportStatus": "共 {total} 条规则，已选择 {selected} 条",
+    "@ruleImportPreviewDialogRuleImportStatus": {
+        "description": "Text for rule import preview rule import status",
+        "placeholders": {
+            "total": {
+                "type": "int",
+                "example": "5"
+            },
+            "selected": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "ruleImportPreviewDialogSelectAll": "全选",
+    "@ruleImportPreviewDialogSelectAll": {
+        "description": "Button text for selecting all rules"
+    },
+    "ruleImportPreviewDialogCancelAll": "取消全选",
+    "@ruleImportPreviewDialogCancelAll": {
+        "description": "Button text for canceling all rules selection"
+    },
+    "ruleImportPreviewDialogImport": "导入",
+    "@ruleImportPreviewDialogImport": {
+        "description": "Button text for importing rules"
+    },
+    "ruleImportPreviewDialogImportError": "导入失败",
+    "@ruleImportPreviewDialogImportError": {
+        "description": "Error message for rule import preview import"
+    },
+    "ruleImportPreviewDialogImportActivityName": "活动名",
+    "@ruleImportPreviewDialogImportActivityName": {
+        "description": "Label for rule import preview import activity name"
+    },
+    "ruleImportPreviewDialogImportActivityFormatError": "格式错误",
+    "@ruleImportPreviewDialogImportActivityFormatError": {
+        "description": "Error message for rule import preview import activity format error"
+    },
+    "ruleImportPreviewDialogImportActivityFormatConflict": "冲突",
+    "@ruleImportPreviewDialogImportActivityFormatConflict": {
+        "description": "Error message for rule import preview import activity format conflict"
+    },
+    "ruleImportPreviewDialogImportMergeable": "可合并",
+    "@ruleImportPreviewDialogImportMergeable": {
+        "description": "Text for rule import preview import mergeable"
+    },
+    "ruleImportPreviewDialogImportUnknownError": "未知错误",
+    "@ruleImportPreviewDialogImportUnknownError": {
+        "description": "Error message for rule import preview import unknown error"
+    }
+}

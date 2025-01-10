@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 class TagChip extends StatelessWidget {
   final String label;
   final VoidCallback? onDeleted;
@@ -195,10 +197,11 @@ class _TagChipsInputState extends State<TagChipsInput> {
   }
 
   void _addTag(String tag) {
+    final l10n = AppLocalizations.of(context)!;
     if (tag.isEmpty) return;
     if (widget.maxTags != null && widget.tags.length >= widget.maxTags!) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('最多只能添加${widget.maxTags}个标签')),
+        SnackBar(content: Text(l10n.tagChipsLimitHint(widget.maxTags!))),
       );
       return;
     }
@@ -243,6 +246,7 @@ class _TagChipsInputState extends State<TagChipsInput> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -261,7 +265,7 @@ class _TagChipsInputState extends State<TagChipsInput> {
           enableSuggestions: false,
           textInputAction: TextInputAction.done,
           decoration: InputDecoration(
-            hintText: '输入标签后按空格或回车添加',
+            hintText: l10n.tagChipsHint,
             hintStyle: TextStyle(
               fontSize: 14,
               color: Colors.grey[400],

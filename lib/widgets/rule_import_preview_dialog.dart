@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../models/rule.dart';
 import '../models/rule_merge_result.dart';
 import '../utils/rule_field_validator.dart';
@@ -52,6 +54,7 @@ class RuleImportPreviewDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     // 初始化时只选择没有冲突的规则
     final initialRules = rules.where((rule) {
       final result = _checkConflict(rule);
@@ -93,7 +96,7 @@ class RuleImportPreviewDialog extends StatelessWidget {
               const SizedBox(height: 16),
               // 标题和统计
               Text(
-                '导入预览',
+                l10n.ruleImportPreviewDialogTitle,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -104,7 +107,10 @@ class RuleImportPreviewDialog extends StatelessWidget {
               ValueListenableBuilder<List<Rule>>(
                 valueListenable: selectedRules,
                 builder: (context, selected, _) => Text(
-                  '共 ${rules.length} 条规则，已选择 ${selected.length} 条',
+                  l10n.ruleImportPreviewDialogRuleImportStatus(
+                    rules.length,
+                    selected.length,
+                  ),
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -148,7 +154,9 @@ class RuleImportPreviewDialog extends StatelessWidget {
                         color: theme.colorScheme.primary,
                       ),
                       label: Text(
-                        isAllSelected ? '取消全选' : '全选',
+                        isAllSelected
+                            ? l10n.ruleImportPreviewDialogCancelAll
+                            : l10n.ruleImportPreviewDialogSelectAll,
                         style: TextStyle(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w500,
@@ -263,11 +271,13 @@ class RuleImportPreviewDialog extends StatelessWidget {
                                                     ),
                                                     child: Text(
                                                       mergeResult.errorMessage
-                                                                  ?.contains(
-                                                                      '活动名') ==
+                                                                  ?.contains(l10n
+                                                                      .ruleImportPreviewDialogImportActivityName) ==
                                                               true
-                                                          ? '格式错误'
-                                                          : '冲突',
+                                                          ? l10n
+                                                              .ruleImportPreviewDialogActivityNameInvalidHint
+                                                          : l10n
+                                                              .ruleImportPreviewDialogConflict,
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         color: theme
@@ -293,7 +303,7 @@ class RuleImportPreviewDialog extends StatelessWidget {
                                                               6),
                                                     ),
                                                     child: Text(
-                                                      '可合并',
+                                                      l10n.ruleImportPreviewDialogImportMergeable,
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         color: theme.colorScheme
@@ -402,8 +412,8 @@ class RuleImportPreviewDialog extends StatelessWidget {
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: (mergeResult.errorMessage
-                                                    ?.contains('活动名') ==
+                                    color: (mergeResult.errorMessage?.contains(l10n
+                                                    .ruleImportPreviewDialogImportActivityName) ==
                                                 true
                                             ? Colors.orange
                                             : theme.colorScheme.error)
@@ -413,14 +423,15 @@ class RuleImportPreviewDialog extends StatelessWidget {
                                   child: Row(
                                     children: [
                                       Icon(
-                                        mergeResult.errorMessage
-                                                    ?.contains('活动名') ==
+                                        mergeResult.errorMessage?.contains(l10n
+                                                    .ruleImportPreviewDialogImportActivityName) ==
                                                 true
                                             ? Icons.warning_amber_outlined
                                             : Icons.error_outline,
                                         size: 16,
                                         color: mergeResult.errorMessage
-                                                    ?.contains('活动名') ==
+                                                    ?.contains(l10n
+                                                        .ruleImportPreviewDialogImportActivityName) ==
                                                 true
                                             ? Colors.orange
                                             : theme.colorScheme.error,
@@ -428,11 +439,13 @@ class RuleImportPreviewDialog extends StatelessWidget {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
-                                          mergeResult.errorMessage ?? '未知错误',
+                                          mergeResult.errorMessage ??
+                                              l10n.ruleImportPreviewDialogImportUnknownError,
                                           style: TextStyle(
                                             fontSize: 13,
                                             color: mergeResult.errorMessage
-                                                        ?.contains('活动名') ==
+                                                        ?.contains(l10n
+                                                            .ruleImportPreviewDialogImportActivityName) ==
                                                     true
                                                 ? Colors.orange
                                                 : theme.colorScheme.error,
@@ -465,7 +478,7 @@ class RuleImportPreviewDialog extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        '取消',
+                        l10n.dialogDefaultCancel,
                         style: TextStyle(
                           color: Colors.grey[700],
                           fontWeight: FontWeight.w500,
@@ -490,8 +503,8 @@ class RuleImportPreviewDialog extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          '导入',
+                        child: Text(
+                          l10n.ruleImportPreviewDialogImport,
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                           ),
