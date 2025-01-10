@@ -401,5 +401,19 @@
     "tagStatsRules": "标记规则",
     "@tagStatsRules": {
         "description": "Label for rules count"
+    },
+    "tagChipsLimitHint": "最多只能添加{maxTags}个标签",
+    "@tagChipsLimitHint": {
+        "description": "Hint text for tag chips limit",
+        "placeholders": {
+            "maxTags": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "tagChipsHint": "输入标签后按空格或回车添加",
+    "@tagChipsHint": {
+        "description": "Hint text for tag chips input"
     }
 }

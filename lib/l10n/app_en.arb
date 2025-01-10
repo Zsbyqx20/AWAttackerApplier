@@ -407,5 +407,19 @@
     "tagStatsRules": "Rules",
     "@tagStatsRules": {
         "description": "Label for rules count"
+    },
+    "tagChipsLimitHint": "Can only add up to {maxTags} tags",
+    "@tagChipsLimitHint": {
+        "description": "Hint text for tag chips limit",
+        "placeholders": {
+            "maxTags": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "tagChipsHint": "Press space or enter to add",
+    "@tagChipsHint": {
+        "description": "Hint text for tag chips input"
     }
 }
