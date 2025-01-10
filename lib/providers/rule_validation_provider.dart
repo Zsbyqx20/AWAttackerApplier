@@ -33,7 +33,7 @@ class RuleValidationProvider extends ChangeNotifier {
       default:
         result = RuleValidationResult.fieldError(
           fieldName,
-          '未知字段',
+          'Unknown field',
           code: 'UNKNOWN_FIELD',
         );
     }

@@ -16,7 +16,7 @@ class RuleImportException implements Exception {
   // 格式错误
   static RuleImportException invalidFormat([String? details]) {
     return RuleImportException(
-      'JSON格式无效',
+      'Invalid JSON format',
       code: 'INVALID_FORMAT',
       details: details,
     );
@@ -25,18 +25,18 @@ class RuleImportException implements Exception {
   // 版本不兼容
   static RuleImportException incompatibleVersion(String version) {
     return RuleImportException(
-      '不兼容的版本',
+      'Incompatible version',
       code: 'INCOMPATIBLE_VERSION',
-      details: '导入文件版本: $version',
+      details: 'Import file version: $version',
     );
   }
 
   // 缺少必需字段
   static RuleImportException missingField(String field) {
     return RuleImportException(
-      '缺少必需字段',
+      'Missing required field',
       code: 'MISSING_FIELD',
-      details: '字段名: $field',
+      details: 'Field name: $field',
     );
   }
 
@@ -44,25 +44,25 @@ class RuleImportException implements Exception {
   static RuleImportException invalidFieldType(
       String field, String expectedType) {
     return RuleImportException(
-      '字段类型错误',
+      'Invalid field type',
       code: 'INVALID_FIELD_TYPE',
-      details: '字段 $field 应为 $expectedType 类型',
+      details: 'Field $field should be $expectedType type',
     );
   }
 
   // 字段值无效
   static RuleImportException invalidFieldValue(String field, String reason) {
     return RuleImportException(
-      '字段值无效',
+      'Invalid field value',
       code: 'INVALID_FIELD_VALUE',
-      details: '字段 $field: $reason',
+      details: 'Field $field: $reason',
     );
   }
 
   // 空文件
   static RuleImportException emptyFile() {
     return RuleImportException(
-      '导入文件为空',
+      'Import file is empty',
       code: 'EMPTY_FILE',
     );
   }
@@ -70,7 +70,7 @@ class RuleImportException implements Exception {
   // 无规则
   static RuleImportException noRules() {
     return RuleImportException(
-      '导入文件不包含任何规则',
+      'Import file does not contain any rules',
       code: 'NO_RULES',
     );
   }

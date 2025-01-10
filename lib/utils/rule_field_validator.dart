@@ -10,7 +10,8 @@ class RuleFieldValidator {
   /// 验证包名
   static RuleValidationResult validatePackageName(String? packageName) {
     if (packageName == null || packageName.isEmpty) {
-      return RuleValidationResult.fieldError('packageName', '包名不能为空');
+      return RuleValidationResult.fieldError(
+          'packageName', 'Package name cannot be empty');
     }
 
     try {
@@ -26,7 +27,8 @@ class RuleFieldValidator {
   /// 验证活动名
   static RuleValidationResult validateActivityName(String? activityName) {
     if (activityName == null || activityName.isEmpty) {
-      return RuleValidationResult.fieldError('activityName', '活动名不能为空');
+      return RuleValidationResult.fieldError(
+          'activityName', 'Activity name cannot be empty');
     }
 
     try {
@@ -42,10 +44,12 @@ class RuleFieldValidator {
   /// 验证规则名称
   static RuleValidationResult validateName(String? name) {
     if (name == null || name.isEmpty) {
-      return RuleValidationResult.fieldError('name', '规则名称不能为空');
+      return RuleValidationResult.fieldError(
+          'name', 'Rule name cannot be empty');
     }
     if (name.length > 50) {
-      return RuleValidationResult.fieldError('name', '规则名称不能超过50个字符');
+      return RuleValidationResult.fieldError(
+          'name', 'Rule name cannot exceed 50 characters');
     }
     return RuleValidationResult.success();
   }
@@ -81,7 +85,8 @@ class RuleFieldValidator {
   /// 验证悬浮窗样式
   static RuleValidationResult validateOverlayStyle(OverlayStyle? style) {
     if (style == null) {
-      return RuleValidationResult.fieldError('overlayStyle', '悬浮窗样式不能为空');
+      return RuleValidationResult.fieldError(
+          'overlayStyle', 'Overlay style cannot be empty');
     }
 
     try {
@@ -97,7 +102,8 @@ class RuleFieldValidator {
   /// 验证颜色
   static RuleValidationResult validateColor(Color? color, String fieldName) {
     if (color == null) {
-      return RuleValidationResult.fieldError(fieldName, '颜色不能为空');
+      return RuleValidationResult.fieldError(
+          fieldName, 'Color cannot be empty');
     }
 
     try {
