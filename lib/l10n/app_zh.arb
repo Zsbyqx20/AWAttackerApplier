@@ -447,5 +447,67 @@
     "permissionNotGranted": "未授权",
     "@permissionNotGranted": {
         "description": "Text for permission not granted"
+    },
+    "ruleImportPreviewDialogTitle": "导入预览",
+    "@ruleImportPreviewDialogTitle": {
+        "description": "Title for rule import preview dialog"
+    },
+    "ruleImportPreviewDialogConflict": "冲突",
+    "@ruleImportPreviewDialogConflict": {
+        "description": "Title for rule import preview conflict dialog"
+    },
+    "ruleImportPreviewDialogActivityNameInvalidHint": "活动名必须以点号\".\"开头",
+    "@ruleImportPreviewDialogActivityNameInvalidHint": {
+        "description": "Hint text for rule import preview activity name invalid"
+    },
+    "ruleImportPreviewDialogRuleImportStatus": "共 {total} 条规则，已选择 {selected} 条",
+    "@ruleImportPreviewDialogRuleImportStatus": {
+        "description": "Text for rule import preview rule import status",
+        "placeholders": {
+            "total": {
+                "type": "int",
+                "example": "5"
+            },
+            "selected": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "ruleImportPreviewDialogSelectAll": "全选",
+    "@ruleImportPreviewDialogSelectAll": {
+        "description": "Button text for selecting all rules"
+    },
+    "ruleImportPreviewDialogCancelAll": "取消全选",
+    "@ruleImportPreviewDialogCancelAll": {
+        "description": "Button text for canceling all rules selection"
+    },
+    "ruleImportPreviewDialogImport": "导入",
+    "@ruleImportPreviewDialogImport": {
+        "description": "Button text for importing rules"
+    },
+    "ruleImportPreviewDialogImportError": "导入失败",
+    "@ruleImportPreviewDialogImportError": {
+        "description": "Error message for rule import preview import"
+    },
+    "ruleImportPreviewDialogImportActivityName": "活动名",
+    "@ruleImportPreviewDialogImportActivityName": {
+        "description": "Label for rule import preview import activity name"
+    },
+    "ruleImportPreviewDialogImportActivityFormatError": "格式错误",
+    "@ruleImportPreviewDialogImportActivityFormatError": {
+        "description": "Error message for rule import preview import activity format error"
+    },
+    "ruleImportPreviewDialogImportActivityFormatConflict": "冲突",
+    "@ruleImportPreviewDialogImportActivityFormatConflict": {
+        "description": "Error message for rule import preview import activity format conflict"
+    },
+    "ruleImportPreviewDialogImportMergeable": "可合并",
+    "@ruleImportPreviewDialogImportMergeable": {
+        "description": "Text for rule import preview import mergeable"
+    },
+    "ruleImportPreviewDialogImportUnknownError": "未知错误",
+    "@ruleImportPreviewDialogImportUnknownError": {
+        "description": "Error message for rule import preview import unknown error"
     }
 }

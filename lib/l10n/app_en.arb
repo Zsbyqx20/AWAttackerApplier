@@ -453,5 +453,67 @@
     "permissionNotGranted": "Not Granted",
     "@permissionNotGranted": {
         "description": "Text for permission not granted"
+    },
+    "ruleImportPreviewDialogTitle": "Import Preview",
+    "@ruleImportPreviewDialogTitle": {
+        "description": "Title for rule import preview dialog"
+    },
+    "ruleImportPreviewDialogConflict": "Conflict",
+    "@ruleImportPreviewDialogConflict": {
+        "description": "Title for rule import preview conflict dialog"
+    },
+    "ruleImportPreviewDialogActivityNameInvalidHint": "Activity name must start with a dot (.)",
+    "@ruleImportPreviewDialogActivityNameInvalidHint": {
+        "description": "Hint text for rule import preview activity name invalid"
+    },
+    "ruleImportPreviewDialogRuleImportStatus": "Total {total} rules, selected {selected}",
+    "@ruleImportPreviewDialogRuleImportStatus": {
+        "description": "Text for rule import preview rule import status",
+        "placeholders": {
+            "total": {
+                "type": "int",
+                "example": "5"
+            },
+            "selected": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "ruleImportPreviewDialogSelectAll": "Select All",
+    "@ruleImportPreviewDialogSelectAll": {
+        "description": "Button text for selecting all rules"
+    },
+    "ruleImportPreviewDialogCancelAll": "Cancel All",
+    "@ruleImportPreviewDialogCancelAll": {
+        "description": "Button text for canceling all rules selection"
+    },
+    "ruleImportPreviewDialogImport": "Import",
+    "@ruleImportPreviewDialogImport": {
+        "description": "Button text for importing rules"
+    },
+    "ruleImportPreviewDialogImportError": "Import failed",
+    "@ruleImportPreviewDialogImportError": {
+        "description": "Error message for rule import preview import"
+    },
+    "ruleImportPreviewDialogImportActivityName": "Activity Name",
+    "@ruleImportPreviewDialogImportActivityName": {
+        "description": "Label for rule import preview import activity name"
+    },
+    "ruleImportPreviewDialogImportActivityFormatError": "Format error",
+    "@ruleImportPreviewDialogImportActivityFormatError": {
+        "description": "Error message for rule import preview import activity format error"
+    },
+    "ruleImportPreviewDialogImportActivityFormatConflict": "Conflict",
+    "@ruleImportPreviewDialogImportActivityFormatConflict": {
+        "description": "Error message for rule import preview import activity format conflict"
+    },
+    "ruleImportPreviewDialogImportMergeable": "Mergeable",
+    "@ruleImportPreviewDialogImportMergeable": {
+        "description": "Text for rule import preview import mergeable"
+    },
+    "ruleImportPreviewDialogImportUnknownError": "Unknown error",
+    "@ruleImportPreviewDialogImportUnknownError": {
+        "description": "Error message for rule import preview import unknown error"
     }
 }
