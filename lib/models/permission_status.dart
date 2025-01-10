@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 /// 权限类型枚举
 enum PermissionType {
   overlay,
@@ -20,23 +23,31 @@ class PermissionStatus {
     required this.notGrantedText,
   });
 
-  factory PermissionStatus.overlay({required bool isGranted}) {
+  factory PermissionStatus.overlay({
+    required bool isGranted,
+    required BuildContext context,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
     return PermissionStatus(
       type: PermissionType.overlay,
       isGranted: isGranted,
-      title: '悬浮窗权限',
-      grantedText: '已授权',
-      notGrantedText: '未授权',
+      title: l10n.overlayPermissionStatus,
+      grantedText: l10n.permissionGranted,
+      notGrantedText: l10n.permissionNotGranted,
     );
   }
 
-  factory PermissionStatus.accessibility({required bool isGranted}) {
+  factory PermissionStatus.accessibility({
+    required bool isGranted,
+    required BuildContext context,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
     return PermissionStatus(
       type: PermissionType.accessibility,
       isGranted: isGranted,
-      title: '无障碍服务',
-      grantedText: '已启用',
-      notGrantedText: '未启用',
+      title: l10n.accessibilityPermissionStatus,
+      grantedText: l10n.permissionGranted,
+      notGrantedText: l10n.permissionNotGranted,
     );
   }
 }

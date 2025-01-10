@@ -423,5 +423,29 @@
     "ruleCardDisabled": "已禁用",
     "@ruleCardDisabled": {
         "description": "Text for rule card disabled status"
+    },
+    "startService": "启动服务",
+    "@startService": {
+        "description": "Button text for starting service"
+    },
+    "stopService": "停止服务",
+    "@stopService": {
+        "description": "Button text for stopping service"
+    },
+    "overlayPermissionStatus": "悬浮窗权限",
+    "@overlayPermissionStatus": {
+        "description": "Title for overlay permission status"
+    },
+    "accessibilityPermissionStatus": "无障碍服务",
+    "@accessibilityPermissionStatus": {
+        "description": "Title for accessibility permission status"
+    },
+    "permissionGranted": "已授权",
+    "@permissionGranted": {
+        "description": "Text for permission granted"
+    },
+    "permissionNotGranted": "未授权",
+    "@permissionNotGranted": {
+        "description": "Text for permission not granted"
     }
 }

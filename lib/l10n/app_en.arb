@@ -429,5 +429,29 @@
     "ruleCardDisabled": "Disabled",
     "@ruleCardDisabled": {
         "description": "Text for rule card disabled status"
+    },
+    "startService": "Start Service",
+    "@startService": {
+        "description": "Button text for starting service"
+    },
+    "stopService": "Stop Service",
+    "@stopService": {
+        "description": "Button text for stopping service"
+    },
+    "overlayPermissionStatus": "Overlay Permission",
+    "@overlayPermissionStatus": {
+        "description": "Title for overlay permission status"
+    },
+    "accessibilityPermissionStatus": "Accessibility Permission",
+    "@accessibilityPermissionStatus": {
+        "description": "Title for accessibility permission status"
+    },
+    "permissionGranted": "Granted",
+    "@permissionGranted": {
+        "description": "Text for permission granted"
+    },
+    "permissionNotGranted": "Not Granted",
+    "@permissionNotGranted": {
+        "description": "Text for permission not granted"
     }
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -166,6 +167,7 @@ class _ServerConfigPageState extends State<ServerConfigPage>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<ConnectionProvider>();
     final allPermissionsGranted =
         _hasOverlayPermission && _hasAccessibilityPermission;
@@ -177,9 +179,14 @@ class _ServerConfigPageState extends State<ServerConfigPage>
         children: [
           PermissionCard(
             permissions: [
-              PermissionStatus.overlay(isGranted: _hasOverlayPermission),
+              PermissionStatus.overlay(
+                isGranted: _hasOverlayPermission,
+                context: context,
+              ),
               PermissionStatus.accessibility(
-                  isGranted: _hasAccessibilityPermission),
+                isGranted: _hasAccessibilityPermission,
+                context: context,
+              ),
             ],
             onRequestPermission: _requestPermission,
           ),
@@ -233,7 +240,9 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                           ),
                         ),
                   label: Text(
-                    provider.isServiceRunning ? '停止服务' : '启动服务',
+                    provider.isServiceRunning
+                        ? l10n.stopService
+                        : l10n.startService,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
