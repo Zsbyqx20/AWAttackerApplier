@@ -371,5 +371,9 @@
     "deleteRule": "Delete Rule",
     "@deleteRule": {
         "description": "Title for rule deletion dialog"
+    },
+    "grantPermission": "Grant Permission",
+    "@grantPermission": {
+        "description": "Button text for granting permission"
     }
 }

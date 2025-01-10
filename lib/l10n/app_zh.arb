@@ -365,5 +365,9 @@
     "deleteRule": "删除规则",
     "@deleteRule": {
         "description": "Title for rule deletion dialog"
+    },
+    "grantPermission": "授权",
+    "@grantPermission": {
+        "description": "Button text for granting permission"
     }
 }
