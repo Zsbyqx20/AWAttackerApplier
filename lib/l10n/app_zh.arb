@@ -271,5 +271,25 @@
     "emptyRuleList": "暂无规则",
     "@emptyRuleList": {
         "description": "Message shown when rule list is empty"
+    },
+    "configTab": "配置",
+    "@configTab": {
+        "description": "Text for settings tab in main page"
+    },
+    "rulesTab": "规则",
+    "@rulesTab": {
+        "description": "Text for rules tab in main page"
+    },
+    "tagsTab": "标签",
+    "@tagsTab": {
+        "description": "Text for tags tab in main page"
+    },
+    "overlayPermissionRequired": "请先授予悬浮窗权限",
+    "@overlayPermissionRequired": {
+        "description": "Message shown when overlay permission is required"
+    },
+    "accessibilityPermissionRequired": "请先授予无障碍服务权限",
+    "@accessibilityPermissionRequired": {
+        "description": "Message shown when accessibility permission is required"
     }
 }

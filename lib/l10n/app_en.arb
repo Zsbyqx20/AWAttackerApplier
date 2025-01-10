@@ -271,5 +271,25 @@
     "emptyRuleList": "No rules yet",
     "@emptyRuleList": {
         "description": "Message shown when rule list is empty"
+    },
+    "configTab": "Settings",
+    "@configTab": {
+        "description": "Text for settings tab in main page"
+    },
+    "rulesTab": "Rules",
+    "@rulesTab": {
+        "description": "Text for rules tab in main page"
+    },
+    "tagsTab": "Tags",
+    "@tagsTab": {
+        "description": "Text for tags tab in main page"
+    },
+    "overlayPermissionRequired": "Please grant overlay permission first",
+    "@overlayPermissionRequired": {
+        "description": "Message shown when overlay permission is required"
+    },
+    "accessibilityPermissionRequired": "Please grant accessibility permission first",
+    "@accessibilityPermissionRequired": {
+        "description": "Message shown when accessibility permission is required"
     }
 }
