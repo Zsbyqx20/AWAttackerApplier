@@ -88,7 +88,9 @@ class RuleCard extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      rule.isEnabled ? '已启用' : '已禁用',
+                                      rule.isEnabled
+                                          ? l10n.ruleCardEnabled
+                                          : l10n.ruleCardDisabled,
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: rule.isEnabled

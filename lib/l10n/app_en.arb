@@ -421,5 +421,13 @@
     "tagChipsHint": "Press space or enter to add",
     "@tagChipsHint": {
         "description": "Hint text for tag chips input"
+    },
+    "ruleCardEnabled": "Enabled",
+    "@ruleCardEnabled": {
+        "description": "Text for rule card enabled status"
+    },
+    "ruleCardDisabled": "Disabled",
+    "@ruleCardDisabled": {
+        "description": "Text for rule card disabled status"
     }
 }

@@ -415,5 +415,13 @@
     "tagChipsHint": "输入标签后按空格或回车添加",
     "@tagChipsHint": {
         "description": "Hint text for tag chips input"
+    },
+    "ruleCardEnabled": "已启用",
+    "@ruleCardEnabled": {
+        "description": "Text for rule card enabled status"
+    },
+    "ruleCardDisabled": "已禁用",
+    "@ruleCardDisabled": {
+        "description": "Text for rule card disabled status"
     }
 }
