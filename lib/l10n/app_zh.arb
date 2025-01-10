@@ -190,7 +190,7 @@
             }
         }
     },
-    "noRules": "没有找到规则",
+    "noRules": "没有规则",
     "@noRules": {
         "description": "Message shown when no rules are available"
     },
@@ -241,5 +241,35 @@
     "height": "高度",
     "@height": {
         "description": "Label for height field"
+    },
+    "ruleImportCancelled": "导入已取消",
+    "@ruleImportCancelled": {
+        "description": "Message shown when rule import is cancelled"
+    },
+    "noRulesToImport": "没有找到可导入的规则",
+    "@noRulesToImport": {
+        "description": "Message shown when no rules are found in import file"
+    },
+    "noRulesToExport": "没有可导出的规则",
+    "@noRulesToExport": {
+        "description": "Message shown when trying to export with no rules"
+    },
+    "exportCancelled": "导出已取消",
+    "@exportCancelled": {
+        "description": "Message shown when rule export is cancelled"
+    },
+    "exportErrorWithException": "导出失败：{error}",
+    "@exportErrorWithException": {
+        "description": "Message shown when rule export fails",
+        "placeholders": {
+            "error": {
+                "type": "String",
+                "example": "File access denied"
+            }
+        }
+    },
+    "emptyRuleList": "暂无规则",
+    "@emptyRuleList": {
+        "description": "Message shown when rule list is empty"
     }
 }

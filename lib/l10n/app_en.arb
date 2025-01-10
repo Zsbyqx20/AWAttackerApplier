@@ -190,7 +190,7 @@
             }
         }
     },
-    "noRules": "No rules found",
+    "noRules": "No rules",
     "@noRules": {
         "description": "Message shown when no rules are available"
     },
@@ -241,5 +241,35 @@
     "height": "Height",
     "@height": {
         "description": "Label for height field"
+    },
+    "ruleImportCancelled": "Import cancelled",
+    "@ruleImportCancelled": {
+        "description": "Message shown when rule import is cancelled"
+    },
+    "noRulesToImport": "No rules to import",
+    "@noRulesToImport": {
+        "description": "Message shown when no rules are found in import file"
+    },
+    "noRulesToExport": "No rules to export",
+    "@noRulesToExport": {
+        "description": "Message shown when trying to export with no rules"
+    },
+    "exportCancelled": "Export cancelled",
+    "@exportCancelled": {
+        "description": "Message shown when rule export is cancelled"
+    },
+    "exportErrorWithException": "Export failed: {error}",
+    "@exportErrorWithException": {
+        "description": "Message shown when rule export fails",
+        "placeholders": {
+            "error": {
+                "type": "String",
+                "example": "File access denied"
+            }
+        }
+    },
+    "emptyRuleList": "No rules yet",
+    "@emptyRuleList": {
+        "description": "Message shown when rule list is empty"
     }
 }
