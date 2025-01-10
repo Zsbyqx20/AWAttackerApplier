@@ -25,6 +25,7 @@ jobs:
           channel: stable
           flutter-version: 3.27.1
       - run: flutter pub get
+      - run: flutter gen-l10n
       - run: flutter test
       - run: dart format lib/
       - run: dart fix --apply
