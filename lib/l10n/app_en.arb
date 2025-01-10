@@ -291,5 +291,55 @@
     "accessibilityPermissionRequired": "Please grant accessibility permission first",
     "@accessibilityPermissionRequired": {
         "description": "Message shown when accessibility permission is required"
+    },
+    "activateTag": "Activate Tag",
+    "@activateTag": {
+        "description": "Title for tag activation dialog"
+    },
+    "activateTagConfirm": "Activating tag \"{tag}\" will affect {count} rules, continue?",
+    "@activateTagConfirm": {
+        "description": "Confirmation message for tag activation",
+        "placeholders": {
+            "tag": {
+                "type": "String",
+                "example": "important"
+            },
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "activate": "Activate",
+    "@activate": {
+        "description": "Button text for activation"
+    },
+    "deleteTag": "Delete Tag",
+    "@deleteTag": {
+        "description": "Title for tag deletion dialog"
+    },
+    "deleteTagConfirm": "Deleting tag \"{tag}\" will remove it from {count} rules, continue?",
+    "@deleteTagConfirm": {
+        "description": "Confirmation message for tag deletion",
+        "placeholders": {
+            "tag": {
+                "type": "String",
+                "example": "important"
+            },
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "usedInRules": "Used in {count} rules",
+    "@usedInRules": {
+        "description": "Text showing how many rules use this tag",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
     }
 }

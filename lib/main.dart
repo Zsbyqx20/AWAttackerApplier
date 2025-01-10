@@ -20,6 +20,7 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final ruleRepository = RuleRepository(prefs);
   final storageRepository = StorageRepository();
+  await storageRepository.init();
 
   // 初始化 Provider
   final ruleValidationProvider = RuleValidationProvider();

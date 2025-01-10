@@ -291,5 +291,55 @@
     "accessibilityPermissionRequired": "请先授予无障碍服务权限",
     "@accessibilityPermissionRequired": {
         "description": "Message shown when accessibility permission is required"
+    },
+    "activateTag": "激活标签",
+    "@activateTag": {
+        "description": "Title for tag activation dialog"
+    },
+    "activateTagConfirm": "激活标签 \"{tag}\" 将影响 {count} 条规则，是否继续？",
+    "@activateTagConfirm": {
+        "description": "Confirmation message for tag activation",
+        "placeholders": {
+            "tag": {
+                "type": "String",
+                "example": "important"
+            },
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "activate": "激活",
+    "@activate": {
+        "description": "Button text for activation"
+    },
+    "deleteTag": "删除标签",
+    "@deleteTag": {
+        "description": "Title for tag deletion dialog"
+    },
+    "deleteTagConfirm": "删除标签 \"{tag}\" 将从 {count} 条规则中移除，是否继续？",
+    "@deleteTagConfirm": {
+        "description": "Confirmation message for tag deletion",
+        "placeholders": {
+            "tag": {
+                "type": "String",
+                "example": "important"
+            },
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "usedInRules": "使用于 {count} 条规则",
+    "@usedInRules": {
+        "description": "Text showing how many rules use this tag",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
     }
 }
