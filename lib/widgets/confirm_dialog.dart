@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ConfirmDialog extends StatelessWidget {
   final String title;
   final String content;
-  final String cancelText;
-  final String confirmText;
+  final String? cancelText;
+  final String? confirmText;
   final VoidCallback onConfirm;
   final Color? confirmColor;
   final IconData? icon;
@@ -13,8 +14,8 @@ class ConfirmDialog extends StatelessWidget {
     super.key,
     required this.title,
     required this.content,
-    this.cancelText = '取消',
-    this.confirmText = '确认',
+    this.cancelText,
+    this.confirmText,
     required this.onConfirm,
     this.confirmColor,
     this.icon,
@@ -25,8 +26,8 @@ class ConfirmDialog extends StatelessWidget {
     required BuildContext context,
     required String title,
     required String content,
-    String cancelText = '取消',
-    String confirmText = '确认',
+    String? cancelText,
+    String? confirmText,
     Color? confirmColor,
     IconData? icon,
   }) {
@@ -43,12 +44,11 @@ class ConfirmDialog extends StatelessWidget {
     );
   }
 
-  /// 私有构造函数，用于内部创建对话框
   const ConfirmDialog._({
     required this.title,
     required this.content,
-    this.cancelText = '取消',
-    this.confirmText = '确认',
+    this.cancelText,
+    this.confirmText,
     this.confirmColor,
     this.icon,
   }) : onConfirm = _noOp;
@@ -58,6 +58,7 @@ class ConfirmDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Dialog(
       elevation: 0,
@@ -118,7 +119,7 @@ class ConfirmDialog extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      cancelText,
+                      cancelText ?? l10n.dialogDefaultCancel,
                       style: TextStyle(
                         color: Colors.grey[700],
                         fontWeight: FontWeight.w500,
@@ -140,7 +141,7 @@ class ConfirmDialog extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      confirmText,
+                      confirmText ?? l10n.dialogDefaultConfirm,
                       style: const TextStyle(
                         fontWeight: FontWeight.w500,
                       ),

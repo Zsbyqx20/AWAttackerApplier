@@ -353,5 +353,17 @@
     "hexColorHint": "例如：FF0000",
     "@hexColorHint": {
         "description": "Hint text for hex color input field"
+    },
+    "dialogDefaultCancel": "取消",
+    "@dialogDefaultCancel": {
+        "description": "Default text for dialog cancel button"
+    },
+    "dialogDefaultConfirm": "确定",
+    "@dialogDefaultConfirm": {
+        "description": "Default text for dialog confirm button"
+    },
+    "deleteRule": "删除规则",
+    "@deleteRule": {
+        "description": "Title for rule deletion dialog"
     }
 }

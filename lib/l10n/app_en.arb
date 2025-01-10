@@ -198,9 +198,15 @@
     "@addRule": {
         "description": "Button text for adding a new rule"
     },
-    "deleteRuleConfirm": "Are you sure you want to delete this rule?",
+    "deleteRuleConfirm": "Are you sure you want to delete rule \"{name}\"?\nThis action cannot be undone.",
     "@deleteRuleConfirm": {
-        "description": "Confirmation message for rule deletion"
+        "description": "Confirmation message for rule deletion",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "My Rule"
+            }
+        }
     },
     "deleteRuleSuccess": "Rule deleted successfully",
     "@deleteRuleSuccess": {
@@ -353,5 +359,17 @@
     "hexColorHint": "Example: FF0000",
     "@hexColorHint": {
         "description": "Hint text for hex color input field"
+    },
+    "dialogDefaultCancel": "Cancel",
+    "@dialogDefaultCancel": {
+        "description": "Default text for dialog cancel button"
+    },
+    "dialogDefaultConfirm": "Confirm",
+    "@dialogDefaultConfirm": {
+        "description": "Default text for dialog confirm button"
+    },
+    "deleteRule": "Delete Rule",
+    "@deleteRule": {
+        "description": "Title for rule deletion dialog"
     }
 }
