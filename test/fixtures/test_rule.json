@@ -5,6 +5,7 @@
             "name": "Test Rule",
             "packageName": "com.example.app",
             "activityName": ".MainActivity",
+            "isEnabled": true,
             "tags": [
                 "test_tag"
             ],
