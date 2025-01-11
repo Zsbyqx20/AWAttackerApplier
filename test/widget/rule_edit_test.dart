@@ -774,5 +774,170 @@ void main() {
         reason: 'Should show both total and enabled rule count as 1',
       );
     });
+
+    testWidgets('Successfully edit tags', (tester) async {
+      // 设置测试窗口大小
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      // 清空规则列表
+      await ruleProvider.clearRules();
+
+      // 构建测试页面，从规则列表页面开始
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<RuleProvider>.value(value: ruleProvider),
+            ChangeNotifierProvider<RuleValidationProvider>.value(
+                value: validationProvider),
+          ],
+          child: MaterialApp(
+            locale: const Locale('zh'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const RuleListPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 点击添加按钮
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      // 点击添加规则按钮
+      final addRuleButton = find.widgetWithText(FloatingActionButton, '添加规则');
+      await tester.tap(addRuleButton);
+      await tester.pumpAndSettle();
+
+      // 填写基本信息
+      await tester.enterText(
+        find.byWidgetPredicate(
+            (widget) => widget is TextInputField && widget.label == '规则名称'),
+        'Tag Test Rule',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate(
+            (widget) => widget is TextInputField && widget.label == '包名'),
+        'com.example.app',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate(
+            (widget) => widget is TextInputField && widget.label == '活动名'),
+        '.MainActivity',
+      );
+      await tester.pumpAndSettle();
+
+      // 找到标签输入组件
+      final tagInput = find.byType(TagChipsInput);
+      expect(tagInput, findsOneWidget, reason: 'Should show tag input field');
+
+      // 找到标签输入框
+      final tagTextField = find.descendant(
+        of: tagInput,
+        matching: find.byType(TextField),
+      );
+      expect(tagTextField, findsOneWidget,
+          reason: 'Should show tag text field');
+
+      // 添加第一个标签
+      await tester.enterText(tagTextField, 'tag1');
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+        of: tagInput,
+        matching: find.byIcon(Icons.add),
+      ));
+      await tester.pumpAndSettle();
+
+      // 添加第二个标签
+      await tester.enterText(tagTextField, 'tag2');
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+        of: tagInput,
+        matching: find.byIcon(Icons.add),
+      ));
+      await tester.pumpAndSettle();
+
+      // 添加第三个标签
+      await tester.enterText(tagTextField, 'tag3');
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+        of: tagInput,
+        matching: find.byIcon(Icons.add),
+      ));
+      await tester.pumpAndSettle();
+
+      // 删除第二个标签
+      await tester.tap(find
+          .descendant(
+            of: find.byType(TagChipsRow),
+            matching: find.byIcon(Icons.cancel),
+          )
+          .at(1));
+      await tester.pumpAndSettle();
+
+      // 填写悬浮窗样式的文本和UI Automator代码
+      await tester.enterText(
+        find.byWidgetPredicate(
+            (widget) => widget is TextInputField && widget.label == '文本'),
+        'Test Text',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextInputField && widget.label == 'UI Automator 代码'),
+        'new UiSelector().text("Test Text")',
+      );
+      await tester.pumpAndSettle();
+
+      // 点击保存按钮
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      // 等待页面完全更新
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // 验证规则列表页面上的显示
+      expect(find.text('Tag Test Rule'), findsOneWidget,
+          reason: 'Rule name should be visible in list');
+      expect(find.text('com.example.app'), findsOneWidget,
+          reason: 'Package name should be visible in list');
+      expect(find.text('.MainActivity'), findsOneWidget,
+          reason: 'Activity name should be visible in list');
+      expect(find.text('tag1'), findsOneWidget,
+          reason: 'First tag should be visible in list');
+      expect(find.text('tag2'), findsNothing,
+          reason: 'Deleted tag should not be visible in list');
+      expect(find.text('tag3'), findsOneWidget,
+          reason: 'Third tag should be visible in list');
+
+      // 验证规则是否被正确保存
+      expect(ruleProvider.rules.length, 1);
+      final savedRule = ruleProvider.rules.first;
+      expect(savedRule.name, 'Tag Test Rule');
+      expect(savedRule.packageName, 'com.example.app');
+      expect(savedRule.activityName, '.MainActivity');
+      expect(savedRule.tags, ['tag1', 'tag3'],
+          reason: 'Saved rule should have correct tags');
+      expect(savedRule.isEnabled, false);
+      expect(savedRule.overlayStyles.length, 1);
+
+      // 验证规则是否被正确保存到 SharedPreferences
+      final savedRules = await ruleRepository.loadRules();
+      expect(savedRules.length, 1);
+      final persistedRule = savedRules.first;
+      expect(persistedRule.name, 'Tag Test Rule');
+      expect(persistedRule.packageName, 'com.example.app');
+      expect(persistedRule.activityName, '.MainActivity');
+      expect(persistedRule.tags, ['tag1', 'tag3'],
+          reason: 'Persisted rule should have correct tags');
+    });
   });
 }
