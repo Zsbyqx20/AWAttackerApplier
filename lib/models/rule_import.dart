@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../exceptions/rule_import_exception.dart';
+import '../utils/rule_import_validator.dart';
 import 'overlay_style.dart';
 import 'rule.dart';
 
@@ -60,26 +61,22 @@ class RuleImport {
     required this.rules,
   });
 
-  /// 从JSON字符串解析
-  static RuleImport fromJson(String jsonStr) {
+  factory RuleImport.fromJson(String jsonStr) {
     if (jsonStr.isEmpty) {
       throw RuleImportException.emptyFile();
     }
 
     Map<String, dynamic> json;
     try {
-      json = jsonDecode(jsonStr);
+      json = jsonDecode(jsonStr) as Map<String, dynamic>;
     } catch (e) {
-      throw RuleImportException.invalidFormat(e.toString());
+      throw RuleImportException.invalidFormat();
     }
 
-    // 验证版本
-    final version = json['version'];
+    // 验证版本号
+    final version = json['version'] as String?;
     if (version == null) {
       throw RuleImportException.missingField('version');
-    }
-    if (version is! String) {
-      throw RuleImportException.invalidFieldType('version', 'String');
     }
     if (version != currentVersion) {
       throw RuleImportException.incompatibleVersion(version);
@@ -105,9 +102,9 @@ class RuleImport {
         rules.add(rule);
       } catch (e) {
         throw RuleImportException(
-          '解析规则失败',
+          'Parse rule failed',
           code: 'RULE_PARSE_ERROR',
-          details: '规则索引: $i, 错误: $e',
+          details: 'Rule index: $i, Error: $e',
         );
       }
     }
@@ -119,29 +116,42 @@ class RuleImport {
   }
 
   /// 解析单个规则
-  static Rule _parseRule(Map<String, dynamic> json) {
+  static Rule _parseRule(dynamic jsonData) {
+    if (jsonData is! Map<String, dynamic>) {
+      throw RuleImportException.invalidFieldValue('rule', 'Rule format error');
+    }
+    final json = jsonData;
+
     final name = json['name'] as String?;
     if (name == null || name.isEmpty) {
-      throw RuleImportException.invalidFieldValue('name', '规则名称不能为空');
+      throw RuleImportException.invalidFieldValue(
+          'name', 'Rule name cannot be empty');
     }
 
     final packageName = json['packageName'] as String?;
     if (packageName == null || packageName.isEmpty) {
-      throw RuleImportException.invalidFieldValue('packageName', '包名不能为空');
+      throw RuleImportException.invalidFieldValue(
+          'packageName', 'Package name cannot be empty');
     }
+    RuleImportValidator.validatePackageName(packageName);
 
     final activityName = json['activityName'] as String?;
     if (activityName == null || activityName.isEmpty) {
-      throw RuleImportException.invalidFieldValue('activityName', '活动名不能为空');
+      throw RuleImportException.invalidFieldValue(
+          'activityName', 'Activity name cannot be empty');
     }
+    RuleImportValidator.validateActivityName(activityName);
 
     final isEnabled = json['isEnabled'] as bool? ?? false;
     final tags = (json['tags'] as List?)?.cast<String>() ?? [];
+    if (tags.isNotEmpty) {
+      RuleImportValidator.validateTags(tags);
+    }
 
     final styleList = json['overlayStyles'] as List?;
     if (styleList == null || styleList.isEmpty) {
       throw RuleImportException.invalidFieldValue(
-          'overlayStyles', '至少需要一个悬浮窗样式');
+          'overlayStyles', 'At least one overlay style is required');
     }
 
     final overlayStyles = <OverlayStyle>[];
@@ -149,7 +159,13 @@ class RuleImport {
 
     for (var i = 0; i < styleList.length; i++) {
       try {
-        final style = OverlayStyle.fromJson(styleList[i]);
+        final styleData = styleList[i];
+        if (styleData is! Map<String, dynamic>) {
+          throw RuleImportException.invalidFieldValue(
+              'overlayStyles', 'Style ${i + 1} format error');
+        }
+        final style = OverlayStyle.fromJson(styleData);
+        RuleImportValidator.validateOverlayStyle(style);
         overlayStyles.add(style);
       } catch (e) {
         final error = e.toString();
@@ -157,16 +173,16 @@ class RuleImport {
         if (fieldMatch != null) {
           final field = fieldMatch.group(1)!;
           final message = error.replaceFirst(RegExp(r'Field .*?: '), '');
-          styleErrors.add('样式 ${i + 1} 的 $field 字段: $message');
+          styleErrors.add('Style ${i + 1} $field: $message');
         } else {
-          styleErrors.add('样式 ${i + 1}: $error');
+          styleErrors.add('Style ${i + 1}: $error');
         }
       }
     }
 
     if (styleErrors.isNotEmpty) {
       throw RuleImportException(
-        '解析样式失败',
+        'Parse overlay styles failed',
         code: 'STYLE_PARSE_ERROR',
         details: styleErrors.join('\n'),
       );
