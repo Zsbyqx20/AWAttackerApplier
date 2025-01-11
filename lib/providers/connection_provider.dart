@@ -42,7 +42,7 @@ class ConnectionProvider extends ChangeNotifier {
   final RuleProvider _ruleProvider;
   late final OverlayService _overlayService;
   late final AccessibilityService _accessibilityService;
-  StreamSubscription? _windowEventSubscription;
+  StreamSubscription<WindowEvent>? _windowEventSubscription;
   final Map<String, CachedOverlayPosition> _overlayPositionCache = {};
 
   ConnectionProvider(this._ruleProvider) {
@@ -74,7 +74,7 @@ class ConnectionProvider extends ChangeNotifier {
     _windowEventSubscription?.cancel(); // 确保之前的订阅被取消
     _windowEventSubscription = _accessibilityService.windowEvents.listen(
       _handleWindowEvent,
-      onError: (error) {
+      onError: (Object error) {
         debugPrint('❌ 窗口事件流错误: $error');
         _setStatus(ConnectionStatus.disconnected);
       },

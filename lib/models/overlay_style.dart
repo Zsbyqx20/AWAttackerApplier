@@ -140,10 +140,10 @@ class OverlayStyle {
     final paddingMap = json['padding'] as Map<String, dynamic>? ?? {};
     try {
       final padding = EdgeInsets.fromLTRB(
-        paddingMap['left']?.toDouble() ?? 0,
-        paddingMap['top']?.toDouble() ?? 0,
-        paddingMap['right']?.toDouble() ?? 0,
-        paddingMap['bottom']?.toDouble() ?? 0,
+        (paddingMap['left'] as num?)?.toDouble() ?? 0,
+        (paddingMap['top'] as num?)?.toDouble() ?? 0,
+        (paddingMap['right'] as num?)?.toDouble() ?? 0,
+        (paddingMap['bottom'] as num?)?.toDouble() ?? 0,
       );
       // 验证 padding 不能为负数
       if (padding.left < 0 ||
@@ -205,12 +205,12 @@ class OverlayStyle {
 
     try {
       return OverlayStyle(
-        x: json['x']?.toDouble() ?? 0,
-        y: json['y']?.toDouble() ?? 0,
-        width: json['width']?.toDouble() ?? 0,
-        height: json['height']?.toDouble() ?? 0,
-        text: json['text'] ?? '',
-        fontSize: json['fontSize']?.toDouble() ?? 14,
+        x: (json['x'] as num?)?.toDouble() ?? 0,
+        y: (json['y'] as num?)?.toDouble() ?? 0,
+        width: (json['width'] as num?)?.toDouble() ?? 0,
+        height: (json['height'] as num?)?.toDouble() ?? 0,
+        text: json['text'] as String? ?? '',
+        fontSize: (json['fontSize'] as num?)?.toDouble() ?? 14,
         backgroundColor: Color(parseColorValue(json['backgroundColor'],
             'backgroundColor', defaultBackgroundColor)),
         textColor: Color(
@@ -218,12 +218,12 @@ class OverlayStyle {
         horizontalAlign:
             parseTextAlign(json['horizontalAlign'], TextAlign.left),
         verticalAlign: parseTextAlign(json['verticalAlign'], TextAlign.center),
-        uiAutomatorCode: json['uiAutomatorCode'] ?? '',
+        uiAutomatorCode: json['uiAutomatorCode'] as String? ?? '',
         padding: EdgeInsets.fromLTRB(
-          paddingMap['left']?.toDouble() ?? 0,
-          paddingMap['top']?.toDouble() ?? 0,
-          paddingMap['right']?.toDouble() ?? 0,
-          paddingMap['bottom']?.toDouble() ?? 0,
+          (paddingMap['left'] as num?)?.toDouble() ?? 0,
+          (paddingMap['top'] as num?)?.toDouble() ?? 0,
+          (paddingMap['right'] as num?)?.toDouble() ?? 0,
+          (paddingMap['bottom'] as num?)?.toDouble() ?? 0,
         ),
       );
     } catch (e) {

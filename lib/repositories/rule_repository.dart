@@ -17,11 +17,13 @@ class RuleRepository {
       final String? rulesJson = _prefs.getString(_storageKey);
       if (rulesJson == null) return [];
 
-      final List<dynamic> decoded = jsonDecode(rulesJson);
-      if (decoded.isEmpty) return [];
+      final decoded = jsonDecode(rulesJson);
+      if (decoded is! List) return [];
+      final List<dynamic> rules = decoded;
+      if (rules.isEmpty) return [];
 
       // 验证解码后的数据是否为有效的规则列表
-      if (decoded.any((item) => item is! Map<String, dynamic>)) {
+      if (rules.any((item) => item is! Map<String, dynamic>)) {
         if (kDebugMode) {
           debugPrint('Invalid rule data format, clearing storage');
         }
@@ -29,7 +31,7 @@ class RuleRepository {
         return [];
       }
 
-      return decoded
+      return rules
           .map((json) => Rule.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {

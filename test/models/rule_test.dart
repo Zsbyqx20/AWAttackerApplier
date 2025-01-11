@@ -256,7 +256,7 @@ void main() {
           'packageName': 'com.example.app',
           'activityName': '.MainActivity',
           'isEnabled': true,
-          'overlayStyles': [],
+          'overlayStyles': <Map<String, dynamic>>[],
         };
 
         final rule = Rule.fromJson(json);

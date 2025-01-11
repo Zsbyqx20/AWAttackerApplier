@@ -18,9 +18,11 @@ class ElementResult {
       success: map['success'] as bool,
       message: map['message'] as String?,
       coordinates: map['coordinates'] != null
-          ? Map<String, int>.from(map['coordinates'])
+          ? Map<String, int>.from(map['coordinates'] as Map<dynamic, dynamic>)
           : null,
-      size: map['size'] != null ? Map<String, int>.from(map['size']) : null,
+      size: map['size'] != null
+          ? Map<String, int>.from(map['size'] as Map<dynamic, dynamic>)
+          : null,
       visible: map['visible'] as bool?,
     );
   }

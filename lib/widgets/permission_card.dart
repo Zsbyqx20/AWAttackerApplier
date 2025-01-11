@@ -6,7 +6,7 @@ import '../models/permission_status.dart';
 
 class PermissionCard extends StatefulWidget {
   final List<PermissionStatus> permissions;
-  final Function(PermissionType) onRequestPermission;
+  final Future<void> Function(PermissionType) onRequestPermission;
 
   const PermissionCard({
     super.key,

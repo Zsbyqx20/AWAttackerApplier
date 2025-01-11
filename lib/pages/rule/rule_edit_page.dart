@@ -341,9 +341,12 @@ class _RuleEditPageState extends State<RuleEditPage>
     }
 
     // 如果有详细信息，添加详细信息
-    if (validationResult?.errorDetails != null &&
-        validationResult!.errorDetails!.isNotEmpty) {
-      errorMessage.write('\n${validationResult.errorDetails}');
+    final details = validationResult?.errorDetails;
+    if (details != null) {
+      final detailsStr = details.toString();
+      if (detailsStr.isNotEmpty) {
+        errorMessage.write('\n$detailsStr');
+      }
     }
 
     // 显示错误提示

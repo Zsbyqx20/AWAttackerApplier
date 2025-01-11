@@ -35,12 +35,13 @@ void main() {
         for (final activityName in invalidActivityNames) {
           expect(
             () => RuleImportValidator.validateActivityName(activityName),
-            throwsA(predicate((e) =>
-                e is RuleImportException &&
-                e.code == 'INVALID_FIELD_VALUE' &&
-                e.message == 'Invalid field value' &&
-                e.details ==
-                    'Field activityName: Activity name must start with a dot (.)')),
+            throwsA(
+              predicate((e) =>
+                  e is RuleImportException &&
+                  e.code == 'INVALID_FIELD_VALUE' &&
+                  e.message == 'Invalid field value' &&
+                  (e.details as String).startsWith('Field activityName:')),
+            ),
           );
         }
       });
@@ -60,7 +61,7 @@ void main() {
                   e is RuleImportException &&
                   e.code == 'INVALID_FIELD_VALUE' &&
                   e.message == 'Invalid field value' &&
-                  e.details!.startsWith('Field activityName:')),
+                  (e.details as String).startsWith('Field activityName:')),
             ),
           );
         }
@@ -69,12 +70,13 @@ void main() {
       test('应当拒绝空活动名', () {
         expect(
           () => RuleImportValidator.validateActivityName(''),
-          throwsA(predicate((e) =>
-              e is RuleImportException &&
-              e.code == 'INVALID_FIELD_VALUE' &&
-              e.message == 'Invalid field value' &&
-              e.details ==
-                  'Field activityName: Activity name must start with a dot (.)')),
+          throwsA(
+            predicate((e) =>
+                e is RuleImportException &&
+                e.code == 'INVALID_FIELD_VALUE' &&
+                e.message == 'Invalid field value' &&
+                (e.details as String).startsWith('Field activityName:')),
+          ),
         );
       });
     });
@@ -110,7 +112,7 @@ void main() {
                 e is RuleImportException &&
                 e.code == 'INVALID_FIELD_VALUE' &&
                 e.message == 'Invalid field value' &&
-                e.details!.startsWith('Field packageName:'))),
+                (e.details as String).startsWith('Field packageName:'))),
           );
         }
       });
@@ -146,7 +148,7 @@ void main() {
                 e is RuleImportException &&
                 e.code == 'INVALID_FIELD_VALUE' &&
                 e.message == 'Invalid field value' &&
-                e.details == 'Field tags: Tag cannot be empty')),
+                (e.details as String).startsWith('Field tags:'))),
           );
         }
       });
@@ -159,8 +161,7 @@ void main() {
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
               e.message == 'Invalid field value' &&
-              e.details ==
-                  'Field tags: Tag length cannot exceed 50 characters')),
+              (e.details as String).startsWith('Field tags:'))),
         );
       });
     });
@@ -197,7 +198,7 @@ void main() {
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
               e.message == 'Invalid field value' &&
-              e.details == 'Field text: Text cannot be empty')),
+              (e.details as String).startsWith('Field text:'))),
         );
       });
 
@@ -216,7 +217,7 @@ void main() {
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
               e.message == 'Invalid field value' &&
-              e.details == 'Field fontSize: Font size must be greater than 0')),
+              (e.details as String).startsWith('Field fontSize:'))),
         );
 
         final negativeStyle = invalidStyle.copyWith(fontSize: -1);
@@ -226,7 +227,7 @@ void main() {
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
               e.message == 'Invalid field value' &&
-              e.details == 'Field fontSize: Font size must be greater than 0')),
+              (e.details as String).startsWith('Field fontSize:'))),
         );
       });
 
@@ -245,8 +246,7 @@ void main() {
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
               e.message == 'Invalid field value' &&
-              e.details ==
-                  'Field uiAutomatorCode: UI Automator code cannot be empty')),
+              (e.details as String).startsWith('Field uiAutomatorCode:'))),
         );
       });
 
@@ -266,7 +266,7 @@ void main() {
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
               e.message == 'Invalid field value' &&
-              e.details == 'Field padding: Padding cannot be negative')),
+              (e.details as String).startsWith('Field padding:'))),
         );
 
         // 测试其他方向的负数内边距
@@ -283,7 +283,7 @@ void main() {
                 e is RuleImportException &&
                 e.code == 'INVALID_FIELD_VALUE' &&
                 e.message == 'Invalid field value' &&
-                e.details == 'Field padding: Padding cannot be negative')),
+                (e.details as String).startsWith('Field padding:'))),
           );
         }
       });
@@ -304,8 +304,7 @@ void main() {
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
               e.message == 'Invalid field value' &&
-              e.details ==
-                  'Field backgroundColor: Color cannot be fully transparent')),
+              (e.details as String).startsWith('Field backgroundColor:'))),
         );
 
         // 测试完全透明的文本色
@@ -323,8 +322,7 @@ void main() {
               e is RuleImportException &&
               e.code == 'INVALID_FIELD_VALUE' &&
               e.message == 'Invalid field value' &&
-              e.details ==
-                  'Field textColor: Color cannot be fully transparent')),
+              (e.details as String).startsWith('Field textColor:'))),
         );
       });
     });

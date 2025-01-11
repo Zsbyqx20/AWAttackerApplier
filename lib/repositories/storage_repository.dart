@@ -18,8 +18,9 @@ class StorageRepository {
     if (json == null) return {};
 
     try {
-      final List<dynamic> list = jsonDecode(json);
-      return list.map((e) => e as String).toSet();
+      final decoded = jsonDecode(json);
+      if (decoded is! List) return {};
+      return decoded.map((e) => e as String).toSet();
     } catch (e) {
       return {};
     }

@@ -59,7 +59,8 @@ class AccessibilityService extends ChangeNotifier {
     switch (call.method) {
       case 'onWindowEvent':
         debugPrint('📨 收到窗口事件: ${call.arguments}');
-        final eventData = jsonDecode(call.arguments as String);
+        final eventData =
+            jsonDecode(call.arguments as String) as Map<String, dynamic>;
         final event = WindowEvent.fromJson(eventData);
         _windowEventController.add(event);
         debugPrint('✅ 事件已广播: $event');
@@ -157,7 +158,8 @@ class AccessibilityService extends ChangeNotifier {
       });
 
       return (result ?? [])
-          .map((e) => ElementResult.fromMap(Map<String, dynamic>.from(e)))
+          .map(
+              (e) => ElementResult.fromMap(Map<String, dynamic>.from(e as Map)))
           .toList();
     } catch (e) {
       debugPrint('批量查找元素时发生错误: $e');

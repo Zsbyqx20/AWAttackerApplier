@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/overlay_style.dart';
 import '../models/rule.dart';
 import '../models/rule_validation_result.dart';
 import '../models/rule_validation_state.dart';
@@ -28,7 +29,8 @@ class RuleValidationProvider extends ChangeNotifier {
         result = RuleFieldValidator.validateTags(value as List<String>?);
         break;
       case 'overlayStyle':
-        result = RuleFieldValidator.validateOverlayStyle(value);
+        result =
+            RuleFieldValidator.validateOverlayStyle(value as OverlayStyle?);
         break;
       default:
         result = RuleValidationResult.fieldError(
