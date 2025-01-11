@@ -97,4 +97,10 @@ class RuleRepository {
       rethrow;
     }
   }
+
+  /// 清空规则列表（仅用于测试）
+  @visibleForTesting
+  Future<void> clearRules() async {
+    await _prefs.remove(_storageKey);
+  }
 }
