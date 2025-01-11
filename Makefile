@@ -9,6 +9,7 @@ test:
 clean:
 	flutter clean
 	flutter pub get
+	flutter gen-l10n
 
 format:
 	dart format lib/
