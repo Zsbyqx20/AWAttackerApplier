@@ -1,0 +1,34 @@
+{
+    "version": "1.0",
+    "rules": [
+        {
+            "name": "Conflicting Rule",
+            "packageName": "com.example.app",
+            "activityName": ".MainActivity",
+            "tags": [
+                "test_tag_2"
+            ],
+            "overlayStyles": [
+                {
+                    "text": "Test Style",
+                    "fontSize": 14,
+                    "uiAutomatorCode": "new UiSelector().text(\"Test Style\")",
+                    "backgroundColor": "#80FFFF00",
+                    "textColor": "#FF0000FF",
+                    "x": 100,
+                    "y": 100,
+                    "width": 200,
+                    "height": 100,
+                    "padding": {
+                        "left": 16,
+                        "top": 8,
+                        "right": 16,
+                        "bottom": 8
+                    },
+                    "horizontalAlign": "start",
+                    "verticalAlign": "center"
+                }
+            ]
+        }
+    ]
+}
