@@ -276,6 +276,7 @@ class _RuleEditPageState extends State<RuleEditPage>
             activityName: _activityNameController.text,
             overlayStyles: _overlayStyles,
             tags: _tags,
+            isEnabled: widget.rule?.isEnabled ?? false,
           ) ??
           Rule(
             name: _nameController.text,

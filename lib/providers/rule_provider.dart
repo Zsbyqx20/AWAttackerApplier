@@ -240,21 +240,44 @@ class RuleProvider extends ChangeNotifier {
         throw RuleImportException('规则验证失败');
       }
 
-      // 先删除具有相同包名和活动名的规则
-      _rules.removeWhere((r) =>
+      // 查找现有规则
+      final existingRuleIndex = _rules.indexWhere((r) =>
           r.packageName == rule.packageName &&
           r.activityName == rule.activityName);
 
-      // 添加更新后的规则
-      _rules.add(rule);
-      await _repository.updateRule(rule);
+      if (existingRuleIndex != -1) {
+        // 如果找到现有规则，使用RuleMerger合并
+        final existingRule = _rules[existingRuleIndex];
+        final mergeResult = RuleMerger.checkConflict(existingRule, rule);
+        if (mergeResult.isMergeable) {
+          // 合并规则时，使用新规则的名称和样式，但保持原始规则的启用状态
+          final mergedRule = mergeResult.mergedRule!.copyWith(
+            name: rule.name,
+            overlayStyles: rule.overlayStyles,
+            isEnabled: existingRule.isEnabled,
+          );
+          _rules[existingRuleIndex] = mergedRule;
+          await _repository.updateRule(mergedRule);
+        } else {
+          // 如果不能合并，直接替换，但保持原始规则的启用状态
+          final updatedRule = rule.copyWith(
+            isEnabled: existingRule.isEnabled,
+          );
+          _rules[existingRuleIndex] = updatedRule;
+          await _repository.updateRule(updatedRule);
+        }
+      } else {
+        // 如果没有找到现有规则，直接添加
+        _rules.add(rule);
+        await _repository.updateRule(rule);
+      }
+
       notifyListeners();
     } catch (e) {
-      _error = e.toString();
-      if (kDebugMode) {
-        print('Error updating rule: $e');
+      if (e is RuleImportException) {
+        rethrow;
       }
-      rethrow;
+      throw RuleImportException(e.toString());
     }
   }
 
@@ -377,7 +400,9 @@ class RuleProvider extends ChangeNotifier {
           // 更新现有规则
           final mergedRule = result.mergedRule!;
           await _repository.updateRule(mergedRule);
-          final index = _rules.indexOf(mergedRule);
+          final index = _rules.indexWhere((r) =>
+              r.packageName == mergedRule.packageName &&
+              r.activityName == mergedRule.activityName);
           if (index != -1) {
             _rules[index] = mergedRule;
           }
