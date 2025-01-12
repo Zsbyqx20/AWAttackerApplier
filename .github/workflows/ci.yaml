@@ -25,6 +25,10 @@ jobs:
           channel: stable
           flutter-version: 3.27.1
           cache: true
+      - name: Set China mirrors
+        run: |
+          flutter pub global activate flutter_pub_mirror
+          flutter pub global run flutter_pub_mirror:main set-mirror -c china
       - run: flutter pub get
       - run: flutter gen-l10n
       - run: flutter test
