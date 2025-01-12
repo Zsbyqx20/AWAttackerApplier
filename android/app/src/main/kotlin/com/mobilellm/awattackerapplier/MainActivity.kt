@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat
 import android.graphics.Rect
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
+import android.content.IntentFilter
 
 class MainActivity : FlutterActivity(), CoroutineScope {
     private val job = SupervisorJob()
@@ -31,15 +32,21 @@ class MainActivity : FlutterActivity(), CoroutineScope {
         private const val CREATE_FILE_REQUEST_CODE = 2
         private const val OPEN_FILE_REQUEST_CODE = 3
         private const val CHANNEL = "com.mobilellm.awattackerapplier/overlay_service"
+        private const val CONNECTION_CHANNEL = "com.mobilellm.awattackerapplier/connection"
         
-        // 提供静态访问方法，用于从AccessibilityService发送事件
         private var methodChannel: MethodChannel? = null
+        private var connectionChannel: MethodChannel? = null
+
         fun getMethodChannel(): MethodChannel? = methodChannel
+        fun getConnectionChannel(): MethodChannel? = connectionChannel
     }
 
     private var pendingResult: MethodChannel.Result? = null
     private var pendingFileContent: String? = null
     private lateinit var channel: MethodChannel
+    private lateinit var connChannel: MethodChannel
+
+    private val serviceReceiver = ServiceControlReceiver()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,9 +55,15 @@ class MainActivity : FlutterActivity(), CoroutineScope {
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
+        // 设置主channel
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
-        methodChannel = channel  // 保存静态引用
+        methodChannel = channel
         
+        // 设置连接channel
+        connChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CONNECTION_CHANNEL)
+        connectionChannel = connChannel
+
+        // 主channel的方法处理
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "checkOverlayPermission" -> {
@@ -170,6 +183,74 @@ class MainActivity : FlutterActivity(), CoroutineScope {
                 else -> result.notImplemented()
             }
         }
+
+        // 服务控制channel的方法处理
+        connChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "handleBroadcastCommand" -> {
+                    val command = call.argument<String>("command")
+                    when (command) {
+                        "START_SERVICE" -> {
+                            try {
+                                val intent = Intent(this, OverlayService::class.java)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    startForegroundService(intent)
+                                } else {
+                                    startService(intent)
+                                }
+                                result.success(true)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "启动服务失败", e)
+                                result.error("START_SERVICE_FAILED", e.message, null)
+                            }
+                        }
+                        "STOP_SERVICE" -> {
+                            try {
+                                val intent = Intent(this, OverlayService::class.java)
+                                stopService(intent)
+                                result.success(true)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "停止服务失败", e)
+                                result.error("STOP_SERVICE_FAILED", e.message, null)
+                            }
+                        }
+                        else -> result.notImplemented()
+                    }
+                }
+                "startService" -> {
+                    try {
+                        val intent = Intent(this, OverlayService::class.java)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForegroundService(intent)
+                        } else {
+                            startService(intent)
+                        }
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "启动服务失败", e)
+                        result.error("START_SERVICE_FAILED", e.message, null)
+                    }
+                }
+                "stopService" -> {
+                    try {
+                        val intent = Intent(this, OverlayService::class.java)
+                        stopService(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "停止服务失败", e)
+                        result.error("STOP_SERVICE_FAILED", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // 注册广播接收器
+        val filter = IntentFilter().apply {
+            addAction(ServiceControlReceiver.ACTION_START_SERVICE)
+            addAction(ServiceControlReceiver.ACTION_STOP_SERVICE)
+        }
+        registerReceiver(serviceReceiver, filter)
     }
 
     override fun onResume() {
@@ -185,7 +266,7 @@ class MainActivity : FlutterActivity(), CoroutineScope {
         }
     }
 
-    private fun checkOverlayPermission(): Boolean {
+    fun checkOverlayPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Settings.canDrawOverlays(this)
         } else {
@@ -193,7 +274,7 @@ class MainActivity : FlutterActivity(), CoroutineScope {
         }
     }
 
-    private fun checkAccessibilityPermission(): Boolean {
+    fun checkAccessibilityPermission(): Boolean {
         val am = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
         val enabledServices = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC)
         val isEnabled = enabledServices.any { it.id.contains(packageName) }
@@ -288,7 +369,10 @@ class MainActivity : FlutterActivity(), CoroutineScope {
     override fun onDestroy() {
         super.onDestroy()
         job.cancel()
+        // 注销广播接收器
+        unregisterReceiver(serviceReceiver)
         methodChannel = null
+        connectionChannel = null
     }
 
     private fun handleFindElements(call: MethodCall, result: MethodChannel.Result) {

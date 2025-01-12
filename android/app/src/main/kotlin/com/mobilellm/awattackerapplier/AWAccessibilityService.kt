@@ -41,6 +41,9 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     private var lastActivity: String? = null
     private var isDetectionEnabled = false
     
+    // 添加公有getter
+    fun isDetectionEnabled(): Boolean = isDetectionEnabled
+
     // 添加去重相关的变量
     private var lastEventTime: Long = 0
     private val EVENT_THROTTLE_TIME = 500L  // 500ms 内的相同事件将被忽略
