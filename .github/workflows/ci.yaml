@@ -33,6 +33,15 @@ jobs:
       - run: dart analyze --fatal-infos
       - run: dart run import_sorter:main
 
+      - name: Commit format fixes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git commit -m "style: auto format and fix" || echo "No changes to commit"
+          git push
+
       - name: Build APK
         if: startsWith(github.ref, 'refs/tags/')
         run: flutter build apk --release
