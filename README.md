@@ -36,5 +36,6 @@ A configurable dynamic attacker app designed for Android World.
 - [x] Support CN/EN locales
 - [ ] Support **configurable popup window rendering rules** with customizable styles and layouts
 - [x] Organize rules with customizable tags
-- [ ] Quick filter and search by tags
 - [x] Support rule format validation and version compatibility checks
+- [x] Support Start/Stop service by `adb` broadcasting
+- [ ] Support refresh rules by `adb` broadcasting
