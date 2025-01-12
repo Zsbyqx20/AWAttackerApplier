@@ -38,6 +38,7 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          git restore --staged pubspec.lock
           git add .
           git commit -m "style: auto format and fix" || echo "No changes to commit"
           git push
