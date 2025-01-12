@@ -38,7 +38,7 @@ class RuleImportPreviewDialog extends StatelessWidget {
         RuleFieldValidator.validateActivityName(rule.activityName);
     if (!activityNameResult.isValid) {
       return RuleMergeResult.conflict(
-        errorMessage: '活动名必须以点号"."开头',
+        errorMessage: '${rule.activityName} ${activityNameResult.errorMessage}',
       );
     }
 
