@@ -86,6 +86,13 @@ class OverlayStyle {
   }
 
   Map<String, dynamic> toJson() {
+    String colorToHex(Color color) {
+      return '#${(color.a * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}'
+          '${(color.r * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}'
+          '${(color.g * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}'
+          '${(color.b * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}';
+    }
+
     return {
       'x': x,
       'y': y,
@@ -93,14 +100,8 @@ class OverlayStyle {
       'height': height,
       'text': text,
       'fontSize': fontSize,
-      'backgroundColor': (backgroundColor.a * 255).toInt() << 24 |
-          (backgroundColor.r * 255).toInt() << 16 |
-          (backgroundColor.g * 255).toInt() << 8 |
-          (backgroundColor.b * 255).toInt(),
-      'textColor': (textColor.a * 255).toInt() << 24 |
-          (textColor.r * 255).toInt() << 16 |
-          (textColor.g * 255).toInt() << 8 |
-          (textColor.b * 255).toInt(),
+      'backgroundColor': colorToHex(backgroundColor),
+      'textColor': colorToHex(textColor),
       'horizontalAlign': _textAlignToString(horizontalAlign),
       'verticalAlign': _textAlignToString(verticalAlign),
       'uiAutomatorCode': uiAutomatorCode,
