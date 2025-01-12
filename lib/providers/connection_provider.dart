@@ -41,15 +41,18 @@ class ConnectionProvider extends ChangeNotifier {
   bool _isStopping = false;
   ConnectionStatus _status = ConnectionStatus.disconnected;
   final RuleProvider _ruleProvider;
-  late final OverlayService _overlayService;
-  late final AccessibilityService _accessibilityService;
+  final OverlayService _overlayService;
+  final AccessibilityService _accessibilityService;
   StreamSubscription<WindowEvent>? _windowEventSubscription;
   final Map<String, CachedOverlayPosition> _overlayPositionCache = {};
 
-  ConnectionProvider(this._ruleProvider) {
+  ConnectionProvider(
+    this._ruleProvider, {
+    OverlayService? overlayService,
+    AccessibilityService? accessibilityService,
+  })  : _overlayService = overlayService ?? OverlayService(),
+        _accessibilityService = accessibilityService ?? AccessibilityService() {
     debugPrint('🏗️ 创建ConnectionProvider');
-    _overlayService = OverlayService();
-    _accessibilityService = AccessibilityService();
     // 监听AccessibilityService的变化
     _accessibilityService.addListener(_handleAccessibilityServiceChange);
   }
