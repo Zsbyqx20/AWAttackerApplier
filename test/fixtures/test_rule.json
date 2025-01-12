@@ -11,9 +11,9 @@
             ],
             "overlayStyles": [
                 {
-                    "text": "Test Style",
+                    "text": "Test Style 1",
                     "fontSize": 14,
-                    "uiAutomatorCode": "new UiSelector().text(\"Test Style\")",
+                    "uiAutomatorCode": "new UiSelector().text(\"Test Style 1\")",
                     "backgroundColor": "#80FFFF00",
                     "textColor": "#FF0000FF",
                     "x": 100,
@@ -28,6 +28,25 @@
                     },
                     "horizontalAlign": "start",
                     "verticalAlign": "center"
+                },
+                {
+                    "text": "Test Style 2",
+                    "fontSize": 16,
+                    "uiAutomatorCode": "new UiSelector().text(\"Test Style 2\")",
+                    "backgroundColor": "#80FF00FF",
+                    "textColor": "#FF00FF00",
+                    "x": 300,
+                    "y": 300,
+                    "width": 150,
+                    "height": 50,
+                    "padding": {
+                        "left": 12,
+                        "top": 6,
+                        "right": 12,
+                        "bottom": 6
+                    },
+                    "horizontalAlign": "end",
+                    "verticalAlign": "top"
                 }
             ]
         }

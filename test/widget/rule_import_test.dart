@@ -196,10 +196,13 @@ void main() {
       expect(rules[0].packageName, 'com.example.app');
       expect(rules[0].activityName, '.MainActivity');
       expect(rules[0].tags, ['test_tag']);
-      expect(rules[0].overlayStyles.length, 1);
-      expect(rules[0].overlayStyles[0].text, 'Test Style');
+      expect(rules[0].overlayStyles.length, 2);
+      expect(rules[0].overlayStyles[0].text, 'Test Style 1');
       expect(rules[0].overlayStyles[0].uiAutomatorCode,
-          'new UiSelector().text("Test Style")');
+          'new UiSelector().text("Test Style 1")');
+      expect(rules[0].overlayStyles[1].text, 'Test Style 2');
+      expect(rules[0].overlayStyles[1].uiAutomatorCode,
+          'new UiSelector().text("Test Style 2")');
 
       // Verify rule is saved in SharedPreferences
       final savedRules = await ruleRepository.loadRules();
@@ -208,10 +211,13 @@ void main() {
       expect(savedRules[0].packageName, 'com.example.app');
       expect(savedRules[0].activityName, '.MainActivity');
       expect(savedRules[0].tags, ['test_tag']);
-      expect(savedRules[0].overlayStyles.length, 1);
-      expect(savedRules[0].overlayStyles[0].text, 'Test Style');
+      expect(savedRules[0].overlayStyles.length, 2);
+      expect(savedRules[0].overlayStyles[0].text, 'Test Style 1');
       expect(savedRules[0].overlayStyles[0].uiAutomatorCode,
-          'new UiSelector().text("Test Style")');
+          'new UiSelector().text("Test Style 1")');
+      expect(savedRules[0].overlayStyles[1].text, 'Test Style 2');
+      expect(savedRules[0].overlayStyles[1].uiAutomatorCode,
+          'new UiSelector().text("Test Style 2")');
     });
 
     testWidgets('Import mergeable rule', (WidgetTester tester) async {
@@ -255,6 +261,7 @@ void main() {
       expect(ruleProvider.rules.length, 1);
       final beforeRule = ruleProvider.rules[0];
       expect(beforeRule.tags, ['test_tag']);
+      expect(beforeRule.overlayStyles.length, 2);
 
       // Import the rule
       await tester.tap(find.text(l10n.ruleImportPreviewDialogImport));
@@ -274,10 +281,14 @@ void main() {
       expect(mergedRule.packageName, 'com.example.app');
       expect(mergedRule.activityName, '.MainActivity');
       expect(mergedRule.tags, containsAll(['test_tag', 'test_tag_2']));
-      expect(mergedRule.overlayStyles.length, 2);
+      expect(mergedRule.overlayStyles.length, 3);
       expect(
           mergedRule.overlayStyles.any((s) =>
-              s.uiAutomatorCode == 'new UiSelector().text("Test Style")'),
+              s.uiAutomatorCode == 'new UiSelector().text("Test Style 1")'),
+          isTrue);
+      expect(
+          mergedRule.overlayStyles.any((s) =>
+              s.uiAutomatorCode == 'new UiSelector().text("Test Style 2")'),
           isTrue);
       expect(
           mergedRule.overlayStyles.any(
@@ -341,10 +352,15 @@ void main() {
       expect(rule.packageName, 'com.example.app');
       expect(rule.activityName, '.MainActivity');
       expect(rule.tags, ['test_tag']);
-      expect(rule.overlayStyles.length, 1);
-      expect(rule.overlayStyles[0].text, 'Test Style');
-      expect(rule.overlayStyles[0].uiAutomatorCode,
-          'new UiSelector().text("Test Style")');
+      expect(rule.overlayStyles.length, 2);
+      expect(
+          rule.overlayStyles.any((s) =>
+              s.uiAutomatorCode == 'new UiSelector().text("Test Style 1")'),
+          isTrue);
+      expect(
+          rule.overlayStyles.any((s) =>
+              s.uiAutomatorCode == 'new UiSelector().text("Test Style 2")'),
+          isTrue);
     });
   });
 }

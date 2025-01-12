@@ -10,13 +10,13 @@
             ],
             "overlayStyles": [
                 {
-                    "text": "Test Style",
+                    "text": "Test Style 1",
                     "fontSize": 14,
-                    "uiAutomatorCode": "new UiSelector().text(\"Test Style\")",
+                    "uiAutomatorCode": "new UiSelector().text(\"Test Style 1\")",
                     "backgroundColor": "#80FFFF00",
                     "textColor": "#FF0000FF",
-                    "x": 100,
-                    "y": 100,
+                    "x": 200,
+                    "y": 200,
                     "width": 200,
                     "height": 100,
                     "padding": {
