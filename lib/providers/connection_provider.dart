@@ -8,8 +8,8 @@ import '../models/rule.dart';
 import '../models/window_event.dart';
 import '../services/accessibility_service.dart';
 import '../services/overlay_service.dart';
-import 'rule_provider.dart';
 import 'connection_provider_broadcast.dart';
+import 'rule_provider.dart';
 
 enum ConnectionStatus {
   connected,
