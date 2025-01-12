@@ -9,6 +9,7 @@ import '../models/window_event.dart';
 import '../services/accessibility_service.dart';
 import '../services/overlay_service.dart';
 import 'rule_provider.dart';
+import 'connection_provider_broadcast.dart';
 
 enum ConnectionStatus {
   connected,
@@ -36,7 +37,7 @@ class CachedOverlayPosition {
   }
 }
 
-class ConnectionProvider extends ChangeNotifier {
+class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
   bool _isServiceRunning = false;
   bool _isStopping = false;
   ConnectionStatus _status = ConnectionStatus.disconnected;
@@ -55,6 +56,8 @@ class ConnectionProvider extends ChangeNotifier {
     debugPrint('🏗️ 创建ConnectionProvider');
     // 监听AccessibilityService的变化
     _accessibilityService.addListener(_handleAccessibilityServiceChange);
+    // 初始化广播命令处理器
+    initializeBroadcastHandler();
   }
 
   // 状态获取器
@@ -367,4 +370,11 @@ class ConnectionProvider extends ChangeNotifier {
     debugPrint('🗑️ 移除悬浮窗缓存: $overlayId');
     return _overlayPositionCache.remove(overlayId);
   }
+
+  // 实现BroadcastCommandHandler的抽象方法
+  @override
+  Future<void> handleStartService() => checkAndConnect();
+
+  @override
+  Future<void> handleStopService() => stop();
 }
