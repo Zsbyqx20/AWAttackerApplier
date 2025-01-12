@@ -1,17 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+import 'package:awattackerapplier/models/element_result.dart';
+import 'package:awattackerapplier/models/overlay_result.dart';
+import 'package:awattackerapplier/models/overlay_style.dart';
+import 'package:awattackerapplier/models/window_event.dart';
 import 'package:awattackerapplier/providers/connection_provider.dart';
 import 'package:awattackerapplier/providers/rule_provider.dart';
 import 'package:awattackerapplier/services/accessibility_service.dart';
 import 'package:awattackerapplier/services/overlay_service.dart';
-import 'package:awattackerapplier/models/window_event.dart';
-import 'package:awattackerapplier/models/element_result.dart';
-import 'package:awattackerapplier/models/overlay_result.dart';
-import 'package:awattackerapplier/models/overlay_style.dart';
-
 import 'connection_provider_test_helper.dart';
 
 // Mock classes

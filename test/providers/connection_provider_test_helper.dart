@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:awattackerapplier/models/window_event.dart';
 import 'package:awattackerapplier/models/rule.dart';
+import 'package:awattackerapplier/models/window_event.dart';
 
 /// 创建测试用的窗口事件
 WindowEvent createTestWindowEvent({
