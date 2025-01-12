@@ -87,7 +87,7 @@ class RuleImportResultDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    '共 $totalCount 条',
+                    l10n.ruleImportResultDetail(totalCount),
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[700],
@@ -108,7 +108,7 @@ class RuleImportResultDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      '成功 $successCount',
+                      l10n.ruleImportResultSuccess(successCount),
                       style: TextStyle(
                         fontSize: 12,
                         color: theme.colorScheme.primary,
@@ -129,7 +129,7 @@ class RuleImportResultDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      '合并 $mergeableCount',
+                      l10n.ruleImportResultMergeable(mergeableCount),
                       style: TextStyle(
                         fontSize: 12,
                         color: theme.colorScheme.secondary,
@@ -150,7 +150,7 @@ class RuleImportResultDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      '冲突 $conflictCount',
+                      l10n.ruleImportResultConflict(conflictCount),
                       style: TextStyle(
                         fontSize: 12,
                         color: theme.colorScheme.error,
