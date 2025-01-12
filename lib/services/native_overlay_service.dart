@@ -12,7 +12,7 @@ import 'interfaces/i_overlay_service.dart';
 /// 原生悬浮窗服务实现
 class NativeOverlayService implements IOverlayService {
   static const _channel =
-      MethodChannel('com.mobilellm.awattackapplier/overlay_service');
+      MethodChannel('com.mobilellm.awattackerapplier/overlay_service');
 
   // 存储活动的悬浮窗ID
   final Set<String> _activeOverlayIds = {};

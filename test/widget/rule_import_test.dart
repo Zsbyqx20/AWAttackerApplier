@@ -99,7 +99,7 @@ void main() {
     Future<void> importBaseRule(WidgetTester tester) async {
       // Mock method channel call for base rule
       const channel =
-          MethodChannel('com.mobilellm.awattackapplier/overlay_service');
+          MethodChannel('com.mobilellm.awattackerapplier/overlay_service');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
         if (call.method == 'openFile') {
@@ -142,7 +142,7 @@ void main() {
 
       // Mock method channel call
       const channel =
-          MethodChannel('com.mobilellm.awattackapplier/overlay_service');
+          MethodChannel('com.mobilellm.awattackerapplier/overlay_service');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
         if (call.method == 'openFile') {
@@ -228,7 +228,7 @@ void main() {
 
       // Now try to import mergeable rule
       const channel =
-          MethodChannel('com.mobilellm.awattackapplier/overlay_service');
+          MethodChannel('com.mobilellm.awattackerapplier/overlay_service');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
         if (call.method == 'openFile') {
@@ -299,7 +299,7 @@ void main() {
 
       // Now try to import conflicting rule
       const channel =
-          MethodChannel('com.mobilellm.awattackapplier/overlay_service');
+          MethodChannel('com.mobilellm.awattackerapplier/overlay_service');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
         if (call.method == 'openFile') {

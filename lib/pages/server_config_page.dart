@@ -26,7 +26,7 @@ class ServerConfigPage extends StatefulWidget {
 class _ServerConfigPageState extends State<ServerConfigPage>
     with WidgetsBindingObserver {
   final _channel =
-      const MethodChannel('com.mobilellm.awattackapplier/overlay_service');
+      const MethodChannel('com.mobilellm.awattackerapplier/overlay_service');
 
   bool _hasOverlayPermission = false;
   bool _hasAccessibilityPermission = false;

@@ -1,4 +1,4 @@
-package com.mobilellm.awattackapplier
+package com.mobilellm.awattackerapplier
 
 import android.content.Context
 import android.graphics.Color

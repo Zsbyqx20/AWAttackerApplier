@@ -1,4 +1,4 @@
-package com.mobilellm.awattackapplier
+package com.mobilellm.awattackerapplier
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
@@ -59,7 +59,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         // "com.android.launcher2",
         // "com.android.launcher3",
         "com.google.android.googlequicksearchbox",
-        "com.mobilellm.awattackapplier"
+        "com.mobilellm.awattackerapplier"
     )
 
     // 添加标记当前是否正在查找的变量
