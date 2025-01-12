@@ -9,7 +9,7 @@ import '../models/window_event.dart';
 
 class AccessibilityService extends ChangeNotifier {
   static const _channel =
-      MethodChannel('com.mobilellm.awattackapplier/overlay_service');
+      MethodChannel('com.mobilellm.awattackerapplier/overlay_service');
   static final AccessibilityService _instance =
       AccessibilityService._internal();
   bool _initialized = false;

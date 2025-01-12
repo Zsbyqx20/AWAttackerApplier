@@ -38,17 +38,23 @@ class CachedOverlayPosition {
 
 class ConnectionProvider extends ChangeNotifier {
   bool _isServiceRunning = false;
+  bool _isStopping = false;
   ConnectionStatus _status = ConnectionStatus.disconnected;
   final RuleProvider _ruleProvider;
-  late final OverlayService _overlayService;
-  late final AccessibilityService _accessibilityService;
+  final OverlayService _overlayService;
+  final AccessibilityService _accessibilityService;
   StreamSubscription<WindowEvent>? _windowEventSubscription;
   final Map<String, CachedOverlayPosition> _overlayPositionCache = {};
 
-  ConnectionProvider(this._ruleProvider) {
+  ConnectionProvider(
+    this._ruleProvider, {
+    OverlayService? overlayService,
+    AccessibilityService? accessibilityService,
+  })  : _overlayService = overlayService ?? OverlayService(),
+        _accessibilityService = accessibilityService ?? AccessibilityService() {
     debugPrint('🏗️ 创建ConnectionProvider');
-    _overlayService = OverlayService();
-    _accessibilityService = AccessibilityService();
+    // 监听AccessibilityService的变化
+    _accessibilityService.addListener(_handleAccessibilityServiceChange);
   }
 
   // 状态获取器
@@ -62,14 +68,19 @@ class ConnectionProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _initialize() async {
-    debugPrint('🚀 开始初始化ConnectionProvider');
+  // 处理AccessibilityService的变化
+  void _handleAccessibilityServiceChange() {
+    // 如果服务正在停止，不重新订阅
+    if (_isStopping) {
+      debugPrint('🚫 服务正在停止，不重新订阅事件');
+      return;
+    }
+    debugPrint('📡 AccessibilityService发生变化，重新设置事件订阅');
+    _setupEventSubscription();
+  }
 
-    // 初始化AccessibilityService
-    await _accessibilityService.initialize();
-    debugPrint('✅ AccessibilityService初始化完成');
-
-    // 设置窗口事件监听
+  // 设置事件订阅
+  void _setupEventSubscription() {
     debugPrint('📡 开始设置窗口事件订阅');
     _windowEventSubscription?.cancel(); // 确保之前的订阅被取消
     _windowEventSubscription = _accessibilityService.windowEvents.listen(
@@ -81,6 +92,17 @@ class ConnectionProvider extends ChangeNotifier {
       cancelOnError: false,
     );
     debugPrint('✅ 窗口事件订阅设置完成');
+  }
+
+  Future<void> _initialize() async {
+    debugPrint('🚀 开始初始化ConnectionProvider');
+
+    // 初始化AccessibilityService
+    await _accessibilityService.initialize();
+    debugPrint('✅ AccessibilityService初始化完成');
+
+    // 设置窗口事件监听
+    _setupEventSubscription();
   }
 
   // 检查并启动服务
@@ -127,6 +149,11 @@ class ConnectionProvider extends ChangeNotifier {
   // 停止服务
   Future<void> stop() async {
     try {
+      _isStopping = true;
+
+      // 先移除监听器，避免重复触发
+      _accessibilityService.removeListener(_handleAccessibilityServiceChange);
+
       // 先停止界面检测
       await _accessibilityService.stopDetection();
       debugPrint('✅ 已停止界面检测');
@@ -145,6 +172,8 @@ class ConnectionProvider extends ChangeNotifier {
       _isServiceRunning = false;
       _setStatus(ConnectionStatus.disconnected);
       notifyListeners();
+    } finally {
+      _isStopping = false;
     }
   }
 
@@ -326,7 +355,9 @@ class ConnectionProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isStopping = true;
     _windowEventSubscription?.cancel();
+    _accessibilityService.removeListener(_handleAccessibilityServiceChange);
     super.dispose();
   }
 

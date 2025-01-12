@@ -509,5 +509,45 @@
     "ruleImportPreviewDialogImportUnknownError": "未知错误",
     "@ruleImportPreviewDialogImportUnknownError": {
         "description": "Error message for rule import preview import unknown error"
+    },
+    "ruleImportResultDetail": "共 {total} 条",
+    "@ruleImportResultDetail": {
+        "description": "Text for rule import result detail",
+        "placeholders": {
+            "total": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "ruleImportResultSuccess": "成功 {success}",
+    "@ruleImportResultSuccess": {
+        "description": "Text for rule import result success",
+        "placeholders": {
+            "success": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "ruleImportResultMergeable": "合并 {mergeable}",
+    "@ruleImportResultMergeable": {
+        "description": "Text for rule import result mergeable",
+        "placeholders": {
+            "mergeable": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "ruleImportResultConflict": "冲突 {conflict}",
+    "@ruleImportResultConflict": {
+        "description": "Text for rule import result conflict",
+        "placeholders": {
+            "conflict": {
+                "type": "int",
+                "example": "5"
+            }
+        }
     }
 }

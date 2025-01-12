@@ -203,7 +203,7 @@ class _RuleListPageState extends State<RuleListPage>
     final l10n = AppLocalizations.of(context)!;
     try {
       final jsonStr = await const MethodChannel(
-              'com.mobilellm.awattackapplier/overlay_service')
+              'com.mobilellm.awattackerapplier/overlay_service')
           .invokeMethod<String>('openFile');
 
       if (jsonStr == null) {
@@ -282,7 +282,7 @@ class _RuleListPageState extends State<RuleListPage>
       ).toJson();
 
       final result = await const MethodChannel(
-              'com.mobilellm.awattackapplier/overlay_service')
+              'com.mobilellm.awattackerapplier/overlay_service')
           .invokeMethod<bool>('saveFile', {
         'content': jsonStr,
         'fileName': 'rules.json',

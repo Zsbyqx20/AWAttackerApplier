@@ -515,5 +515,45 @@
     "ruleImportPreviewDialogImportUnknownError": "Unknown error",
     "@ruleImportPreviewDialogImportUnknownError": {
         "description": "Error message for rule import preview import unknown error"
+    },
+    "ruleImportResultDetail": "Total {total}",
+    "@ruleImportResultDetail": {
+        "description": "Text for rule import result detail",
+        "placeholders": {
+            "total": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "ruleImportResultSuccess": "Success {success}",
+    "@ruleImportResultSuccess": {
+        "description": "Text for rule import result success",
+        "placeholders": {
+            "success": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "ruleImportResultMergeable": "Mergeable {mergeable}",
+    "@ruleImportResultMergeable": {
+        "description": "Text for rule import result mergeable",
+        "placeholders": {
+            "mergeable": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "ruleImportResultConflict": "Conflict {conflict}",
+    "@ruleImportResultConflict": {
+        "description": "Text for rule import result conflict",
+        "placeholders": {
+            "conflict": {
+                "type": "int",
+                "example": "5"
+            }
+        }
     }
 }

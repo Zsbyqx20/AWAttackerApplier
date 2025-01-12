@@ -86,6 +86,13 @@ class OverlayStyle {
   }
 
   Map<String, dynamic> toJson() {
+    String colorToHex(Color color) {
+      return '#${(color.a * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}'
+          '${(color.r * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}'
+          '${(color.g * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}'
+          '${(color.b * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}';
+    }
+
     return {
       'x': x,
       'y': y,
@@ -93,14 +100,8 @@ class OverlayStyle {
       'height': height,
       'text': text,
       'fontSize': fontSize,
-      'backgroundColor': (backgroundColor.r * 255).toInt() << 16 |
-          (backgroundColor.g * 255).toInt() << 8 |
-          (backgroundColor.b * 255).toInt() |
-          (0xFF << 24),
-      'textColor': (textColor.r * 255).toInt() << 16 |
-          (textColor.g * 255).toInt() << 8 |
-          (textColor.b * 255).toInt() |
-          (0xFF << 24),
+      'backgroundColor': colorToHex(backgroundColor),
+      'textColor': colorToHex(textColor),
       'horizontalAlign': _textAlignToString(horizontalAlign),
       'verticalAlign': _textAlignToString(verticalAlign),
       'uiAutomatorCode': uiAutomatorCode,
@@ -117,13 +118,15 @@ class OverlayStyle {
   String _textAlignToString(TextAlign align) {
     switch (align) {
       case TextAlign.left:
-        return 'left';
+      case TextAlign.start:
+        return 'start';
       case TextAlign.center:
         return 'center';
       case TextAlign.right:
-        return 'right';
-      default:
-        return 'left'; // 默认为左对齐
+      case TextAlign.end:
+        return 'end';
+      case TextAlign.justify:
+        return 'center';
     }
   }
 
@@ -183,19 +186,22 @@ class OverlayStyle {
     final defaultTextColor = (0xFF << 24) | (0 << 16) | (0 << 8) | 0;
 
     // 处理文本对齐方式
-    TextAlign parseTextAlign(dynamic value, TextAlign defaultValue) {
+    TextAlign parseTextAlign(
+        dynamic value, TextAlign defaultValue, bool isHorizontal) {
       if (value == null) return defaultValue;
       if (value is int) return TextAlign.values[value];
       if (value is String) {
         switch (value.toLowerCase()) {
           case 'left':
-          case 'start':
             return TextAlign.left;
+          case 'start':
+            return isHorizontal ? TextAlign.left : TextAlign.start;
           case 'center':
             return TextAlign.center;
           case 'right':
-          case 'end':
             return TextAlign.right;
+          case 'end':
+            return isHorizontal ? TextAlign.right : TextAlign.end;
           default:
             return defaultValue;
         }
@@ -216,8 +222,9 @@ class OverlayStyle {
         textColor: Color(
             parseColorValue(json['textColor'], 'textColor', defaultTextColor)),
         horizontalAlign:
-            parseTextAlign(json['horizontalAlign'], TextAlign.left),
-        verticalAlign: parseTextAlign(json['verticalAlign'], TextAlign.center),
+            parseTextAlign(json['horizontalAlign'], TextAlign.left, true),
+        verticalAlign:
+            parseTextAlign(json['verticalAlign'], TextAlign.center, false),
         uiAutomatorCode: json['uiAutomatorCode'] as String? ?? '',
         padding: EdgeInsets.fromLTRB(
           (paddingMap['left'] as num?)?.toDouble() ?? 0,

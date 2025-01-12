@@ -104,6 +104,8 @@ void main() {
         expect(json['height'], equals(50));
         expect(json['text'], equals('Test'));
         expect(json['fontSize'], equals(16));
+        expect(json['backgroundColor'], equals('#FF2196F3'));
+        expect(json['textColor'], equals('#FFFF0000'));
         expect(json['horizontalAlign'], equals('center'));
         expect(json['verticalAlign'], equals('center'));
         expect(json['uiAutomatorCode'], equals('test code'));
@@ -115,8 +117,6 @@ void main() {
               'right': 3.0,
               'bottom': 4.0,
             }));
-        expect(json['backgroundColor'], equals(0xFF2196F3));
-        expect(json['textColor'], equals(0xFFFF0000));
       });
 
       test('fromJson creates instance with correct values', () {

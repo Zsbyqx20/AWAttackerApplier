@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../models/rule_merge_result.dart';
 
 class RuleImportResultDialog extends StatelessWidget {
@@ -25,6 +27,7 @@ class RuleImportResultDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final totalCount = mergeResults.length;
     final successCount = mergeResults.where((r) => r.isSuccess).length;
     final mergeableCount = mergeResults.where((r) => r.isMergeable).length;
@@ -62,7 +65,7 @@ class RuleImportResultDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              hasErrors ? '导入失败' : '导入成功',
+              hasErrors ? l10n.importError : l10n.importSuccess,
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -84,7 +87,7 @@ class RuleImportResultDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    '共 $totalCount 条',
+                    l10n.ruleImportResultDetail(totalCount),
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[700],
@@ -105,7 +108,7 @@ class RuleImportResultDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      '成功 $successCount',
+                      l10n.ruleImportResultSuccess(successCount),
                       style: TextStyle(
                         fontSize: 12,
                         color: theme.colorScheme.primary,
@@ -126,7 +129,7 @@ class RuleImportResultDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      '合并 $mergeableCount',
+                      l10n.ruleImportResultMergeable(mergeableCount),
                       style: TextStyle(
                         fontSize: 12,
                         color: theme.colorScheme.secondary,
@@ -147,7 +150,7 @@ class RuleImportResultDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      '冲突 $conflictCount',
+                      l10n.ruleImportResultConflict(conflictCount),
                       style: TextStyle(
                         fontSize: 12,
                         color: theme.colorScheme.error,
@@ -171,7 +174,7 @@ class RuleImportResultDialog extends StatelessWidget {
                     children: mergeResults
                         .where((r) => r.isConflict)
                         .map((result) => Text(
-                              result.errorMessage ?? '未知错误',
+                              result.errorMessage ?? l10n.unknown,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[700],
@@ -198,9 +201,9 @@ class RuleImportResultDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  '确定',
-                  style: TextStyle(
+                child: Text(
+                  l10n.dialogDefaultConfirm,
+                  style: const TextStyle(
                     fontWeight: FontWeight.w500,
                   ),
                 ),

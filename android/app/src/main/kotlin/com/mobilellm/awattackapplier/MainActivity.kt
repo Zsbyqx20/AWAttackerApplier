@@ -1,4 +1,4 @@
-package com.mobilellm.awattackapplier
+package com.mobilellm.awattackerapplier
 
 import android.content.Intent
 import android.net.Uri
@@ -30,7 +30,7 @@ class MainActivity : FlutterActivity(), CoroutineScope {
         private const val OVERLAY_PERMISSION_REQUEST_CODE = 1
         private const val CREATE_FILE_REQUEST_CODE = 2
         private const val OPEN_FILE_REQUEST_CODE = 3
-        private const val CHANNEL = "com.mobilellm.awattackapplier/overlay_service"
+        private const val CHANNEL = "com.mobilellm.awattackerapplier/overlay_service"
         
         // 提供静态访问方法，用于从AccessibilityService发送事件
         private var methodChannel: MethodChannel? = null

@@ -50,12 +50,13 @@ class ColorPickerField extends StatelessWidget {
   Future<void> _showColorPicker(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final String currentHex =
+        '${(color.a * 255).toInt().toRadixString(16).padLeft(2, '0')}'
         '${(color.r * 255).toInt().toRadixString(16).padLeft(2, '0')}'
         '${(color.g * 255).toInt().toRadixString(16).padLeft(2, '0')}'
         '${(color.b * 255).toInt().toRadixString(16).padLeft(2, '0')}';
     debugPrint('Current color: ${color.toString()} (hex: #$currentHex)');
     final TextEditingController hexController =
-        TextEditingController(text: currentHex);
+        TextEditingController(text: currentHex.substring(2));
     Color previewColor = color;
 
     final String? newHex = await showDialog<String>(
@@ -110,12 +111,13 @@ class ColorPickerField extends StatelessWidget {
                 inputFormatters: [
                   UpperCaseTextFormatter(),
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9A-Fa-f]')),
-                  LengthLimitingTextInputFormatter(6),
+                  LengthLimitingTextInputFormatter(8),
                 ],
                 onChanged: (value) {
-                  if (value.length == 6) {
+                  if (value.length == 6 || value.length == 8) {
                     try {
-                      final newColor = Color(int.parse('FF$value', radix: 16));
+                      final colorHex = value.length == 6 ? 'FF$value' : value;
+                      final newColor = Color(int.parse(colorHex, radix: 16));
                       debugPrint(
                           'New color from hex: ${newColor.toString()} (hex: #$value)');
                       setState(() {
@@ -143,10 +145,11 @@ class ColorPickerField extends StatelessWidget {
             TextButton(
               onPressed: () {
                 final hex = hexController.text;
-                if (hex.length == 6) {
+                if (hex.length == 6 || hex.length == 8) {
                   try {
-                    Color(int.parse('FF$hex', radix: 16));
-                    Navigator.of(context).pop(hex);
+                    final colorHex = hex.length == 6 ? 'FF$hex' : hex;
+                    Color(int.parse(colorHex, radix: 16));
+                    Navigator.of(context).pop(colorHex);
                   } catch (e) {
                     // 忽略无效的颜色值
                   }
@@ -175,7 +178,7 @@ class ColorPickerField extends StatelessWidget {
     );
 
     if (newHex != null) {
-      final newColor = Color(int.parse('FF$newHex', radix: 16));
+      final newColor = Color(int.parse(newHex, radix: 16));
       debugPrint('Selected color: ${newColor.toString()} (hex: #$newHex)');
       onColorChanged(newColor);
     }

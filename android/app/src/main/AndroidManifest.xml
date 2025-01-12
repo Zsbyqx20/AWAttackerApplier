@@ -54,7 +54,7 @@
         </service>
 
         <service
-            android:name="com.mobilellm.awattackapplier.OverlayService"
+            android:name="com.mobilellm.awattackerapplier.OverlayService"
             android:exported="false"
             android:foregroundServiceType="dataSync">
             <meta-data

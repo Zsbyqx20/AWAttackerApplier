@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.mobilellm.awattackapplier"
+    namespace = "com.mobilellm.awattackerapplier"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -19,7 +19,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.mobilellm.awattackapplier"
+        applicationId = "com.mobilellm.awattackerapplier"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
