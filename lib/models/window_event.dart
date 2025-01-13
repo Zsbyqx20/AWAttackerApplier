@@ -4,6 +4,7 @@ class WindowEvent {
   final String? activityName;
   final int timestamp;
   final bool contentChanged;
+  final bool isFirstConnect;
 
   WindowEvent({
     required this.type,
@@ -11,6 +12,7 @@ class WindowEvent {
     this.activityName,
     required this.timestamp,
     this.contentChanged = false,
+    this.isFirstConnect = false,
   });
 
   factory WindowEvent.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class WindowEvent {
       activityName: json['activity_name'] as String?,
       timestamp: json['timestamp'] as int,
       contentChanged: json['content_changed'] as bool? ?? false,
+      isFirstConnect: json['is_first_connect'] as bool? ?? false,
     );
   }
 
@@ -30,6 +33,12 @@ class WindowEvent {
       'activity_name': activityName,
       'timestamp': timestamp,
       'content_changed': contentChanged,
+      'is_first_connect': isFirstConnect,
     };
+  }
+
+  @override
+  String toString() {
+    return 'WindowEvent{type: $type, packageName: $packageName, activityName: $activityName, contentChanged: $contentChanged, isFirstConnect: $isFirstConnect}';
   }
 }

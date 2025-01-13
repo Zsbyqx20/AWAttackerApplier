@@ -11,6 +11,7 @@ import org.json.JSONObject
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.Objects
 
 class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     private val job = SupervisorJob()
@@ -32,7 +33,13 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     companion object {
         private const val TAG = "AWAccessibilityService"
         private var instance: AWAccessibilityService? = null
+        private var isFirstConnect = true
         
+        // 添加状态保持变量
+        private var savedPackage: String? = null
+        private var savedActivity: String? = null
+        private var savedWindowHash: Int = 0
+
         fun getInstance(): AWAccessibilityService? = instance
     }
 
@@ -101,14 +108,48 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        if (instance != null) {
-            configureService()
-            // 服务连接后发送一个初始事件
+        instance = this
+        configureService()
+        
+        if (isFirstConnect) {
+            // 首次连接，完整初始化
+            isFirstConnect = false
+            isDetectionEnabled = false
+            lastWindowHash = 0
+            lastPackage = null
+            lastActivity = null
+            
+            // 清除保存的状态
+            savedPackage = null
+            savedActivity = null
+            savedWindowHash = 0
+            
+            Log.d(TAG, "AccessibilityService 首次连接")
             sendWindowEvent(
                 type = "SERVICE_CONNECTED",
                 packageName = null,
                 activityName = null,
-                contentChanged = false
+                contentChanged = false,
+                isFirstConnect = true
+            )
+        } else {
+            // 重连时恢复保存的状态
+            lastPackage = savedPackage
+            lastActivity = savedActivity
+            lastWindowHash = savedWindowHash
+            
+            if (!isDetectionEnabled) {
+                isDetectionEnabled = true
+                Log.d(TAG, "重连时重新启用检测功能")
+            }
+            
+            Log.d(TAG, "AccessibilityService 重新连接，保持现有状态 - package: $lastPackage, activity: $lastActivity")
+            sendWindowEvent(
+                type = "SERVICE_CONNECTED",
+                packageName = null,
+                activityName = null,
+                contentChanged = false,
+                isFirstConnect = false
             )
         }
     }
@@ -143,6 +184,14 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
             }
             
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
+                // 先检查是否是需要忽略的包名
+                val currentPackage = event.packageName?.toString()
+                if (currentPackage != null && 
+                    IGNORED_PACKAGES.any { currentPackage.startsWith(it) }) {
+                    Log.d(TAG, "忽略系统应用的窗口变化: $currentPackage")
+                    return
+                }
+                
                 val currentHash = calculateWindowHash()
                 Log.d(TAG, "窗口状态变化: currentHash=$currentHash, lastHash=$lastWindowHash")
                 if (currentHash != lastWindowHash) {
@@ -190,29 +239,29 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     }
 
     private fun handleWindowStateChanged(event: AccessibilityEvent) {
-        // 取消当前正在进行的查找操作
-        cancelSearch()
-        
-        // 重置规则匹配状态
-        hasMatchedRule = false
-
         val currentPackage = event.packageName?.toString()
         val currentActivity = event.className?.toString()
-        
-        if (currentPackage != null && 
-            !IGNORED_PACKAGES.any { currentPackage.startsWith(it) }) {
-            Log.d(TAG, "检测到窗口变化: package=$currentPackage, activity=$currentActivity")
-            lastPackage = currentPackage
-            lastActivity = currentActivity
-            
-            sendWindowEvent(
-                type = "WINDOW_STATE_CHANGED",
-                packageName = currentPackage,
-                activityName = getRelativeActivityName(currentActivity, currentPackage),
-                contentChanged = true
-            )
-        } else {
-            Log.d(TAG, "忽略系统应用的窗口变化: $currentPackage")
+        val currentHash = Objects.hash(currentPackage, currentActivity)
+
+        if (currentPackage != null && !IGNORED_PACKAGES.any { currentPackage.startsWith(it) }) {
+            if (currentHash != lastWindowHash) {
+                lastWindowHash = currentHash
+                lastPackage = currentPackage
+                lastActivity = currentActivity
+                
+                // 同步保存状态
+                savedPackage = currentPackage
+                savedActivity = currentActivity
+                savedWindowHash = currentHash
+                
+                Log.d(TAG, "Window state changed - package: $currentPackage, activity: $currentActivity")
+                sendWindowEvent(
+                    type = "WINDOW_STATE_CHANGED",
+                    packageName = currentPackage,
+                    activityName = currentActivity,
+                    contentChanged = false
+                )
+            }
         }
     }
 
@@ -242,7 +291,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         lastEventSource = currentSource?.let { AccessibilityNodeInfo.obtain(it) }  // 保存新的 source 的副本
         
         // 记录内容变化的类型
-        Log.d(TAG, "检测到内容变化: package=$currentPackage, activity=$currentActivity, changeTypes=$currentChangeTypes")
+        Log.d(TAG, "检测到内容变化: package:$lastPackage->$currentPackage, activity:$lastActivity->$currentActivity, changeTypes=$currentChangeTypes")
         
         // 使用当前保存的包名和活动名
         if (lastPackage != null && 
@@ -406,7 +455,8 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         type: String,
         packageName: String?,
         activityName: String?,
-        contentChanged: Boolean
+        contentChanged: Boolean,
+        isFirstConnect: Boolean = false
     ) {
         val event = JSONObject().apply {
             put("type", type)
@@ -414,6 +464,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
             put("activity_name", activityName)
             put("timestamp", System.currentTimeMillis())
             put("content_changed", contentChanged)
+            put("is_first_connect", isFirstConnect)
         }
 
         MainActivity.getMethodChannel()?.let {
@@ -431,9 +482,9 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
 
     override fun onDestroy() {
         super.onDestroy()
-        job.cancel() // 取消所有协程
-        retryJob?.cancel() // 取消重试任务
-        lastEventSource?.recycle()  // 清理资源
+        job.cancel()
+        retryJob?.cancel()
+        lastEventSource?.recycle()
         WindowManagerHelper.destroyInstance()
         instance = null
         Log.d(TAG, "AccessibilityService destroyed")
