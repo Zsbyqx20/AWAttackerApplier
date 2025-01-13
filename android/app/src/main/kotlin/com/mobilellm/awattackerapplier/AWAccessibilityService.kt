@@ -258,7 +258,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
                 sendWindowEvent(
                     type = "WINDOW_STATE_CHANGED",
                     packageName = currentPackage,
-                    activityName = currentActivity,
+                    activityName = getRelativeActivityName(currentActivity, currentPackage),
                     contentChanged = false
                 )
             }
@@ -291,7 +291,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         lastEventSource = currentSource?.let { AccessibilityNodeInfo.obtain(it) }  // 保存新的 source 的副本
         
         // 记录内容变化的类型
-        Log.d(TAG, "检测到内容变化: package:$lastPackage->$currentPackage, activity:$lastActivity->$currentActivity, changeTypes=$currentChangeTypes")
+        Log.d(TAG, "检测到内容变化: package:$currentPackage, activity:$currentActivity, changeTypes=$currentChangeTypes")
         
         // 使用当前保存的包名和活动名
         if (lastPackage != null && 
