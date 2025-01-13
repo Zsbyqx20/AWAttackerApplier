@@ -17,23 +17,16 @@ enum ConnectionStatus {
 }
 
 class CachedOverlayPosition {
-  final double x;
-  final double y;
-  final double width;
-  final double height;
   final String overlayId;
+  final OverlayStyle style;
 
   CachedOverlayPosition({
-    required this.x,
-    required this.y,
-    required this.width,
-    required this.height,
     required this.overlayId,
+    required this.style,
   });
 
-  bool matchesPosition(
-      double newX, double newY, double newWidth, double newHeight) {
-    return x == newX && y == newY && width == newWidth && height == newHeight;
+  bool matchesPosition(OverlayStyle style) {
+    return this.style == style;
   }
 }
 
@@ -183,21 +176,39 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
   void _handleWindowEvent(WindowEvent event) {
     debugPrint('📥 ConnectionProvider收到窗口事件: $event');
 
-    // 处理窗口事件
-    if (!_isServiceRunning) {
+    if (!_isServiceRunning && event.type != 'SERVICE_CONNECTED') {
       debugPrint('🚫 服务未运行，忽略窗口事件');
       return;
     }
 
     debugPrint('🔄 处理窗口事件: ${event.type}');
 
-    // 窗口状态变化事件（已经过哈希值验证）
-    if (event.type == 'WINDOW_STATE_CHANGED') {
-      _handleWindowStateChanged(event);
-    }
-    // 内容变化事件（替代原来的用户交互事件）
-    else if (event.type == 'CONTENT_CHANGED') {
-      _handleContentChanged(event);
+    switch (event.type) {
+      case 'SERVICE_CONNECTED':
+        if (event.isFirstConnect) {
+          debugPrint('🔌 服务首次连接，执行初始化');
+          _initializeService();
+        } else {
+          debugPrint('🔌 服务重新连接，准备重建悬浮窗');
+          // 检查服务状态
+          if (_isServiceRunning && _status == ConnectionStatus.connected) {
+            debugPrint('🔄 服务状态正常，开始重建悬浮窗');
+            _rebuildOverlaysFromCache();
+          } else {
+            debugPrint('⚠️ 服务状态异常，跳过重建悬浮窗');
+            // 可能需要重新初始化服务
+            _initializeService();
+          }
+        }
+        break;
+      case 'WINDOW_STATE_CHANGED':
+        _handleWindowStateChanged(event);
+        break;
+      case 'CONTENT_CHANGED':
+        _handleContentChanged(event);
+        break;
+      default:
+        debugPrint('⚠️ 未处理的事件类型: ${event.type}');
     }
   }
 
@@ -295,14 +306,6 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
             continue;
           }
 
-          // 检查缓存
-          final cachedPosition = _overlayPositionCache[overlayId];
-          if (cachedPosition != null &&
-              cachedPosition.matchesPosition(newX, newY, newWidth, newHeight)) {
-            debugPrint('📍 悬浮窗位置未变化，跳过更新: $overlayId');
-            continue;
-          }
-
           // 调整坐标和大小，考虑padding的影响
           final adjustedX = newX + style.x;
           final adjustedY = newY + style.y;
@@ -323,6 +326,14 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
             height: adjustedHeight,
           );
 
+          // 检查缓存
+          final cachedPosition = _overlayPositionCache[overlayId];
+          if (cachedPosition != null &&
+              cachedPosition.matchesPosition(overlayStyle)) {
+            debugPrint('📍 悬浮窗位置未变化，跳过更新: $overlayId');
+            continue;
+          }
+
           final overlayResult = await _overlayService.createOverlay(
             overlayId,
             overlayStyle,
@@ -331,11 +342,8 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
           if (overlayResult.success) {
             // 更新缓存
             _overlayPositionCache[overlayId] = CachedOverlayPosition(
-              x: newX,
-              y: newY,
-              width: newWidth,
-              height: newHeight,
               overlayId: overlayId,
+              style: overlayStyle,
             );
             debugPrint('✅ 悬浮窗位置已更新并缓存: $overlayId');
           } else {
@@ -377,4 +385,62 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
 
   @override
   Future<void> handleStopService() => stop();
+
+  Future<void> _initializeService() async {
+    debugPrint('🔄 开始初始化服务...');
+
+    // 清理现有状态
+    _overlayPositionCache.clear();
+    await _overlayService.removeAllOverlays();
+
+    // 重新设置事件订阅
+    _setupEventSubscription();
+
+    // 设置服务状态
+    _setStatus(ConnectionStatus.connected);
+    notifyListeners();
+
+    debugPrint('✅ 服务初始化完成');
+  }
+
+  Future<void> _rebuildOverlaysFromCache() async {
+    debugPrint('🔄 开始从缓存重建悬浮窗...');
+
+    if (_overlayPositionCache.isEmpty) {
+      debugPrint('ℹ️ 没有找到缓存的悬浮窗位置信息');
+      return;
+    }
+
+    // 遍历缓存的悬浮窗位置信息
+    for (final entry in _overlayPositionCache.entries) {
+      final overlayId = entry.key;
+      final position = entry.value;
+
+      debugPrint('🎯 重建悬浮窗: $overlayId');
+
+      try {
+        // 使用缓存的位置信息重新创建悬浮窗
+        final overlayStyle = position.style;
+
+        final result = await _overlayService.createOverlay(
+          overlayId,
+          overlayStyle,
+        );
+
+        if (result.success) {
+          debugPrint('✅ 悬浮窗重建成功: $overlayId');
+        } else {
+          debugPrint('❌ 重建悬浮窗失败: $overlayId, 错误: ${result.error}');
+          // 从缓存中移除失败的项
+          _overlayPositionCache.remove(overlayId);
+        }
+      } catch (e) {
+        debugPrint('❌ 重建悬浮窗失败: $overlayId, 错误: $e');
+        // 从缓存中移除失败的项
+        _overlayPositionCache.remove(overlayId);
+      }
+    }
+
+    debugPrint('✅ 悬浮窗重建完成');
+  }
 }
