@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+
 import 'package:grpc/grpc.dart';
 
 import '../exceptions/overlay_exception.dart';
 import '../generated/window_info.pbgrpc.dart';
-import '../generated/window_info.pbenum.dart';
 import '../models/overlay_style.dart';
 import '../models/rule.dart';
 import '../models/window_event.dart';

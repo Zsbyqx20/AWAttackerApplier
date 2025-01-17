@@ -1,9 +1,11 @@
 import 'dart:async';
-import 'package:grpc/grpc.dart';
-import '../generated/window_info.pbgrpc.dart';
-import '../generated/accessibility.pbgrpc.dart';
+
 import 'package:flutter/foundation.dart';
 
+import 'package:grpc/grpc.dart';
+
+import '../generated/accessibility.pbgrpc.dart';
+import '../generated/window_info.pbgrpc.dart';
 import 'accessibility_service.dart';
 
 class GrpcService {
@@ -16,7 +18,7 @@ class GrpcService {
   AccessibilityServiceClient? _accessibilityClient;
   bool _isConnected = false;
   StreamController<ClientResponse>? _responseController;
-  StreamSubscription? _commandSubscription;
+  StreamSubscription<ServerCommand>? _commandSubscription;
 
   bool get isConnected => _isConnected;
   WindowInfoServiceClient? get client => _client;
