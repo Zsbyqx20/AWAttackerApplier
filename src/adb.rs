@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use regex::Regex;
 use std::process::{Command, Stdio};
 
@@ -39,12 +39,12 @@ impl AdbCommand {
     // 执行ADB shell命令
     fn execute_shell_command(&self, device_id: &str, command: &str) -> Result<String> {
         self.check_adb_available()?;
-        
+
         let mut cmd = Command::new(&self.adb_path);
         if !device_id.is_empty() {
             cmd.arg("-s").arg(device_id);
         }
-        
+
         let output = cmd
             .arg("shell")
             .arg(command)
@@ -73,12 +73,12 @@ impl AdbCommand {
     // 执行普通ADB命令
     fn execute_command(&self, device_id: &str, args: &[&str]) -> Result<String> {
         self.check_adb_available()?;
-        
+
         let mut cmd = Command::new(&self.adb_path);
         if !device_id.is_empty() {
             cmd.arg("-s").arg(device_id);
         }
-        
+
         let output = cmd
             .args(args)
             .stdout(Stdio::piped())
@@ -112,7 +112,9 @@ impl AdbCommand {
                 return Err(anyhow!("No devices connected"));
             }
             if devices.len() > 1 {
-                return Err(anyhow!("Multiple devices connected, please specify a device ID"));
+                return Err(anyhow!(
+                    "Multiple devices connected, please specify a device ID"
+                ));
             }
             devices[0].clone()
         } else {
@@ -124,25 +126,25 @@ impl AdbCommand {
         }
 
         let output = self.execute_shell_command(&effective_device_id, "am stack list")?;
-        println!("Raw output: {}", output);  // 添加调试日志
-        
+        println!("Raw output: {}", output); // 添加调试日志
+
         if !output.trim().is_empty() {
             return self.parse_activity_output(&output);
         }
-        
+
         Err(anyhow!("No visible activity found"))
     }
 
     fn parse_activity_output(&self, output: &str) -> Result<(String, String)> {
-        println!("Parsing output: {}", output);  // 添加调试日志
-        
+        println!("Parsing output: {}", output); // 添加调试日志
+
         let re = Regex::new(r"topActivity=ComponentInfo\{([^/]+)/([^}]+)\}")?;
-        
+
         if let Some(captures) = re.captures(output) {
             if captures.len() >= 3 {
                 let package_name = captures.get(1).unwrap().as_str().to_string();
                 let mut activity_name = captures.get(2).unwrap().as_str().to_string();
-                
+
                 // 处理activity名字，使其变为相对路径
                 if activity_name.starts_with(&package_name) {
                     activity_name = activity_name[package_name.len()..].to_string();
@@ -152,8 +154,11 @@ impl AdbCommand {
                 } else if !activity_name.starts_with('.') {
                     activity_name = format!(".{}", activity_name);
                 }
-                
-                println!("Parsed: package={}, activity={}", package_name, activity_name);  // 添加调试日志
+
+                println!(
+                    "Parsed: package={}, activity={}",
+                    package_name, activity_name
+                ); // 添加调试日志
                 return Ok((package_name, activity_name));
             }
         }
@@ -165,11 +170,12 @@ impl AdbCommand {
     pub fn check_device_connected(&self, device_id: &str) -> bool {
         match self.execute_command("", &["devices"]) {
             Ok(output) => {
-                let devices = output.lines()
-                    .skip(1)  // 跳过标题行
+                let devices = output
+                    .lines()
+                    .skip(1) // 跳过标题行
                     .filter(|line| !line.trim().is_empty())
                     .collect::<Vec<_>>();
-                
+
                 if device_id.is_empty() {
                     // 如果没有指定设备ID，只要有任何设备连接就返回true
                     !devices.is_empty()
@@ -185,12 +191,13 @@ impl AdbCommand {
     // 获取所有已连接设备
     pub fn get_connected_devices(&self) -> Result<Vec<String>> {
         let output = self.execute_command("", &["devices"])?;
-        
-        Ok(output.lines()
-            .skip(1)  // 跳过第一行（标题行）
+
+        Ok(output
+            .lines()
+            .skip(1) // 跳过第一行（标题行）
             .filter(|line| !line.trim().is_empty())
             .map(|line| line.split_whitespace().next().unwrap_or("").to_string())
             .filter(|device_id| !device_id.is_empty())
             .collect())
     }
-} 
+}
