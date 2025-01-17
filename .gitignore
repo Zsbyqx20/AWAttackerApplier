@@ -76,3 +76,7 @@ Temporary Items
 ## Project specific
 debug/**
 coverage/**
+
+.vscode/
+target/
+lib/generated
