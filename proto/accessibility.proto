@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package accessibility;
+option java_package = "com.mobilellm.awattackerapplier.proto";
+
+// 边界框
+message BoundingBox {
+  int32 left = 1;
+  int32 top = 2;
+  int32 right = 3;
+  int32 bottom = 4;
+}
+
+// 无障碍节点
+message AccessibilityNode {
+  // 基础文本和标识信息
+  string text = 1;
+  string content_description = 2;
+  string class_name = 3;
+  string package_name = 4;
+  string resource_id = 5;
+  string resource_name = 6;
+  string hint_text = 7;
+  string tooltip = 8;
+
+  // 位置信息
+  BoundingBox bbox = 9;
+  BoundingBox bbox_pixels = 10;
+
+  // 状态标志
+  bool is_checkable = 11;
+  bool is_checked = 12;
+  bool is_clickable = 13;
+  bool is_editable = 14;
+  bool is_enabled = 15;
+  bool is_focused = 16;
+  bool is_focusable = 17;
+  bool is_long_clickable = 18;
+  bool is_scrollable = 19;
+  bool is_selected = 20;
+  bool is_visible = 21;
+  
+  // 节点关系
+  repeated AccessibilityNode children = 22;
+}
+
+// 无障碍树
+message AccessibilityTree {
+  AccessibilityNode root = 1;
+  int64 timestamp = 2;
+}
+
+// 请求消息
+message GetAccessibilityTreeRequest {
+  string device_id = 1;
+  bytes raw_output = 2;
+}
+
+// 响应消息
+message GetAccessibilityTreeResponse {
+  bool success = 1;
+  string error_message = 2;
+  bytes raw_output = 3;
+  optional AccessibilityTree tree = 4;  // 可选字段，服务端暂时不使用
+}
+
+// 更新数据请求
+message UpdateAccessibilityDataRequest {
+  string device_id = 1;
+  bytes raw_output = 2;
+}
+
+// 更新数据响应
+message UpdateAccessibilityDataResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+// 服务器到客户端的命令消息
+message ServerCommand {
+    string device_id = 1;
+    enum CommandType {
+        GET_ACCESSIBILITY_TREE = 0;
+    }
+    CommandType command = 2;
+}
+
+// 客户端到服务器的响应消息
+message ClientResponse {
+    string device_id = 1;
+    bool success = 2;
+    string error_message = 3;
+    bytes raw_output = 4;
+}
+
+// 无障碍服务
+service AccessibilityService {
+    // 双向流式通信
+    rpc StreamAccessibility(stream ClientResponse) returns (stream ServerCommand);
+    
+    // 获取无障碍树 (保留用于兼容性)
+    rpc GetAccessibilityTree(GetAccessibilityTreeRequest) returns (GetAccessibilityTreeResponse);
+    
+    // 更新无障碍数据 (保留用于兼容性)
+    rpc UpdateAccessibilityData(UpdateAccessibilityDataRequest) returns (UpdateAccessibilityDataResponse);
+} 

@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package window_info;
+option java_package = "com.mobilellm.awattackerapplier.proto";
+
+service WindowInfoService {
+  // 获取当前窗口信息
+  rpc GetCurrentWindowInfo (WindowInfoRequest) returns (WindowInfoResponse);
+}
+
+message WindowInfoRequest {
+  string device_id = 1;
+}
+
+message WindowInfoResponse {
+  string package_name = 1;
+  string activity_name = 2;
+  int64 timestamp = 3;
+  WindowInfoSource source = 4;
+  bool success = 5;
+  string error_message = 6;
+  ResponseType type = 7;
+}
+
+enum WindowInfoSource {
+  PC_ADB = 0;
+  ACCESSIBILITY = 1;
+}
+
+enum ResponseType {
+  WINDOW_INFO = 0;
+  SERVER_STOP = 1;
+} 
