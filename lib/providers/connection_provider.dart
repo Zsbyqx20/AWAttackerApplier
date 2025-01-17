@@ -1,12 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:grpc/grpc.dart';
 
 import '../exceptions/overlay_exception.dart';
+import '../generated/window_info.pbgrpc.dart';
+import '../generated/window_info.pbenum.dart';
 import '../models/overlay_style.dart';
 import '../models/rule.dart';
 import '../models/window_event.dart';
 import '../services/accessibility_service.dart';
+import '../services/grpc_service.dart';
 import '../services/overlay_service.dart';
 import 'connection_provider_broadcast.dart';
 import 'rule_provider.dart';
@@ -37,8 +41,10 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
   final RuleProvider _ruleProvider;
   final OverlayService _overlayService;
   final AccessibilityService _accessibilityService;
+  final GrpcService _grpcService = GrpcService();
   StreamSubscription<WindowEvent>? _windowEventSubscription;
   final Map<String, CachedOverlayPosition> _overlayPositionCache = {};
+  String? _currentDeviceId;
 
   ConnectionProvider(
     this._ruleProvider, {
@@ -51,11 +57,14 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
     _accessibilityService.addListener(_handleAccessibilityServiceChange);
     // 初始化广播命令处理器
     initializeBroadcastHandler();
+    // 设置当前设备ID为本机
+    _currentDeviceId = 'local';
   }
 
   // 状态获取器
   bool get isServiceRunning => _isServiceRunning;
   ConnectionStatus get status => _status;
+  String? get currentDeviceId => _currentDeviceId;
 
   void _setStatus(ConnectionStatus status) {
     if (_status != status) {
@@ -131,12 +140,28 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
       await _accessibilityService.startDetection();
       debugPrint('✅ 已开启界面检测');
 
+      // 连接gRPC服务
+      try {
+        await _grpcService.connect('auto', 50051);
+        debugPrint('✅ 已连接gRPC服务');
+      } catch (e) {
+        debugPrint('❌ gRPC服务连接失败: $e');
+        // 停止已启动的服务
+        await _accessibilityService.stopDetection();
+        await _overlayService.stop();
+        _setStatus(ConnectionStatus.disconnected);
+        return false;
+      }
+
       _isServiceRunning = true;
       _setStatus(ConnectionStatus.connected);
       notifyListeners();
       return true;
     } catch (e) {
       debugPrint('🌐 启动服务错误: $e');
+      // 确保清理所有已启动的服务
+      await _accessibilityService.stopDetection();
+      await _overlayService.stop();
       _setStatus(ConnectionStatus.disconnected);
       return false;
     }
@@ -149,6 +174,10 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
 
       // 先移除监听器，避免重复触发
       _accessibilityService.removeListener(_handleAccessibilityServiceChange);
+
+      // 断开gRPC连接
+      await _grpcService.disconnect();
+      debugPrint('✅ 已断开gRPC连接');
 
       // 先停止界面检测
       await _accessibilityService.stopDetection();
@@ -175,8 +204,10 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
 
   void _handleWindowEvent(WindowEvent event) {
     debugPrint('📥 ConnectionProvider收到窗口事件: $event');
+    debugPrint(
+        '📊 当前服务状态: running=$_isServiceRunning, status=$_status, deviceId=$_currentDeviceId');
 
-    if (!_isServiceRunning && event.type != 'SERVICE_CONNECTED') {
+    if (!_isServiceRunning && event.type != WindowEventType.serviceConnected) {
       debugPrint('🚫 服务未运行，忽略窗口事件');
       return;
     }
@@ -184,7 +215,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
     debugPrint('🔄 处理窗口事件: ${event.type}');
 
     switch (event.type) {
-      case 'SERVICE_CONNECTED':
+      case WindowEventType.serviceConnected:
         if (event.isFirstConnect) {
           debugPrint('🔌 服务首次连接，执行初始化');
           _initializeService();
@@ -201,66 +232,84 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
           }
         }
         break;
-      case 'WINDOW_STATE_CHANGED':
-        _handleWindowStateChanged(event);
+      case WindowEventType.windowEvent:
+        // 当收到窗口事件时，通过gRPC获取当前窗口信息
+        debugPrint('🔍 准备通过gRPC获取窗口信息');
+        _handleWindowStateChange();
         break;
-      case 'CONTENT_CHANGED':
-        _handleContentChanged(event);
-        break;
-      default:
-        debugPrint('⚠️ 未处理的事件类型: ${event.type}');
     }
   }
 
-  void _handleContentChanged(WindowEvent event) async {
-    debugPrint('📄 收到内容变化事件: ${event.packageName}/${event.activityName}');
+  Future<void> _handleWindowStateChange() async {
+    debugPrint('🔄 开始处理窗口状态变化');
+    debugPrint('📊 gRPC服务状态: connected=${_grpcService.isConnected}');
 
-    // 获取匹配的规则
-    final matchedRules = _ruleProvider.rules.where((rule) {
-      return rule.packageName == event.packageName &&
-          rule.activityName == event.activityName &&
-          rule.isEnabled;
-    }).toList();
-
-    if (matchedRules.isEmpty) {
-      debugPrint('❌ 没有找到匹配的规则，清理现有悬浮窗');
-      _overlayPositionCache.clear(); // 清除位置缓存
-      await _overlayService.removeAllOverlays();
-      await _accessibilityService.updateRuleMatchStatus(false);
+    if (_currentDeviceId == null) {
+      debugPrint('❌ 未设置设备ID，无法获取窗口信息');
       return;
     }
 
-    debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则，开始检查元素');
-    await _accessibilityService.updateRuleMatchStatus(true);
-    await _sendBatchQuickSearch(matchedRules);
-  }
+    try {
+      // 获取当前窗口信息
+      final response =
+          await _grpcService.getCurrentWindowInfo(_currentDeviceId!);
 
-  void _handleWindowStateChanged(WindowEvent event) async {
-    debugPrint('🪟 收到窗口状态变化事件: ${event.packageName}/${event.activityName}');
+      // 检查是否是服务停止消息
+      if (response.type == ResponseType.SERVER_STOP) {
+        debugPrint('📢 收到服务器停止消息，准备停止服务');
+        await stop();
+        return;
+      }
 
-    // 获取匹配的规则
-    final matchedRules = _ruleProvider.rules.where((rule) {
-      return rule.packageName == event.packageName &&
-          rule.activityName == event.activityName &&
-          rule.isEnabled;
-    }).toList();
+      if (!response.success) {
+        debugPrint('❌ 获取窗口信息失败: ${response.errorMessage}');
+        return;
+      }
 
-    if (matchedRules.isEmpty) {
-      debugPrint('❌ 没有找到匹配的规则，清理现有悬浮窗');
-      _overlayPositionCache.clear(); // 清除位置缓存
-      await _overlayService.removeAllOverlays();
-      await _accessibilityService.updateRuleMatchStatus(false);
-      return;
+      debugPrint('🪟 收到窗口信息: ${response.packageName}/${response.activityName}');
+
+      // 获取匹配的规则
+      final matchedRules = _ruleProvider.rules.where((rule) {
+        return rule.packageName == response.packageName &&
+            rule.activityName == response.activityName &&
+            rule.isEnabled;
+      }).toList();
+
+      debugPrint('📋 规则匹配结果: 找到${matchedRules.length}个规则');
+
+      if (matchedRules.isEmpty) {
+        debugPrint('❌ 没有找到匹配的规则，清理现有悬浮窗');
+        _overlayPositionCache.clear(); // 清除位置缓存
+        await _overlayService.removeAllOverlays();
+        await _accessibilityService.updateRuleMatchStatus(false);
+        return;
+      }
+
+      debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则，开始检查元素');
+      await _accessibilityService.updateRuleMatchStatus(true);
+      await _sendBatchQuickSearch(matchedRules);
+    } catch (e) {
+      debugPrint('❌ 获取窗口信息时发生错误: $e');
+      if (e is GrpcError) {
+        // 检查是否是连接相关错误
+        if (e.code == StatusCode.unavailable ||
+            e.code == StatusCode.unknown ||
+            e.message?.contains('Connection') == true ||
+            e.message?.contains('terminated') == true) {
+          debugPrint('⚠️ gRPC连接已断开，准备停止服务');
+          await stop();
+        }
+      }
     }
-
-    debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则，开始检查元素');
-    await _accessibilityService.updateRuleMatchStatus(true);
-    await _sendBatchQuickSearch(matchedRules);
   }
 
   Future<void> _sendBatchQuickSearch(List<Rule> matchedRules) async {
     try {
       debugPrint('📤 准备批量查找元素...');
+      if (matchedRules.isEmpty) {
+        debugPrint('❌ 没有找到需要查询的规则');
+        return;
+      }
 
       // 收集所有规则中的UI Automator代码
       final List<String> uiAutomatorCodes = [];
@@ -274,14 +323,8 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
         }
       }
 
-      if (uiAutomatorCodes.isEmpty) {
-        debugPrint('❌ 没有找到需要查询的UI Automator代码');
-        return;
-      }
-
       // 批量查找元素
-      final elements =
-          await _accessibilityService.findElements(uiAutomatorCodes);
+      final elements = await _accessibilityService.findElements(styles);
 
       // 处理查找结果
       for (var i = 0; i < elements.length; i++) {
@@ -442,5 +485,27 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
     }
 
     debugPrint('✅ 悬浮窗重建完成');
+  }
+
+  // 获取当前窗口信息
+  Future<WindowInfoResponse> getCurrentWindowInfo(String deviceId) {
+    return _grpcService.getCurrentWindowInfo(deviceId);
+  }
+
+  // 获取无障碍树数据
+  Future<Uint8List?> getAccessibilityTree(String deviceId) {
+    return _grpcService.getAccessibilityTree(deviceId);
+  }
+
+  // 设置当前设备ID
+  Future<void> setDeviceId(String deviceId) async {
+    if (_currentDeviceId != deviceId) {
+      _currentDeviceId = deviceId;
+      if (_isServiceRunning) {
+        // 如果服务正在运行，需要重新初始化
+        await _initializeService();
+      }
+      notifyListeners();
+    }
   }
 }

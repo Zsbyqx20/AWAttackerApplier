@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../models/element_result.dart';
 import '../models/window_event.dart';
+import '../models/overlay_style.dart';
 
 class AccessibilityService extends ChangeNotifier {
   static const _channel =
@@ -31,6 +31,22 @@ class AccessibilityService extends ChangeNotifier {
 
   bool _isServiceRunning = false;
   bool get isServiceRunning => _isServiceRunning;
+
+  /// 获取最新的无障碍树数据
+  Future<Uint8List?> getLatestState() async {
+    try {
+      final result = await _channel.invokeMethod<Uint8List>('getLatestState');
+      if (result != null) {
+        debugPrint('✅ 成功获取无障碍树数据: ${result.length} bytes');
+        return result;
+      }
+      debugPrint('❌ 获取无障碍树数据失败: 返回为空');
+      return null;
+    } catch (e) {
+      debugPrint('❌ 获取无障碍树数据时发生错误: $e');
+      return null;
+    }
+  }
 
   Future<void> initialize() async {
     debugPrint('🚀 开始初始化AccessibilityService');
@@ -59,9 +75,7 @@ class AccessibilityService extends ChangeNotifier {
     switch (call.method) {
       case 'onWindowEvent':
         debugPrint('📨 收到窗口事件: ${call.arguments}');
-        final eventData =
-            jsonDecode(call.arguments as String) as Map<String, dynamic>;
-        final event = WindowEvent.fromJson(eventData);
+        final event = WindowEvent.fromJson(call.arguments as String);
         _windowEventController.add(event);
         debugPrint('✅ 事件已广播: $event');
         break;
@@ -89,11 +103,11 @@ class AccessibilityService extends ChangeNotifier {
     }
   }
 
-  Future<ElementResult?> findElement(String selectorCode) async {
+  Future<ElementResult?> findElement(OverlayStyle style) async {
     try {
       final result =
           await _channel.invokeMethod<Map<dynamic, dynamic>>('findElement', {
-        'selectorCode': selectorCode,
+        'style': style.toNative(),
       });
 
       return result != null
@@ -150,11 +164,11 @@ class AccessibilityService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<ElementResult>> findElements(List<String> selectorCodes) async {
+  Future<List<ElementResult>> findElements(List<OverlayStyle> styles) async {
     try {
       final result =
           await _channel.invokeMethod<List<dynamic>>('findElements', {
-        'selectorCodes': selectorCodes,
+        'styles': styles.map((style) => style.toNative()).toList(),
       });
 
       return (result ?? [])
