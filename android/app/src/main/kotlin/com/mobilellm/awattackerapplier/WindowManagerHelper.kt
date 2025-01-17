@@ -141,7 +141,8 @@ class WindowManagerHelper private constructor(private val context: Context) {
             }
             
             flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
             
             format = PixelFormat.TRANSLUCENT
             
