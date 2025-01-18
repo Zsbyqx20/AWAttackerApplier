@@ -246,7 +246,8 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
             // 设置状态标志
             .setIsCheckable(node.isCheckable)
             .setIsChecked(node.isChecked)
-            .setIsClickable(node.isClickable)
+            // 为节点默认设置为可点击
+            .setIsClickable(true)
             .setIsEditable(node.isEditable)
             .setIsEnabled(node.isEnabled)
             .setIsFocused(node.isFocused)
