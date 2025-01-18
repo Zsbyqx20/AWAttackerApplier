@@ -234,6 +234,24 @@ class MainActivity : FlutterActivity(), CoroutineScope {
                                 result.error("STOP_SERVICE_FAILED", e.message, null)
                             }
                         }
+                        "SET_GRPC_CONFIG" -> {
+                            try {
+                                val host = call.argument<String>("host")
+                                val port = call.argument<Int>("port")
+                                if (host == null || port == null) {
+                                    result.error("INVALID_ARGUMENTS", "Invalid gRPC configuration parameters", null)
+                                    return@setMethodCallHandler
+                                }
+                                // 返回与其他命令一致的格式
+                                result.success(mapOf(
+                                    "success" to true,
+                                    "error" to null
+                                ))
+                            } catch (e: Exception) {
+                                Log.e(TAG, "设置gRPC配置失败", e)
+                                result.error("SET_GRPC_CONFIG_FAILED", e.message, null)
+                            }
+                        }
                         else -> result.notImplemented()
                     }
                 }
@@ -269,6 +287,7 @@ class MainActivity : FlutterActivity(), CoroutineScope {
         val filter = IntentFilter().apply {
             addAction(ServiceControlReceiver.ACTION_START_SERVICE)
             addAction(ServiceControlReceiver.ACTION_STOP_SERVICE)
+            addAction(ServiceControlReceiver.ACTION_SET_GRPC_CONFIG)
         }
         registerReceiver(serviceReceiver, filter)
     }

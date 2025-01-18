@@ -511,6 +511,26 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
     }
   }
 
+  @override
+  Future<void> handleSetGrpcConfig(String host, int port) async {
+    debugPrint('🔄 通过广播设置gRPC配置: host=$host, port=$port');
+
+    if (_isServiceRunning) {
+      debugPrint('❌ 服务正在运行，无法更改gRPC配置');
+      throw Exception('Cannot change gRPC config while service is running');
+    }
+
+    try {
+      await setGrpcConfig(host, port);
+      debugPrint('✅ gRPC配置更新成功');
+      // 通知UI更新
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ 更新gRPC配置失败: $e');
+      rethrow;
+    }
+  }
+
   Future<void> _initializeService() async {
     debugPrint('🔄 开始初始化服务...');
 

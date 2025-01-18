@@ -17,12 +17,14 @@ class ServiceControlReceiver : BroadcastReceiver() {
         private const val TAG = "ServiceControlReceiver"
         const val ACTION_START_SERVICE = "com.mobilellm.awattackerapplier.START_SERVICE"
         const val ACTION_STOP_SERVICE = "com.mobilellm.awattackerapplier.STOP_SERVICE"
+        const val ACTION_SET_GRPC_CONFIG = "com.mobilellm.awattackerapplier.SET_GRPC_CONFIG"
         
         // 结果码
         const val RESULT_SUCCESS = 1           // 成功通知 Flutter
         const val RESULT_PERMISSION_DENIED = 2 // 权限不足
         const val RESULT_INVALID_STATE = 3     // 服务状态不适合执行操作
         const val RESULT_ERROR = 4             // 其他错误
+        const val RESULT_INVALID_PARAMS = 5    // 参数无效
         
         private const val TIMEOUT_MS = 10000L  // 10秒超时
     }
@@ -124,6 +126,44 @@ class ServiceControlReceiver : BroadcastReceiver() {
                         } catch (e: Exception) {
                             Log.e(TAG, "停止服务失败", e)
                             pendingResult.setResult(RESULT_ERROR, "Failed to stop service: ${e.message}", null)
+                        }
+                    }
+                    ACTION_SET_GRPC_CONFIG -> {
+                        val host = intent.getStringExtra("host")
+                        val port = intent.getIntExtra("port", -1)
+                        
+                        if (host == null || port == -1) {
+                            Log.w(TAG, "无效的gRPC配置参数: host=$host, port=$port")
+                            pendingResult.setResult(RESULT_INVALID_PARAMS, "Invalid gRPC configuration parameters", null)
+                            return@launch
+                        }
+                        
+                        try {
+                            withTimeout(TIMEOUT_MS) {
+                                val result = invokeMethodWithResult(
+                                    "handleServiceCommand",
+                                    mapOf(
+                                        "command" to "SET_GRPC_CONFIG",
+                                        "host" to host,
+                                        "port" to port
+                                    )
+                                )
+                                
+                                val success = result["success"] as? Boolean ?: false
+                                val error = result["error"] as? String
+                                
+                                if (success) {
+                                    pendingResult.setResult(RESULT_SUCCESS, "gRPC configuration updated successfully", null)
+                                } else {
+                                    pendingResult.setResult(RESULT_ERROR, error ?: "Failed to update gRPC configuration", null)
+                                }
+                            }
+                        } catch (e: TimeoutCancellationException) {
+                            Log.e(TAG, "更新gRPC配置超时")
+                            pendingResult.setResult(RESULT_ERROR, "Update gRPC configuration timeout", null)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "更新gRPC配置失败", e)
+                            pendingResult.setResult(RESULT_ERROR, "Failed to update gRPC configuration: ${e.message}", null)
                         }
                     }
                     else -> {

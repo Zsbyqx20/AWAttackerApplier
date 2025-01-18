@@ -42,9 +42,11 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     _checkPermissions();
     _setupPermissionListener();
 
-    final provider = context.read<ConnectionProvider>();
-    _hostController.text = provider.grpcHost;
-    _portController.text = provider.grpcPort.toString();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<ConnectionProvider>();
+      _hostController.text = provider.grpcHost;
+      _portController.text = provider.grpcPort.toString();
+    });
   }
 
   void _setupPermissionListener() {
@@ -344,10 +346,20 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     provider.setGrpcConfig(host, port);
   }
 
+  void _updateControllersFromProvider(ConnectionProvider provider) {
+    if (_hostController.text != provider.grpcHost) {
+      _hostController.text = provider.grpcHost;
+    }
+    if (_portController.text != provider.grpcPort.toString()) {
+      _portController.text = provider.grpcPort.toString();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<ConnectionProvider>();
+    _updateControllersFromProvider(provider);
     final allPermissionsGranted =
         _hasOverlayPermission && _hasAccessibilityPermission;
 
