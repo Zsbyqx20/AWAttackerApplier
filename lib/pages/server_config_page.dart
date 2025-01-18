@@ -122,13 +122,57 @@ class _ServerConfigPageState extends State<ServerConfigPage>
       _isStartingService = true;
     });
 
+    final l10n = AppLocalizations.of(context)!;
+
     try {
       final provider = context.read<ConnectionProvider>();
-      await provider.checkAndConnect();
+      final connected = await provider.checkAndConnect();
+
+      if (!connected && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.grpcConnectionError,
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(8),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: l10n.confirm,
+              textColor: Colors.white,
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('启动服务时发生错误: $e')),
+          SnackBar(
+            content: Text(
+              'Error starting service: $e',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(8),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: l10n.confirm,
+              textColor: Colors.white,
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
+          ),
         );
       }
     } finally {

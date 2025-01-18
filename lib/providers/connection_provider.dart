@@ -18,6 +18,8 @@ import 'rule_provider.dart';
 enum ConnectionStatus {
   connected,
   disconnected,
+  connecting,
+  disconnecting,
 }
 
 class CachedOverlayPosition {
@@ -424,10 +426,45 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
 
   // 实现BroadcastCommandHandler的抽象方法
   @override
-  Future<void> handleStartService() => checkAndConnect();
+  Future<void> handleStartService() async {
+    debugPrint('🔄 通过广播启动服务...');
+    // 通知UI更新状态
+    _setStatus(ConnectionStatus.connecting);
+    notifyListeners();
+
+    try {
+      final connected = await checkAndConnect();
+      if (!connected) {
+        debugPrint('❌ 服务启动失败');
+        _setStatus(ConnectionStatus.disconnected);
+        notifyListeners();
+        throw Exception('Failed to connect to service');
+      }
+    } catch (e) {
+      debugPrint('❌ 服务启动错误: $e');
+      _setStatus(ConnectionStatus.disconnected);
+      notifyListeners();
+      rethrow;
+    }
+  }
 
   @override
-  Future<void> handleStopService() => stop();
+  Future<void> handleStopService() async {
+    debugPrint('🔄 通过广播停止服务...');
+    // 通知UI更新状态
+    _setStatus(ConnectionStatus.disconnecting);
+    notifyListeners();
+
+    try {
+      await stop();
+    } catch (e) {
+      debugPrint('❌ 服务停止错误: $e');
+      rethrow;
+    } finally {
+      _setStatus(ConnectionStatus.disconnected);
+      notifyListeners();
+    }
+  }
 
   Future<void> _initializeService() async {
     debugPrint('🔄 开始初始化服务...');

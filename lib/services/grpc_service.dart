@@ -45,10 +45,29 @@ class GrpcService {
       _accessibilityClient = AccessibilityServiceClient(_channel!);
       debugPrint('✅ gRPC客户端创建成功');
 
-      // 发送测试请求以验证连接
-      await _client!.getCurrentWindowInfo(
-        WindowInfoRequest()..deviceId = '',
-      );
+      // 发送测试请求以验证连接，添加超时处理
+      try {
+        await Future.any<void>([
+          _client!
+              .getCurrentWindowInfo(
+                WindowInfoRequest()..deviceId = '',
+              )
+              .then((_) {}),
+          Future<void>.delayed(const Duration(seconds: 3)).then((_) {
+            throw GrpcError.deadlineExceeded('Connection timeout');
+          }),
+        ]);
+      } catch (e) {
+        debugPrint('❌ gRPC连接验证失败: $e');
+        await _channel?.shutdown();
+        _channel = null;
+        _client = null;
+        _accessibilityClient = null;
+        if (e is GrpcError) {
+          rethrow;
+        }
+        throw GrpcError.deadlineExceeded('Connection timeout');
+      }
       debugPrint('✅ gRPC连接验证成功');
 
       // 建立双向流连接

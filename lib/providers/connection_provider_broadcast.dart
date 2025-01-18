@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// 表示命令执行结果的类
+class CommandResult {
+  final bool success;
+  final String? error;
+
+  CommandResult({required this.success, this.error});
+}
+
 /// 处理广播命令的Mixin
 mixin BroadcastCommandHandler on ChangeNotifier {
   static const _channel =
@@ -19,14 +27,18 @@ mixin BroadcastCommandHandler on ChangeNotifier {
 
     if (call.method == 'handleServiceCommand') {
       final command = call.arguments['command'] as String?;
-      return _handleCommand(command);
+      final result = await _handleCommand(command);
+      return {
+        'success': result.success,
+        'error': result.error,
+      };
     }
 
     throw MissingPluginException();
   }
 
   /// 处理具体的命令
-  Future<bool> _handleCommand(String? command) async {
+  Future<CommandResult> _handleCommand(String? command) async {
     debugPrint('BroadcastCommandHandler: Handling command: $command');
 
     switch (command) {
@@ -35,24 +47,25 @@ mixin BroadcastCommandHandler on ChangeNotifier {
           debugPrint('BroadcastCommandHandler: Starting service');
           await handleStartService();
           debugPrint('BroadcastCommandHandler: Service started successfully');
-          return true;
+          return CommandResult(success: true);
         } catch (e) {
           debugPrint('BroadcastCommandHandler: Error starting service: $e');
-          return false;
+          return CommandResult(success: false, error: e.toString());
         }
       case 'STOP_SERVICE':
         try {
           debugPrint('BroadcastCommandHandler: Stopping service');
           await handleStopService();
           debugPrint('BroadcastCommandHandler: Service stopped successfully');
-          return true;
+          return CommandResult(success: true);
         } catch (e) {
           debugPrint('BroadcastCommandHandler: Error stopping service: $e');
-          return false;
+          return CommandResult(success: false, error: e.toString());
         }
       default:
         debugPrint('BroadcastCommandHandler: Unknown command: $command');
-        return false;
+        return CommandResult(
+            success: false, error: 'Unknown command: $command');
     }
   }
 

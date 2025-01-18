@@ -555,5 +555,9 @@
                 "example": "5"
             }
         }
+    },
+    "grpcConnectionError": "Failed to connect to gRPC server",
+    "@grpcConnectionError": {
+        "description": "Error message for gRPC connection error"
     }
 }
