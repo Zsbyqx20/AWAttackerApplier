@@ -43,7 +43,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
   final RuleProvider _ruleProvider;
   final OverlayService _overlayService;
   final AccessibilityService _accessibilityService;
-  final GrpcService _grpcService = GrpcService();
+  final GrpcService _grpcService;
   StreamSubscription<WindowEvent>? _windowEventSubscription;
   final Map<String, CachedOverlayPosition> _overlayPositionCache = {};
   String? _currentDeviceId;
@@ -53,8 +53,10 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
     this._ruleProvider, {
     OverlayService? overlayService,
     AccessibilityService? accessibilityService,
+    GrpcService? grpcService,
   })  : _overlayService = overlayService ?? OverlayService(),
-        _accessibilityService = accessibilityService ?? AccessibilityService() {
+        _accessibilityService = accessibilityService ?? AccessibilityService(),
+        _grpcService = grpcService ?? GrpcService() {
     debugPrint('🏗️ 创建ConnectionProvider');
     // 监听AccessibilityService的变化
     _accessibilityService.addListener(_handleAccessibilityServiceChange);

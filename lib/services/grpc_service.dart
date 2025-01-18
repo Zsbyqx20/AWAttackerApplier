@@ -9,9 +9,7 @@ import '../generated/window_info.pbgrpc.dart';
 import 'accessibility_service.dart';
 
 class GrpcService {
-  static final GrpcService _instance = GrpcService._internal();
-  factory GrpcService() => _instance;
-  GrpcService._internal();
+  GrpcService();
 
   ClientChannel? _channel;
   WindowInfoServiceClient? _client;
@@ -26,26 +24,50 @@ class GrpcService {
   WindowInfoServiceClient? get client => _client;
   AccessibilityServiceClient? get accessibilityClient => _accessibilityClient;
 
+  @visibleForTesting
+  Duration get heartbeatDuration => const Duration(seconds: 30);
+
+  @visibleForTesting
+  StreamController<ClientResponse>? get responseController =>
+      _responseController;
+
+  @visibleForTesting
+  bool get isReconnecting => _isReconnecting;
+
+  // 用于测试的工厂方法
+  @visibleForTesting
+  ClientChannel createChannel(String host, int port) {
+    return ClientChannel(
+      host,
+      port: port,
+      options: const ChannelOptions(
+        credentials: ChannelCredentials.insecure(),
+        connectTimeout: Duration(seconds: 5),
+        idleTimeout: Duration(seconds: 10),
+      ),
+    );
+  }
+
+  @visibleForTesting
+  WindowInfoServiceClient createWindowInfoClient(ClientChannel channel) {
+    return WindowInfoServiceClient(channel);
+  }
+
+  @visibleForTesting
+  AccessibilityServiceClient createAccessibilityClient(ClientChannel channel) {
+    return AccessibilityServiceClient(channel);
+  }
+
   Future<void> connect(String host, int port) async {
     if (_isConnected) return;
 
     try {
       final effectiveHost = host == 'auto' ? '10.0.2.2' : host;
-      debugPrint('📡 正在连接gRPC服务: $effectiveHost:$port');
+      debugPrint('📡 开始连接gRPC服务: $effectiveHost:$port');
 
-      _channel = ClientChannel(
-        effectiveHost,
-        port: port,
-        options: const ChannelOptions(
-          credentials: ChannelCredentials.insecure(),
-          connectTimeout: Duration(seconds: 5),
-          idleTimeout: Duration(seconds: 10),
-        ),
-      );
-
-      _client = WindowInfoServiceClient(_channel!);
-      _accessibilityClient = AccessibilityServiceClient(_channel!);
-      debugPrint('✅ gRPC客户端创建成功');
+      _channel = createChannel(effectiveHost, port);
+      _client = createWindowInfoClient(_channel!);
+      _accessibilityClient = createAccessibilityClient(_channel!);
 
       // 发送测试请求以验证连接，添加超时处理
       try {
@@ -59,36 +81,34 @@ class GrpcService {
             throw GrpcError.deadlineExceeded('Connection timeout');
           }),
         ]);
+        debugPrint('✅ gRPC基础连接已建立');
       } catch (e) {
-        debugPrint('❌ gRPC连接验证失败: $e');
-        _isConnected = false;
-        await _channel?.shutdown();
-        _channel = null;
-        _client = null;
-        _accessibilityClient = null;
-        _cleanupResources();
-        if (e is GrpcError) {
-          rethrow;
-        }
-        throw GrpcError.deadlineExceeded('Connection timeout');
+        debugPrint('❌ gRPC连接失败: $e');
+        rethrow;
       }
-      debugPrint('✅ gRPC连接验证成功');
 
       // 建立双向流连接
       await _setupBidirectionalStream();
-      debugPrint('✅ 双向流连接建立成功');
-
       _isConnected = true;
+      debugPrint('✅ gRPC服务连接完成');
     } catch (e) {
-      debugPrint('❌ gRPC连接失败: $e');
-      _isConnected = false;
-      _cleanupResources();
-      await _channel?.shutdown();
-      _channel = null;
-      _client = null;
-      _accessibilityClient = null;
+      await _handleConnectionFailure();
       rethrow;
     }
+  }
+
+  /// 处理连接失败的清理工作
+  Future<void> _handleConnectionFailure() async {
+    _isConnected = false;
+
+    // 先清理资源
+    await _safeCleanup();
+
+    // 再关闭和清理channel相关资源
+    await _channel?.shutdown();
+    _channel = null;
+    _client = null;
+    _accessibilityClient = null;
   }
 
   Future<void> _setupBidirectionalStream() async {
@@ -98,10 +118,7 @@ class GrpcService {
     await _safeCleanup();
 
     try {
-      _responseController = StreamController<ClientResponse>.broadcast(
-        onListen: () => debugPrint('🎧 响应流开始监听'),
-        onCancel: () => debugPrint('🛑 响应流取消监听'),
-      );
+      _responseController = StreamController<ClientResponse>.broadcast();
 
       // 创建一个初始的心跳响应
       final heartbeatResponse = ClientResponse()
@@ -109,7 +126,7 @@ class GrpcService {
         ..success = true;
 
       // 设置新的心跳定时器
-      _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _heartbeatTimer = Timer.periodic(heartbeatDuration, (timer) {
         if (_isConnected &&
             _responseController != null &&
             !_responseController!.isClosed) {
@@ -117,9 +134,8 @@ class GrpcService {
             _responseController!.add(heartbeatResponse);
             debugPrint('💓 发送心跳');
           } catch (e) {
-            debugPrint('❌ 发送心跳失败: $e');
+            debugPrint('❌ 心跳发送失败: $e');
             timer.cancel();
-            // 不再立即触发重连，而是等待其他错误处理机制
           }
         } else {
           timer.cancel();
@@ -138,7 +154,7 @@ class GrpcService {
           }
         },
         onError: (Object error) {
-          debugPrint('❌ 流错误: $error');
+          debugPrint('❌ 流连接错误: $error');
           _isConnected = false;
           if (!_isReconnecting) {
             _reconnectStream();
@@ -153,71 +169,48 @@ class GrpcService {
         },
       );
 
-      debugPrint('✅ 双向流连接建立成功');
+      debugPrint('✅ 双向流连接已建立');
     } catch (e) {
-      debugPrint('❌ 建立流连接失败: $e');
+      debugPrint('❌ 双向流连接失败: $e');
       _isConnected = false;
       await _safeCleanup();
       rethrow;
     }
   }
 
-  void _cleanupResources() {
-    debugPrint('🧹 清理资源...');
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
-
-    // 先取消订阅
-    _commandSubscription?.cancel();
-    _commandSubscription = null;
-
-    // 最后关闭流控制器
-    if (_responseController != null && !_responseController!.isClosed) {
-      _responseController!.close();
-    }
-    _responseController = null;
-  }
-
   Future<void> _reconnectStream() async {
     if (_isReconnecting) {
-      debugPrint('🚫 已经在重连中，跳过重连请求');
+      debugPrint('🚫 已在重连中');
       return;
     }
 
-    debugPrint('🔄 准备重新建立流连接...');
+    debugPrint('🔄 开始重连...');
     _isReconnecting = true;
 
     try {
-      // 清理旧的连接
       await _safeCleanup();
 
       // 验证基础连接是否正常
       try {
         await _client!.getCurrentWindowInfo(WindowInfoRequest()..deviceId = '');
       } catch (e) {
-        debugPrint('❌ 基础连接验证失败，需要完全重连: $e');
-        _isConnected = false;
-        // 不再抛出异常，而是直接返回
+        debugPrint('❌ 基础连接已断开，需要完全重连');
+        await _handleConnectionFailure();
         return;
       }
 
-      // 如果基础连接正常，重新建立流
       await Future<void>.delayed(const Duration(seconds: 2));
 
-      // 使用 try-catch 包装 _setupBidirectionalStream
       try {
         await _setupBidirectionalStream();
         _isConnected = true;
-        debugPrint('✅ 流重连成功');
+        debugPrint('✅ 重连成功');
       } catch (e) {
-        debugPrint('❌ 建立流连接失败: $e');
-        _isConnected = false;
-        // 不抛出异常，静默处理
+        debugPrint('❌ 重连失败: $e');
+        await _handleConnectionFailure();
       }
     } catch (e) {
-      debugPrint('❌ 重连失败: $e');
-      _isConnected = false;
-      // 不再抛出异常
+      await _handleConnectionFailure();
     } finally {
       _isReconnecting = false;
     }
@@ -225,26 +218,18 @@ class GrpcService {
 
   // 安全的清理资源方法
   Future<void> _safeCleanup() async {
-    debugPrint('🧹 开始安全清理资源...');
+    debugPrint('🧹 清理资源...');
 
-    // 先标记连接状态为断开
-    _isConnected = false;
-
-    // 取消心跳定时器
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
 
-    // 等待一小段时间确保没有正在进行的操作
     await Future<void>.delayed(const Duration(milliseconds: 100));
 
-    // 取消订阅
     await _commandSubscription?.cancel();
     _commandSubscription = null;
 
-    // 再等待一小段时间
     await Future<void>.delayed(const Duration(milliseconds: 100));
 
-    // 最后关闭流控制器
     if (_responseController != null && !_responseController!.isClosed) {
       await _responseController!.close();
     }
@@ -290,17 +275,8 @@ class GrpcService {
 
   Future<void> disconnect() async {
     debugPrint('🔌 开始断开连接');
-    _isConnected = false;
-    _isReconnecting = false;
-
-    _cleanupResources();
-
-    await _channel?.shutdown();
-    _channel = null;
-    _client = null;
-    _accessibilityClient = null;
-
-    debugPrint('✅ 连接已完全断开');
+    await _handleConnectionFailure();
+    debugPrint('✅ 连接已断开');
   }
 
   Future<WindowInfoResponse> getCurrentWindowInfo(String deviceId) async {
