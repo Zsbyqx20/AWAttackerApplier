@@ -32,12 +32,19 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   bool _hasAccessibilityPermission = false;
   bool _isStartingService = false;
 
+  final _hostController = TextEditingController(text: 'auto');
+  final _portController = TextEditingController(text: '50051');
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkPermissions();
     _setupPermissionListener();
+
+    final provider = context.read<ConnectionProvider>();
+    _hostController.text = provider.grpcHost;
+    _portController.text = provider.grpcPort.toString();
   }
 
   void _setupPermissionListener() {
@@ -64,6 +71,8 @@ class _ServerConfigPageState extends State<ServerConfigPage>
 
   @override
   void dispose() {
+    _hostController.dispose();
+    _portController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -209,6 +218,132 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     }
   }
 
+  Widget _buildGrpcConfigCard(ConnectionProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
+    final isServiceRunning = provider.isServiceRunning;
+    final connectionStatus = provider.status;
+
+    return Card(
+      elevation: 1,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Colors.grey[100]!,
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.dns_rounded,
+                  color: Theme.of(context).primaryColor,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.grpcSettings,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const Spacer(),
+                _buildConnectionStatusChip(connectionStatus, l10n),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _hostController,
+              decoration: InputDecoration(
+                labelText: l10n.grpcHost,
+                hintText: 'auto',
+                border: const OutlineInputBorder(),
+                enabled: !isServiceRunning,
+              ),
+              onChanged: (value) => _updateGrpcConfig(provider),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _portController,
+              decoration: InputDecoration(
+                labelText: l10n.grpcPort,
+                hintText: '50051',
+                border: const OutlineInputBorder(),
+                enabled: !isServiceRunning,
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (value) => _updateGrpcConfig(provider),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConnectionStatusChip(
+      ConnectionStatus status, AppLocalizations l10n) {
+    Color chipColor;
+    String label;
+    IconData icon;
+
+    switch (status) {
+      case ConnectionStatus.connected:
+        chipColor = Colors.green;
+        label = l10n.grpcConnected;
+        icon = Icons.check_circle;
+        break;
+      case ConnectionStatus.disconnected:
+        chipColor = Colors.grey;
+        label = l10n.grpcDisconnected;
+        icon = Icons.cancel;
+        break;
+      case ConnectionStatus.connecting:
+        chipColor = Colors.orange;
+        label = l10n.grpcConnecting;
+        icon = Icons.sync;
+        break;
+      case ConnectionStatus.disconnecting:
+        chipColor = Colors.orange;
+        label = l10n.grpcDisconnecting;
+        icon = Icons.sync;
+        break;
+    }
+
+    return Chip(
+      avatar: Icon(icon, color: Colors.white, size: 16),
+      label: Text(
+        label,
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
+      backgroundColor: chipColor,
+    );
+  }
+
+  void _updateGrpcConfig(ConnectionProvider provider) {
+    if (provider.isServiceRunning) return;
+
+    final host = _hostController.text;
+    final portStr = _portController.text;
+
+    if (portStr.isEmpty) return;
+
+    final port = int.tryParse(portStr);
+    if (port == null || port <= 0 || port > 65535) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.grpcInvalidPort),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    provider.setGrpcConfig(host, port);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -234,6 +369,8 @@ class _ServerConfigPageState extends State<ServerConfigPage>
             ],
             onRequestPermission: _requestPermission,
           ),
+          const SizedBox(height: 16),
+          _buildGrpcConfigCard(provider),
           const SizedBox(height: 24),
           Card(
             elevation: 1,

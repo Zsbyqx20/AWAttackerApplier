@@ -40,6 +40,8 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
   bool _isServiceRunning = false;
   bool _isStopping = false;
   ConnectionStatus _status = ConnectionStatus.disconnected;
+  String _grpcHost = 'auto';
+  int _grpcPort = 50051;
   final RuleProvider _ruleProvider;
   final OverlayService _overlayService;
   final AccessibilityService _accessibilityService;
@@ -148,35 +150,33 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
       await _accessibilityService.startDetection();
       debugPrint('✅ 已开启界面检测');
 
-      // 连接gRPC服务
+      // 连接gRPC服务，使用配置的主机和端口
       try {
-        await _grpcService.connect('auto', 50051);
+        await _grpcService.connect(_grpcHost, _grpcPort);
         debugPrint('✅ 已连接gRPC服务');
       } catch (e) {
         debugPrint('❌ gRPC服务连接失败: $e');
         // 停止已启动的服务
-        _isServiceRunning = false; // 确保服务状态更新
+        _isServiceRunning = false;
         await _accessibilityService.stopDetection();
         await _overlayService.stop();
         _setStatus(ConnectionStatus.disconnected);
-        notifyListeners(); // 确保通知监听器状态变化
+        notifyListeners();
         return false;
       }
 
       _isServiceRunning = true;
       _setStatus(ConnectionStatus.connected);
-      // 启动gRPC状态监听
       _startGrpcStatusMonitor();
       notifyListeners();
       return true;
     } catch (e) {
       debugPrint('🌐 启动服务错误: $e');
-      // 确保清理所有已启动的服务
-      _isServiceRunning = false; // 确保服务状态更新
+      _isServiceRunning = false;
       await _accessibilityService.stopDetection();
       await _overlayService.stop();
       _setStatus(ConnectionStatus.disconnected);
-      notifyListeners(); // 确保通知监听器状态变化
+      notifyListeners();
       return false;
     }
   }
@@ -589,5 +589,19 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
       }
       notifyListeners();
     }
+  }
+
+  // 获取gRPC配置
+  String get grpcHost => _grpcHost;
+  int get grpcPort => _grpcPort;
+
+  // 设置gRPC配置
+  Future<void> setGrpcConfig(String host, int port) async {
+    if (_isServiceRunning) {
+      throw Exception('Cannot change gRPC config while service is running');
+    }
+    _grpcHost = host;
+    _grpcPort = port;
+    notifyListeners();
   }
 }

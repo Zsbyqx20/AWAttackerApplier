@@ -559,5 +559,41 @@
     "grpcConnectionError": "Failed to connect to gRPC server",
     "@grpcConnectionError": {
         "description": "Error message for gRPC connection error"
+    },
+    "grpcSettings": "gRPC Settings",
+    "@grpcSettings": {
+        "description": "Title for gRPC settings"
+    },
+    "grpcHost": "Host",
+    "@grpcHost": {
+        "description": "Label for gRPC host field"
+    },
+    "grpcPort": "Port",
+    "@grpcPort": {
+        "description": "Label for gRPC port field"
+    },
+    "grpcConnectionStatus": "Connection Status",
+    "@grpcConnectionStatus": {
+        "description": "Label for gRPC connection status"
+    },
+    "grpcConnected": "Connected",
+    "@grpcConnected": {
+        "description": "Text for gRPC connected status"
+    },
+    "grpcDisconnected": "Disconnected",
+    "@grpcDisconnected": {
+        "description": "Text for gRPC disconnected status"
+    },
+    "grpcConnecting": "Connecting",
+    "@grpcConnecting": {
+        "description": "Text for gRPC connecting status"
+    },
+    "grpcDisconnecting": "Disconnecting",
+    "@grpcDisconnecting": {
+        "description": "Text for gRPC disconnecting status"
+    },
+    "grpcInvalidPort": "Invalid port number",
+    "@grpcInvalidPort": {
+        "description": "Error message for gRPC invalid port"
     }
 }
