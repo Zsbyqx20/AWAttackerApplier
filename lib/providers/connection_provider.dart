@@ -47,6 +47,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
   StreamSubscription<WindowEvent>? _windowEventSubscription;
   final Map<String, CachedOverlayPosition> _overlayPositionCache = {};
   String? _currentDeviceId;
+  Timer? _grpcStatusCheckTimer;
 
   ConnectionProvider(
     this._ruleProvider, {
@@ -117,6 +118,8 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
     if (_isServiceRunning) return true;
 
     try {
+      _setStatus(ConnectionStatus.connecting);
+
       // 确保初始化完成
       await _initialize();
 
@@ -126,6 +129,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
         final granted = await _overlayService.requestPermission();
         if (!granted) {
           debugPrint('❌ 悬浮窗权限被拒绝');
+          _setStatus(ConnectionStatus.disconnected);
           return false;
         }
       }
@@ -149,23 +153,62 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
       } catch (e) {
         debugPrint('❌ gRPC服务连接失败: $e');
         // 停止已启动的服务
+        _isServiceRunning = false; // 确保服务状态更新
         await _accessibilityService.stopDetection();
         await _overlayService.stop();
         _setStatus(ConnectionStatus.disconnected);
+        notifyListeners(); // 确保通知监听器状态变化
         return false;
       }
 
       _isServiceRunning = true;
       _setStatus(ConnectionStatus.connected);
+      // 启动gRPC状态监听
+      _startGrpcStatusMonitor();
       notifyListeners();
       return true;
     } catch (e) {
       debugPrint('🌐 启动服务错误: $e');
       // 确保清理所有已启动的服务
+      _isServiceRunning = false; // 确保服务状态更新
       await _accessibilityService.stopDetection();
       await _overlayService.stop();
       _setStatus(ConnectionStatus.disconnected);
+      notifyListeners(); // 确保通知监听器状态变化
       return false;
+    }
+  }
+
+  void _startGrpcStatusMonitor() {
+    _grpcStatusCheckTimer?.cancel();
+    _grpcStatusCheckTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!_isServiceRunning) {
+        timer.cancel();
+        return;
+      }
+
+      final isConnected = _grpcService.isConnected;
+      if (!isConnected && _status == ConnectionStatus.connected) {
+        debugPrint('⚠️ 检测到gRPC连接断开，更新状态');
+        _isServiceRunning = false; // 确保服务状态也更新
+        _setStatus(ConnectionStatus.disconnected);
+        // 停止服务
+        _stopServices();
+      } else if (isConnected && _status == ConnectionStatus.disconnected) {
+        debugPrint('✅ 检测到gRPC重新连接，更新状态');
+        _isServiceRunning = true;
+        _setStatus(ConnectionStatus.connected);
+      }
+    });
+  }
+
+  // 抽取停止服务的逻辑为单独的方法
+  Future<void> _stopServices() async {
+    try {
+      await _accessibilityService.stopDetection();
+      await _overlayService.stop();
+    } catch (e) {
+      debugPrint('❌ 停止服务时发生错误: $e');
     }
   }
 
@@ -173,6 +216,11 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
   Future<void> stop() async {
     try {
       _isStopping = true;
+      _setStatus(ConnectionStatus.disconnecting);
+
+      // 停止gRPC状态监听
+      _grpcStatusCheckTimer?.cancel();
+      _grpcStatusCheckTimer = null;
 
       // 先移除监听器，避免重复触发
       _accessibilityService.removeListener(_handleAccessibilityServiceChange);
@@ -181,12 +229,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
       await _grpcService.disconnect();
       debugPrint('✅ 已断开gRPC连接');
 
-      // 先停止界面检测
-      await _accessibilityService.stopDetection();
-      debugPrint('✅ 已停止界面检测');
-
-      await _overlayService.stop();
-      await _accessibilityService.stop(); // 停止AccessibilityService
+      await _stopServices();
       _overlayPositionCache.clear(); // 清除位置缓存
       _windowEventSubscription?.cancel(); // 取消事件订阅
       _windowEventSubscription = null;
@@ -411,7 +454,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
 
   @override
   void dispose() {
-    _isStopping = true;
+    _grpcStatusCheckTimer?.cancel();
     _windowEventSubscription?.cancel();
     _accessibilityService.removeListener(_handleAccessibilityServiceChange);
     super.dispose();

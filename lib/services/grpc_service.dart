@@ -19,6 +19,8 @@ class GrpcService {
   bool _isConnected = false;
   StreamController<ClientResponse>? _responseController;
   StreamSubscription<ServerCommand>? _commandSubscription;
+  Timer? _heartbeatTimer;
+  bool _isReconnecting = false;
 
   bool get isConnected => _isConnected;
   WindowInfoServiceClient? get client => _client;
@@ -59,10 +61,12 @@ class GrpcService {
         ]);
       } catch (e) {
         debugPrint('❌ gRPC连接验证失败: $e');
+        _isConnected = false;
         await _channel?.shutdown();
         _channel = null;
         _client = null;
         _accessibilityClient = null;
+        _cleanupResources();
         if (e is GrpcError) {
           rethrow;
         }
@@ -78,6 +82,7 @@ class GrpcService {
     } catch (e) {
       debugPrint('❌ gRPC连接失败: $e');
       _isConnected = false;
+      _cleanupResources();
       await _channel?.shutdown();
       _channel = null;
       _client = null;
@@ -87,26 +92,35 @@ class GrpcService {
   }
 
   Future<void> _setupBidirectionalStream() async {
-    // 创建一个广播流控制器，这样多个监听器不会导致流关闭
-    _responseController = StreamController<ClientResponse>.broadcast(
-      onListen: () => debugPrint('🎧 响应流开始监听'),
-      onCancel: () => debugPrint('🛑 响应流取消监听'),
-    );
+    debugPrint('🔄 开始建立双向流连接');
+
+    // 确保在开始前资源是清理的
+    await _safeCleanup();
 
     try {
-      debugPrint('🔄 开始建立双向流连接');
+      _responseController = StreamController<ClientResponse>.broadcast(
+        onListen: () => debugPrint('🎧 响应流开始监听'),
+        onCancel: () => debugPrint('🛑 响应流取消监听'),
+      );
 
-      // 创建一个初始的心跳响应，保持流活跃
+      // 创建一个初始的心跳响应
       final heartbeatResponse = ClientResponse()
         ..deviceId = 'heartbeat'
         ..success = true;
-      _responseController!.add(heartbeatResponse);
 
-      // 设置定期发送心跳
-      Timer.periodic(Duration(seconds: 30), (timer) {
-        if (_isConnected && !_responseController!.isClosed) {
-          _responseController!.add(heartbeatResponse);
-          debugPrint('💓 发送心跳');
+      // 设置新的心跳定时器
+      _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+        if (_isConnected &&
+            _responseController != null &&
+            !_responseController!.isClosed) {
+          try {
+            _responseController!.add(heartbeatResponse);
+            debugPrint('💓 发送心跳');
+          } catch (e) {
+            debugPrint('❌ 发送心跳失败: $e');
+            timer.cancel();
+            // 不再立即触发重连，而是等待其他错误处理机制
+          }
         } else {
           timer.cancel();
         }
@@ -125,15 +139,15 @@ class GrpcService {
         },
         onError: (Object error) {
           debugPrint('❌ 流错误: $error');
-          // 只有在连接仍然活跃时才重连
-          if (_isConnected && !_responseController!.isClosed) {
+          _isConnected = false;
+          if (!_isReconnecting) {
             _reconnectStream();
           }
         },
         onDone: () {
           debugPrint('📡 流连接已关闭');
-          // 只有在连接仍然活跃时才重连
-          if (_isConnected && !_responseController!.isClosed) {
+          _isConnected = false;
+          if (!_isReconnecting) {
             _reconnectStream();
           }
         },
@@ -142,9 +156,101 @@ class GrpcService {
       debugPrint('✅ 双向流连接建立成功');
     } catch (e) {
       debugPrint('❌ 建立流连接失败: $e');
-      _responseController?.close();
+      _isConnected = false;
+      await _safeCleanup();
       rethrow;
     }
+  }
+
+  void _cleanupResources() {
+    debugPrint('🧹 清理资源...');
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+
+    // 先取消订阅
+    _commandSubscription?.cancel();
+    _commandSubscription = null;
+
+    // 最后关闭流控制器
+    if (_responseController != null && !_responseController!.isClosed) {
+      _responseController!.close();
+    }
+    _responseController = null;
+  }
+
+  Future<void> _reconnectStream() async {
+    if (_isReconnecting) {
+      debugPrint('🚫 已经在重连中，跳过重连请求');
+      return;
+    }
+
+    debugPrint('🔄 准备重新建立流连接...');
+    _isReconnecting = true;
+
+    try {
+      // 清理旧的连接
+      await _safeCleanup();
+
+      // 验证基础连接是否正常
+      try {
+        await _client!.getCurrentWindowInfo(WindowInfoRequest()..deviceId = '');
+      } catch (e) {
+        debugPrint('❌ 基础连接验证失败，需要完全重连: $e');
+        _isConnected = false;
+        // 不再抛出异常，而是直接返回
+        return;
+      }
+
+      // 如果基础连接正常，重新建立流
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      // 使用 try-catch 包装 _setupBidirectionalStream
+      try {
+        await _setupBidirectionalStream();
+        _isConnected = true;
+        debugPrint('✅ 流重连成功');
+      } catch (e) {
+        debugPrint('❌ 建立流连接失败: $e');
+        _isConnected = false;
+        // 不抛出异常，静默处理
+      }
+    } catch (e) {
+      debugPrint('❌ 重连失败: $e');
+      _isConnected = false;
+      // 不再抛出异常
+    } finally {
+      _isReconnecting = false;
+    }
+  }
+
+  // 安全的清理资源方法
+  Future<void> _safeCleanup() async {
+    debugPrint('🧹 开始安全清理资源...');
+
+    // 先标记连接状态为断开
+    _isConnected = false;
+
+    // 取消心跳定时器
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+
+    // 等待一小段时间确保没有正在进行的操作
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    // 取消订阅
+    await _commandSubscription?.cancel();
+    _commandSubscription = null;
+
+    // 再等待一小段时间
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    // 最后关闭流控制器
+    if (_responseController != null && !_responseController!.isClosed) {
+      await _responseController!.close();
+    }
+    _responseController = null;
+
+    debugPrint('✅ 资源清理完成');
   }
 
   Future<void> _handleGetAccessibilityTree(String deviceId) async {
@@ -182,34 +288,12 @@ class GrpcService {
     }
   }
 
-  void _reconnectStream() {
-    debugPrint('🔄 准备重新建立流连接...');
-
-    // 清理旧的连接
-    _commandSubscription?.cancel();
-    _responseController?.close();
-    _commandSubscription = null;
-    _responseController = null;
-
-    // 如果仍然连接着，尝试重新建立流
-    if (_isConnected) {
-      debugPrint('🔄 开始重新建立流连接');
-      Future.delayed(Duration(seconds: 1), () {
-        _setupBidirectionalStream();
-      });
-    } else {
-      debugPrint('❌ 连接已断开，不再重新建立流连接');
-    }
-  }
-
   Future<void> disconnect() async {
     debugPrint('🔌 开始断开连接');
-    _isConnected = false; // 先标记为断开，防止重连
+    _isConnected = false;
+    _isReconnecting = false;
 
-    _commandSubscription?.cancel();
-    _responseController?.close();
-    _commandSubscription = null;
-    _responseController = null;
+    _cleanupResources();
 
     await _channel?.shutdown();
     _channel = null;
