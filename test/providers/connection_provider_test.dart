@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:awattackerapplier/generated/window_info.pb.dart';
 import 'package:awattackerapplier/models/element_result.dart';
 import 'package:awattackerapplier/models/overlay_result.dart';
 import 'package:awattackerapplier/models/overlay_style.dart';
@@ -12,6 +13,7 @@ import 'package:awattackerapplier/models/window_event.dart';
 import 'package:awattackerapplier/providers/connection_provider.dart';
 import 'package:awattackerapplier/providers/rule_provider.dart';
 import 'package:awattackerapplier/services/accessibility_service.dart';
+import 'package:awattackerapplier/services/grpc_service.dart';
 import 'package:awattackerapplier/services/overlay_service.dart';
 import 'connection_provider_test_helper.dart';
 
@@ -56,6 +58,12 @@ class MockAccessibilityService extends Mock implements AccessibilityService {
   }
 
   @override
+  Future<void> stopDetection() async {
+    debugPrint('🛑 Stopping detection');
+    return Future<void>.value();
+  }
+
+  @override
   void dispose() {
     _windowEventController.close();
     _listeners.clear();
@@ -66,6 +74,8 @@ class MockOverlayService extends Mock implements OverlayService {}
 
 class MockRuleProvider extends Mock implements RuleProvider {}
 
+class MockGrpcService extends Mock implements GrpcService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -73,6 +83,7 @@ void main() {
   late MockAccessibilityService mockAccessibilityService;
   late MockOverlayService mockOverlayService;
   late MockRuleProvider mockRuleProvider;
+  late MockGrpcService mockGrpcService;
 
   setUpAll(() {
     // Register fallback values for complex types
@@ -99,6 +110,7 @@ void main() {
     mockAccessibilityService = MockAccessibilityService();
     mockOverlayService = MockOverlayService();
     mockRuleProvider = MockRuleProvider();
+    mockGrpcService = MockGrpcService();
 
     // Register fallback values
     registerFallbackValue(createTestWindowEvent());
@@ -129,6 +141,21 @@ void main() {
     when(() => mockOverlayService.createOverlay(any(), any()))
         .thenAnswer((_) async => const OverlayResult(success: true));
 
+    // Setup gRPC service mocks
+    when(() => mockGrpcService.connect(any(), any()))
+        .thenAnswer((_) async => Future<void>.value());
+    when(() => mockGrpcService.disconnect())
+        .thenAnswer((_) async => Future<void>.value());
+    when(() => mockGrpcService.isConnected).thenReturn(true);
+    when(() => mockGrpcService.getCurrentWindowInfo(any())).thenAnswer(
+      (_) async => WindowInfoResponse(
+        success: true,
+        packageName: 'com.example.app',
+        activityName: '.MainActivity',
+        type: ResponseType.WINDOW_INFO,
+      ),
+    );
+
     when(() => mockRuleProvider.rules).thenReturn([]);
 
     // Create test object with mocked dependencies
@@ -136,6 +163,7 @@ void main() {
       mockRuleProvider,
       overlayService: mockOverlayService,
       accessibilityService: mockAccessibilityService,
+      grpcService: mockGrpcService,
     );
   });
 
@@ -224,8 +252,6 @@ void main() {
       // Emit window event
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.nonexistent',
-        activityName: '.MainActivity',
       ));
 
       // Wait for event processing
@@ -262,8 +288,6 @@ void main() {
       // Emit window event matching the test rule
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       // Wait for event processing
@@ -300,8 +324,6 @@ void main() {
       // Emit content changed event
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'CONTENT_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       // Wait for event processing
@@ -336,8 +358,6 @@ void main() {
       // Emit window event
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       // Wait for all async operations to complete
@@ -377,8 +397,6 @@ void main() {
       // Emit window event
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       // Wait for event processing
@@ -418,8 +436,6 @@ void main() {
       // Emit window event
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -461,8 +477,6 @@ void main() {
       // First window event
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -470,8 +484,6 @@ void main() {
       // Second window event with same position
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -511,8 +523,6 @@ void main() {
       // First window event
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -520,8 +530,6 @@ void main() {
       // Second window event with different position
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -556,8 +564,6 @@ void main() {
       // First window event with matching rule
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -566,8 +572,6 @@ void main() {
       when(() => mockRuleProvider.rules).thenReturn([]);
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.nonexistent',
-        activityName: '.MainActivity',
       ));
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -576,8 +580,6 @@ void main() {
       when(() => mockRuleProvider.rules).thenReturn(rules);
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -626,8 +628,6 @@ void main() {
       // Test WINDOW_STATE_CHANGED event
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -635,8 +635,6 @@ void main() {
       // Test CONTENT_CHANGED event
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'CONTENT_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -669,8 +667,6 @@ void main() {
       // Emit window event
       mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
         type: 'WINDOW_STATE_CHANGED',
-        packageName: 'com.example.app',
-        activityName: '.MainActivity',
       ));
 
       await Future<void>.delayed(const Duration(milliseconds: 500));

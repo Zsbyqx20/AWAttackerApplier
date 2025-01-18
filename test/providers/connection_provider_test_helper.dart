@@ -7,17 +7,13 @@ import 'package:awattackerapplier/models/window_event.dart';
 /// 创建测试用的窗口事件
 WindowEvent createTestWindowEvent({
   String type = 'WINDOW_STATE_CHANGED',
-  String packageName = 'com.example.app',
-  String activityName = '.MainActivity',
-  bool contentChanged = false,
+  bool isFirstConnect = false,
 }) {
-  return WindowEvent.fromJson({
-    'type': type,
-    'package_name': packageName,
-    'activity_name': activityName,
-    'timestamp': DateTime.now().millisecondsSinceEpoch,
-    'content_changed': contentChanged,
-  });
+  return WindowEvent(
+    type: WindowEventType.windowEvent,
+    timestamp: DateTime.now().millisecondsSinceEpoch,
+    isFirstConnect: isFirstConnect,
+  );
 }
 
 /// 从测试规则文件加载规则
