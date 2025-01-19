@@ -33,9 +33,9 @@ A configurable dynamic attacker app designed for Android World.
 ### What's going on NEXT?
 
 - [x] Support JSON rule file import & export directly from Android File System.
+- [x] Support gRPC service and integration with Android World ecosystem.
 - [x] Support CN/EN locales
-- [ ] Support **configurable popup window rendering rules** with customizable styles and layouts
 - [x] Organize rules with customizable tags
 - [x] Support rule format validation and version compatibility checks
-- [x] Support Start/Stop service by `adb` broadcasting
+- [x] Support Start/Stop service and specify gRPC config by `adb` broadcasting
 - [ ] Support refresh rules by `adb` broadcasting

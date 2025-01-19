@@ -20,12 +20,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      # 安装 protoc 编译器和插件
+      - name: Install Protoc and Plugins
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          
+          # 安装 protoc 的 Dart 插件
+          dart pub global activate protoc_plugin
+          
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.27.1
           cache: true
+          
       - run: flutter pub get
+      
+      # 确保 Dart protoc 插件在 PATH 中
+      - name: Generate Proto Files
+        run: |
+          export PATH="$PATH:$HOME/.pub-cache/bin"
+          mkdir -p lib/generated
+          mkdir -p android/app/src/main/java/com/mobilellm/awattackerapplier/proto
+          protoc --dart_out=grpc:lib/generated -Iproto proto/window_info.proto proto/accessibility.proto
+          protoc --java_out=android/app/src/main/java -Iproto proto/window_info.proto proto/accessibility.proto
+      
       - run: flutter gen-l10n
       - run: flutter test
       - run: dart format lib/
