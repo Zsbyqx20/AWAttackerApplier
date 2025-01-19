@@ -10,9 +10,15 @@ import android.view.accessibility.AccessibilityNodeInfo
 import org.json.JSONObject
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.Objects
-
+import java.util.LinkedList
+import com.mobilellm.awattackerapplier.proto.Accessibility.AccessibilityTree
+import com.mobilellm.awattackerapplier.proto.Accessibility.AccessibilityNode
+import com.mobilellm.awattackerapplier.proto.Accessibility.BoundingBox
+import com.mobilellm.awattackerapplier.models.OverlayStyle
 class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     private val job = SupervisorJob()
     override val coroutineContext: CoroutineContext
@@ -79,24 +85,16 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     private var pendingEvents = mutableListOf<Triple<String, String?, String?>>()
     private var retryJob: Job? = null
 
+    // 状态队列
+    private val stateQueue = LinkedList<ByteArray>()
+    private val maxQueueSize = 10
+    private val queueLock = Mutex()
+
     private fun cancelSearch() {
         searchScope?.cancel()
         searchScope = null
         drawingLock.set(false)  // 禁止绘制
         Log.d(TAG, "取消当前的查找操作，已禁止绘制")
-    }
-
-    private fun getRelativeActivityName(fullName: String?, packageName: String?): String? {
-        if (fullName == null || packageName == null) return fullName
-        
-        // 如果活动名以包名开头，移除包名部分并确保以点号开头
-        return if (fullName.startsWith(packageName)) {
-            val remaining = fullName.substring(packageName.length)
-            if (remaining.startsWith('.')) remaining else ".$remaining"
-        } else {
-            // 如果不是以包名开头，确保以点号开头
-            if (fullName.startsWith('.')) fullName else ".$fullName"
-        }
     }
 
     override fun onCreate() {
@@ -112,43 +110,21 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         configureService()
         
         if (isFirstConnect) {
-            // 首次连接，完整初始化
             isFirstConnect = false
             isDetectionEnabled = false
-            lastWindowHash = 0
-            lastPackage = null
-            lastActivity = null
-            
-            // 清除保存的状态
-            savedPackage = null
-            savedActivity = null
-            savedWindowHash = 0
-            
             Log.d(TAG, "AccessibilityService 首次连接")
             sendWindowEvent(
                 type = "SERVICE_CONNECTED",
-                packageName = null,
-                activityName = null,
-                contentChanged = false,
                 isFirstConnect = true
             )
         } else {
-            // 重连时恢复保存的状态
-            lastPackage = savedPackage
-            lastActivity = savedActivity
-            lastWindowHash = savedWindowHash
-            
             if (!isDetectionEnabled) {
                 isDetectionEnabled = true
                 Log.d(TAG, "重连时重新启用检测功能")
             }
-            
-            Log.d(TAG, "AccessibilityService 重新连接，保持现有状态 - package: $lastPackage, activity: $lastActivity")
+            Log.d(TAG, "AccessibilityService 重新连接")
             sendWindowEvent(
                 type = "SERVICE_CONNECTED",
-                packageName = null,
-                activityName = null,
-                contentChanged = false,
                 isFirstConnect = false
             )
         }
@@ -179,135 +155,149 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         }
 
         when (event.eventType) {
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
-                handleContentChanged(event)
-            }
-            
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
-                // 先检查是否是需要忽略的包名
-                val currentPackage = event.packageName?.toString()
-                if (currentPackage != null && 
-                    IGNORED_PACKAGES.any { currentPackage.startsWith(it) }) {
-                    Log.d(TAG, "忽略系统应用的窗口变化: $currentPackage")
-                    return
-                }
-                
-                val currentHash = calculateWindowHash()
-                Log.d(TAG, "窗口状态变化: currentHash=$currentHash, lastHash=$lastWindowHash")
-                if (currentHash != lastWindowHash) {
-                    lastWindowHash = currentHash
-                    handleWindowStateChanged(event)
-                } else {
-                    Log.d(TAG, "接收到状态变化信号，但哈希值未改变，忽略事件")
-                }
+                handleWindowEvent(event)
             }
         }
     }
 
-    private fun calculateWindowHash(): Int {
-        val rootNode = rootInActiveWindow ?: return 0
-        val hashBuilder = StringBuilder()
-        
-        fun traverseNode(node: AccessibilityNodeInfo) {
-            // 检查是否是状态栏
-            if (node.packageName?.toString() == "com.android.systemui" && 
-                (node.className?.toString()?.contains("StatusBar") == true || 
-                 node.viewIdResourceName?.contains("status_bar") == true)) {
-                return
-            }
-            
-            hashBuilder.append(node.className)
-            hashBuilder.append(node.text)
-            hashBuilder.append(node.contentDescription)
-            
-            for (i in 0 until node.childCount) {
-                node.getChild(i)?.let { 
-                    traverseNode(it)
-                    it.recycle()
-                }
-            }
-        }
-        
-        try {
-            traverseNode(rootNode)
-            val hash = hashBuilder.toString().hashCode()
-            Log.d(TAG, "计算界面哈希值: $hash")
-            return hash
-        } finally {
-            rootNode.recycle()
-        }
-    }
-
-    private fun handleWindowStateChanged(event: AccessibilityEvent) {
-        val currentPackage = event.packageName?.toString()
-        val currentActivity = event.className?.toString()
-        val currentHash = Objects.hash(currentPackage, currentActivity)
-
-        if (currentPackage != null && !IGNORED_PACKAGES.any { currentPackage.startsWith(it) }) {
-            if (currentHash != lastWindowHash) {
-                lastWindowHash = currentHash
-                lastPackage = currentPackage
-                lastActivity = currentActivity
-                
-                // 同步保存状态
-                savedPackage = currentPackage
-                savedActivity = currentActivity
-                savedWindowHash = currentHash
-                
-                Log.d(TAG, "Window state changed - package: $currentPackage, activity: $currentActivity")
-                sendWindowEvent(
-                    type = "WINDOW_STATE_CHANGED",
-                    packageName = currentPackage,
-                    activityName = getRelativeActivityName(currentActivity, currentPackage),
-                    contentChanged = false
-                )
-            }
-        }
-    }
-
-    private fun handleContentChanged(event: AccessibilityEvent) {
+    private fun handleWindowEvent(event: AccessibilityEvent) {
         val currentTime = System.currentTimeMillis()
         val currentPackage = event.packageName?.toString()
         val currentActivity = event.className?.toString()
-        val currentChangeTypes = event.contentChangeTypes
-        val currentSource = event.source
         
         // 检查是否需要忽略此事件
         if (currentTime - lastEventTime < EVENT_THROTTLE_TIME &&
             currentPackage == lastEventPackage &&
-            currentActivity == lastEventActivity &&
-            currentChangeTypes == lastEventChangeTypes &&
-            currentSource?.equals(lastEventSource) == true) {
-            Log.d(TAG, "忽略完全相同的内容变化事件")
+            currentActivity == lastEventActivity) {
+            Log.d(TAG, "忽略重复的窗口事件")
             return
         }
         
+        // 检查是否是需要忽略的包名
+        if (currentPackage != null && 
+            IGNORED_PACKAGES.any { currentPackage.startsWith(it) }) {
+            Log.d(TAG, "忽略系统应用的窗口变化: $currentPackage")
+            return
+        }
+
         // 更新事件信息
         lastEventTime = currentTime
         lastEventPackage = currentPackage
         lastEventActivity = currentActivity
-        lastEventChangeTypes = currentChangeTypes
-        lastEventSource?.recycle()  // 回收旧的 source
-        lastEventSource = currentSource?.let { AccessibilityNodeInfo.obtain(it) }  // 保存新的 source 的副本
         
-        // 记录内容变化的类型
-        Log.d(TAG, "检测到内容变化: package:$currentPackage, activity:$currentActivity, changeTypes=$currentChangeTypes")
-        
-        // 使用当前保存的包名和活动名
-        if (lastPackage != null && 
-            !IGNORED_PACKAGES.any { lastPackage!!.startsWith(it) }) {
+        if (currentPackage != null) {
+            // 清理之前的节点记录
+            WindowManagerHelper.getInstance(this).clearModifiedNodes()
             
-            sendWindowEvent(
-                type = "CONTENT_CHANGED",
-                packageName = lastPackage,
-                activityName = getRelativeActivityName(lastActivity, lastPackage),
-                contentChanged = true
-            )
+            // 获取根节点
+            val rootNode = rootInActiveWindow ?: return
+            
+            // 保存当前状态
+            launch {
+                Log.d(TAG, "窗口事件触发，保存当前状态")
+                saveCurrentState(rootNode)
+            }
+            
+            // 发送窗口事件通知，触发规则匹配和元素查找
+            sendWindowEvent(type = "WINDOW_EVENT")
+        }
+    }
+
+    // 在元素查找完成后调用此方法保存状态
+    suspend fun saveStateAfterSearch(rootNode: AccessibilityNodeInfo?) {
+        if (rootNode == null) {
+            Log.d(TAG, "Root node is null, skip saving state")
+            return
+        }
+        saveCurrentState(rootNode)
+        // 清理节点记录
+        WindowManagerHelper.getInstance(this).clearModifiedNodes()
+    }
+
+    private fun buildAccessibilityNode(node: AccessibilityNodeInfo): AccessibilityNode {
+        val bounds = Rect()
+        node.getBoundsInScreen(bounds)
+        
+        val windowHelper = WindowManagerHelper.getInstance(this)
+        // 检查节点是否被修改过
+        val text = if (windowHelper.isNodeModified(node)) {
+            windowHelper.getModifiedText(node) ?: node.text?.toString() ?: ""
+        } else {
+            node.text?.toString() ?: ""
+        }
+        
+        val builder = AccessibilityNode.newBuilder()
+            .setText(text)  // 使用可能被修改的文本
+            .setContentDescription(node.contentDescription?.toString() ?: "")
+            .setClassName(node.className?.toString() ?: "")
+            .setPackageName(node.packageName?.toString() ?: "")
+            .setResourceId(node.viewIdResourceName ?: "")
+            
+            // 设置边界
+            .setBbox(BoundingBox.newBuilder()
+                .setLeft(bounds.left)
+                .setTop(bounds.top)
+                .setRight(bounds.right)
+                .setBottom(bounds.bottom)
+                .build())
+            
+            // 设置状态标志
+            .setIsCheckable(node.isCheckable)
+            .setIsChecked(node.isChecked)
+            // 为节点默认设置为可点击
+            .setIsClickable(true)
+            .setIsEditable(node.isEditable)
+            .setIsEnabled(node.isEnabled)
+            .setIsFocused(node.isFocused)
+            .setIsFocusable(node.isFocusable)
+            .setIsLongClickable(node.isLongClickable)
+            .setIsScrollable(node.isScrollable)
+            .setIsSelected(node.isSelected)
+            .setIsVisible(node.isVisibleToUser)
+
+        // 递归处理子节点
+        for (i in 0 until node.childCount) {
+            node.getChild(i)?.let { childNode ->
+                builder.addChildren(buildAccessibilityNode(childNode))
+                childNode.recycle()
+            }
+        }
+        
+        return builder.build()
+    }
+
+    // 获取最新状态
+    suspend fun getLatestState(): ByteArray? {
+        return queueLock.withLock {
+            stateQueue.firstOrNull()
+        }
+    }
+
+    private suspend fun saveCurrentState(rootNode: AccessibilityNodeInfo) {
+        try {
+            // 构建无障碍树
+            val tree = AccessibilityTree.newBuilder()
+                .setRoot(buildAccessibilityNode(rootNode))
+                .setTimestamp(System.currentTimeMillis())
+                .build()
+
+            // 序列化并保存
+            val bytes = tree.toByteArray()
+            queueLock.withLock {
+                stateQueue.addFirst(bytes)
+                if (stateQueue.size > maxQueueSize) {
+                    stateQueue.removeLast()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save state", e)
         }
     }
 
     // 元素查找功能
-    suspend fun findElementByUiSelector(selectorCode: String): AccessibilityNodeInfo? = withContext(Dispatchers.Default) {
+    suspend fun findElementByUiSelector(style: OverlayStyle): AccessibilityNodeInfo? = withContext(Dispatchers.Default) {
         var retryCount = 0
         val maxRetries = 5
         val retryDelay = 200L
@@ -323,9 +313,9 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
                     continue
                 }
 
-                val node = UiAutomatorHelper.findNodeBySelector(rootNode, selectorCode)
+                val node = UiAutomatorHelper.findNodeBySelector(rootNode, style.uiAutomatorCode)
                 if (node == null) {
-                    Log.d(TAG, "Node not found with selector: $selectorCode, retry: ${retryCount + 1}/$maxRetries")
+                    Log.d(TAG, "Node not found with selector: ${style.uiAutomatorCode}, retry: ${retryCount + 1}/$maxRetries")
                     delay(retryDelay)
                     retryCount++
                     continue
@@ -350,6 +340,9 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
                 // 比较位置是否稳定
                 if (bounds == lastBounds) {
                     Log.d(TAG, "元素位置稳定，最终位置: $boundsStr")
+                    WindowManagerHelper.getInstance(this@AWAccessibilityService)
+                        .addModifiedNode(node, style.text)
+                    Log.d(TAG, "Found matching node, recorded with modified text: ${style.text}")
                     return@withContext node
                 } else {
                     // 位置不稳定，更新记录并继续等待
@@ -374,13 +367,13 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     }
 
     // 批量查找元素
-    suspend fun findElements(selectorCodes: List<String>): List<ElementResult> = withContext(Dispatchers.Default) {
+    suspend fun findElements(styles: List<OverlayStyle>): List<ElementResult> = withContext(Dispatchers.Default) {
         if (hasMatchedRule) {
             Log.d(TAG, "开始批量查找元素，允许绘制")
             drawingLock.set(true)  // 允许绘制
         } else {
             Log.d(TAG, "当前窗口没有匹配规则，保持禁止绘制状态")
-            return@withContext selectorCodes.map { 
+            return@withContext styles.map { 
                 ElementResult(success = false, message = "No matching rule for current window") 
             }
         }
@@ -390,12 +383,12 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         searchScope = CoroutineScope(coroutineContext + Job())
         
         try {
-            searchScope?.let { scope ->
-                selectorCodes.mapIndexed { index, code ->
+            val results = searchScope?.let { scope ->
+                styles.mapIndexed { index, style ->
                     scope.async {
-                        Log.d(TAG, "查找第 ${index + 1} 个元素: $code")
+                        Log.d(TAG, "查找第 ${index + 1} 个元素: ${style.uiAutomatorCode}")
                         try {
-                            val node = findElementByUiSelector(code)
+                            val node = findElementByUiSelector(style)
                             if (node != null) {
                                 val bounds = Rect()
                                 node.getBoundsInScreen(bounds)
@@ -423,9 +416,16 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
                     }
                 }.awaitAll()
             } ?: emptyList()
+
+            // 在所有元素查找完成后保存状态
+            val rootNode = rootInActiveWindow
+            saveStateAfterSearch(rootNode)
+            rootNode?.recycle()  // 记得回收根节点
+
+            return@withContext results
         } catch (e: CancellationException) {
             Log.d(TAG, "搜索操作被取消")
-            selectorCodes.map { 
+            styles.map { 
                 ElementResult(success = false, message = "Search cancelled") 
             }
         } finally {
@@ -440,7 +440,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
                 val channel = MainActivity.getMethodChannel()
                 if (channel != null) {
                     pendingEvents.toList().forEach { (type, packageName, activityName) ->
-                        sendWindowEvent(type, packageName, activityName, false)
+                        sendWindowEvent(type, false)
                     }
                     pendingEvents.clear()
                     retryJob?.cancel()
@@ -453,26 +453,16 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
 
     private fun sendWindowEvent(
         type: String,
-        packageName: String?,
-        activityName: String?,
-        contentChanged: Boolean,
         isFirstConnect: Boolean = false
     ) {
         val event = JSONObject().apply {
             put("type", type)
-            put("package_name", packageName)
-            put("activity_name", activityName)
             put("timestamp", System.currentTimeMillis())
-            put("content_changed", contentChanged)
             put("is_first_connect", isFirstConnect)
         }
 
         MainActivity.getMethodChannel()?.let {
             it.invokeMethod("onWindowEvent", event.toString())
-        } ?: run {
-            Log.d(TAG, "MethodChannel不可用，将事件加入重试队列")
-            pendingEvents.add(Triple(type, packageName, activityName))
-            startEventRetry()
         }
     }
 
@@ -525,22 +515,6 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
             getWindowManagerHelper().removeAllOverlays()
         }
         Log.d(TAG, "更新规则匹配状态: hasMatch=$hasMatch")
-    }
-
-    private fun getEventTypeName(eventType: Int): String {
-        return when (eventType) {
-            AccessibilityEvent.TYPE_VIEW_CLICKED -> "VIEW_CLICKED"
-            AccessibilityEvent.TYPE_VIEW_LONG_CLICKED -> "VIEW_LONG_CLICKED"
-            AccessibilityEvent.TYPE_VIEW_SELECTED -> "VIEW_SELECTED"
-            AccessibilityEvent.TYPE_VIEW_FOCUSED -> "VIEW_FOCUSED"
-            AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED -> "VIEW_TEXT_CHANGED"
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> "WINDOW_STATE_CHANGED"
-            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> "WINDOW_CONTENT_CHANGED"
-            AccessibilityEvent.TYPE_VIEW_SCROLLED -> "VIEW_SCROLLED"
-            AccessibilityEvent.TYPE_TOUCH_INTERACTION_START -> "TOUCH_INTERACTION_START"
-            AccessibilityEvent.TYPE_TOUCH_INTERACTION_END -> "TOUCH_INTERACTION_END"
-            else -> "UNKNOWN_EVENT_TYPE($eventType)"
-        }
     }
 
     fun startDetection() {
@@ -603,7 +577,7 @@ object UiAutomatorHelper {
         return code.replace(""".instance\(\d+\)""".toRegex(), "")
     }
 
-    private fun extractSelectorValue(code: String, type: String): String {
+    public fun extractSelectorValue(code: String, type: String): String {
         val regex = """.$type\("([^"]+)"\)""".toRegex()
         val value = regex.find(code)?.groupValues?.get(1) ?: ""
         return value

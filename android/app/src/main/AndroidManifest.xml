@@ -69,6 +69,7 @@
             <intent-filter>
                 <action android:name="com.mobilellm.awattackerapplier.START_SERVICE" />
                 <action android:name="com.mobilellm.awattackerapplier.STOP_SERVICE" />
+                <action android:name="com.mobilellm.awattackerapplier.SET_GRPC_CONFIG" />
             </intent-filter>
         </receiver>
     </application>

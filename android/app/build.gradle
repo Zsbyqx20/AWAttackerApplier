@@ -40,4 +40,5 @@ flutter {
 dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3"
+    implementation "com.google.protobuf:protobuf-java:4.29.3"
 }

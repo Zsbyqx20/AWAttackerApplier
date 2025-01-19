@@ -448,6 +448,10 @@
     "@permissionNotGranted": {
         "description": "Text for permission not granted"
     },
+    "grpcConnectionError": "无法连接到服务器，请检查服务是否正常运行",
+    "@grpcConnectionError": {
+        "description": "Error message when gRPC server connection fails"
+    },
     "ruleImportPreviewDialogTitle": "导入预览",
     "@ruleImportPreviewDialogTitle": {
         "description": "Title for rule import preview dialog"
@@ -549,5 +553,41 @@
                 "example": "5"
             }
         }
+    },
+    "grpcSettings": "gRPC 设置",
+    "@grpcSettings": {
+        "description": "Title for gRPC settings"
+    },
+    "grpcHost": "主机地址",
+    "@grpcHost": {
+        "description": "Label for gRPC host field"
+    },
+    "grpcPort": "端口号",
+    "@grpcPort": {
+        "description": "Label for gRPC port field"
+    },
+    "grpcConnectionStatus": "连接状态",
+    "@grpcConnectionStatus": {
+        "description": "Label for gRPC connection status"
+    },
+    "grpcConnected": "已连接",
+    "@grpcConnected": {
+        "description": "Text for gRPC connected status"
+    },
+    "grpcDisconnected": "未连接",
+    "@grpcDisconnected": {
+        "description": "Text for gRPC disconnected status"
+    },
+    "grpcConnecting": "连接中",
+    "@grpcConnecting": {
+        "description": "Text for gRPC connecting status"
+    },
+    "grpcDisconnecting": "断开中",
+    "@grpcDisconnecting": {
+        "description": "Text for gRPC disconnecting status"
+    },
+    "grpcInvalidPort": "无效的端口号",
+    "@grpcInvalidPort": {
+        "description": "Error message for gRPC invalid port"
     }
 }

@@ -12,6 +12,13 @@ import android.widget.TextView
 import android.graphics.drawable.ColorDrawable
 import android.util.Log
 import android.accessibilityservice.AccessibilityService
+import android.view.accessibility.AccessibilityNodeInfo
+
+// 简化的数据类，只记录节点和修改后的文本
+data class ModifiedNode(
+    val node: AccessibilityNodeInfo,
+    val modifiedText: String
+)
 
 class WindowManagerHelper private constructor(private val context: Context) {
     companion object {
@@ -50,7 +57,46 @@ class WindowManagerHelper private constructor(private val context: Context) {
 
     private val windowManager: WindowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val activeWindows = mutableMapOf<String, TextView>()
-    
+    // 记录匹配到的节点和它们的新文本
+    private val modifiedNodes = mutableListOf<ModifiedNode>()
+
+    // 新增：记录匹配到的节点
+    fun addModifiedNode(node: AccessibilityNodeInfo, newText: String) {
+        // 移除之前可能存在的相同节点的记录
+        modifiedNodes.removeAll { it.node == node }
+        // 添加新记录
+        modifiedNodes.add(ModifiedNode(node, newText))
+    }
+
+    // 新增：清除所有记录的节点
+    fun clearModifiedNodes() {
+        modifiedNodes.forEach { it.node.recycle() }
+        modifiedNodes.clear()
+    }
+
+    // 新增：获取节点的修改后文本
+    fun getModifiedText(node: AccessibilityNodeInfo): String? {
+        return modifiedNodes.find { it.node == node }?.modifiedText
+    }
+
+    // 新增：判断节点是否被修改
+    fun isNodeModified(node: AccessibilityNodeInfo): Boolean {
+        return modifiedNodes.any { it.node == node }
+    }
+
+    // 新增：获取所有修改过的节点信息
+    fun getAllModifiedNodes(): List<ModifiedNode> {
+        return modifiedNodes.toList()
+    }
+
+    // 新增：移除单个修改过的节点
+    fun removeModifiedNode(node: AccessibilityNodeInfo) {
+        modifiedNodes.find { it.node == node }?.let {
+            it.node.recycle()
+            modifiedNodes.remove(it)
+        }
+    }
+
     private fun parseColor(colorValue: Number): Int {
         // 将颜色值转换为 Long 以避免溢出
         val longValue = colorValue.toLong() and 0xFFFFFFFFL
@@ -95,7 +141,8 @@ class WindowManagerHelper private constructor(private val context: Context) {
             }
             
             flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
             
             format = PixelFormat.TRANSLUCENT
             

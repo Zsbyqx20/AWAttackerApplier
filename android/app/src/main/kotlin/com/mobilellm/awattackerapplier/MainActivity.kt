@@ -20,6 +20,7 @@ import android.graphics.Rect
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 import android.content.IntentFilter
+import com.mobilellm.awattackerapplier.models.OverlayStyle
 
 class MainActivity : FlutterActivity(), CoroutineScope {
     private val job = SupervisorJob()
@@ -180,6 +181,25 @@ class MainActivity : FlutterActivity(), CoroutineScope {
                     AWAccessibilityService.getInstance()?.updateRuleMatchStatus(hasMatch)
                     result.success(null)
                 }
+                "getLatestState" -> {
+                    launch {
+                        try {
+                            val service = AWAccessibilityService.getInstance()
+                            if (service != null) {
+                                val state = service.getLatestState()
+                                if (state != null) {
+                                    result.success(state)
+                                } else {
+                                    result.error("NO_STATE", "No accessibility state available", null)
+                                }
+                            } else {
+                                result.error("SERVICE_NOT_RUNNING", "Accessibility service is not running", null)
+                            }
+                        } catch (e: Exception) {
+                            result.error("GET_STATE_ERROR", e.message, null)
+                        }
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
@@ -212,6 +232,24 @@ class MainActivity : FlutterActivity(), CoroutineScope {
                             } catch (e: Exception) {
                                 Log.e(TAG, "停止服务失败", e)
                                 result.error("STOP_SERVICE_FAILED", e.message, null)
+                            }
+                        }
+                        "SET_GRPC_CONFIG" -> {
+                            try {
+                                val host = call.argument<String>("host")
+                                val port = call.argument<Int>("port")
+                                if (host == null || port == null) {
+                                    result.error("INVALID_ARGUMENTS", "Invalid gRPC configuration parameters", null)
+                                    return@setMethodCallHandler
+                                }
+                                // 返回与其他命令一致的格式
+                                result.success(mapOf(
+                                    "success" to true,
+                                    "error" to null
+                                ))
+                            } catch (e: Exception) {
+                                Log.e(TAG, "设置gRPC配置失败", e)
+                                result.error("SET_GRPC_CONFIG_FAILED", e.message, null)
                             }
                         }
                         else -> result.notImplemented()
@@ -249,6 +287,7 @@ class MainActivity : FlutterActivity(), CoroutineScope {
         val filter = IntentFilter().apply {
             addAction(ServiceControlReceiver.ACTION_START_SERVICE)
             addAction(ServiceControlReceiver.ACTION_STOP_SERVICE)
+            addAction(ServiceControlReceiver.ACTION_SET_GRPC_CONFIG)
         }
         registerReceiver(serviceReceiver, filter)
     }
@@ -378,11 +417,13 @@ class MainActivity : FlutterActivity(), CoroutineScope {
     private fun handleFindElements(call: MethodCall, result: MethodChannel.Result) {
         launch {
             try {
-                val selectorCodes = call.argument<List<String>>("selectorCodes")
-                if (selectorCodes == null) {
-                    result.error("INVALID_ARGUMENT", "Selector codes cannot be null", null)
+                val rawStyles = call.argument<List<Map<String, Any>>>("styles")
+                if (rawStyles == null) {
+                    result.error("INVALID_ARGUMENT", "Styles cannot be null", null)
                     return@launch
                 }
+
+                val styles = rawStyles.map { OverlayStyle.fromMap(it) }
 
                 val service = AWAccessibilityService.getInstance()
                 if (service == null) {
@@ -390,7 +431,7 @@ class MainActivity : FlutterActivity(), CoroutineScope {
                     return@launch
                 }
 
-                val elements = service.findElements(selectorCodes)
+                val elements = service.findElements(styles)
                 result.success(elements.map { it.toMapResult() })
             } catch (e: Exception) {
                 result.error("FIND_ERROR", e.message, null)
@@ -401,11 +442,13 @@ class MainActivity : FlutterActivity(), CoroutineScope {
     private fun handleFindElement(call: MethodCall, result: MethodChannel.Result) {
         launch {
             try {
-                val selectorCode = call.argument<String>("selectorCode")
-                if (selectorCode == null) {
-                    result.error("INVALID_ARGUMENT", "Selector code cannot be null", null)
+                val rawStyle = call.argument<Map<String, Any>>("style")
+                if (rawStyle == null) {
+                    result.error("INVALID_ARGUMENT", "Style cannot be null", null)
                     return@launch
                 }
+
+                val style = OverlayStyle.fromMap(rawStyle)
 
                 val service = AWAccessibilityService.getInstance()
                 if (service == null) {
@@ -413,7 +456,7 @@ class MainActivity : FlutterActivity(), CoroutineScope {
                     return@launch
                 }
 
-                val element = service.findElementByUiSelector(selectorCode)?.let {
+                val element = service.findElementByUiSelector(style)?.let {
                     val bounds = Rect()
                     it.getBoundsInScreen(bounds)
                     AWAccessibilityService.ElementResult(

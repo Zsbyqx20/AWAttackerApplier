@@ -32,6 +32,7 @@ class OverlayConverter {
         'right': style.padding.right,
         'bottom': style.padding.bottom,
       },
+      'uiAutomatorCode': style.uiAutomatorCode,
     };
   }
 
@@ -99,6 +100,7 @@ class OverlayConverter {
         (map['padding']['right'] as num).toDouble(),
         (map['padding']['bottom'] as num).toDouble(),
       ),
+      uiAutomatorCode: map['uiAutomatorCode'] as String,
     );
   }
 }

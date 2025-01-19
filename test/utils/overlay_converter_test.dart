@@ -90,6 +90,7 @@ void main() {
           'right': 30.0,
           'bottom': 40.0,
         },
+        'uiAutomatorCode': 'test_code',
       };
 
       final style = OverlayConverter.styleFromNative(nativeMap);
@@ -108,6 +109,7 @@ void main() {
       expect(style.padding.top, equals(20.0));
       expect(style.padding.right, equals(30.0));
       expect(style.padding.bottom, equals(40.0));
+      expect(style.uiAutomatorCode, equals('test_code'));
     });
 
     test('颜色转换的双向一致性', () {
