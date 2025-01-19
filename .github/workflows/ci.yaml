@@ -20,21 +20,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      # 安装 protoc 编译器和插件
-      - name: Install Protoc and Plugins
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
-          
-          # 安装 protoc 的 Dart 插件
-          dart pub global activate protoc_plugin
-          
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.27.1
           cache: true
+
+      - name: Install Protoc and Plugins
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          dart pub global activate protoc_plugin
           
       - run: flutter pub get
       
