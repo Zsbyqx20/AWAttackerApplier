@@ -299,8 +299,8 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     // 元素查找功能
     suspend fun findElementByUiSelector(style: OverlayStyle): AccessibilityNodeInfo? = withContext(Dispatchers.Default) {
         var retryCount = 0
-        val maxRetries = 5
-        val retryDelay = 200L
+        val maxRetries = 3
+        val retryDelay = 300L
         var lastBounds: Rect? = null
 
         while (retryCount < maxRetries && isActive) {
