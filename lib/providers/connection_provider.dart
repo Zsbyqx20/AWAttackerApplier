@@ -377,11 +377,19 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
       for (var i = 0; i < elements.length; i++) {
         final result = elements[i];
         final style = styles[i];
+        final overlayId = 'overlay_$i';
 
-        if (result.success &&
-            result.coordinates != null &&
-            result.size != null) {
-          final overlayId = 'overlay_$i';
+        if (!result.success) {
+          // 只在悬浮窗存在于缓存中时才尝试移除
+          if (_overlayPositionCache.containsKey(overlayId)) {
+            debugPrint('❌ 元素搜索失败，移除悬浮窗: $overlayId');
+            popOverlayCache(overlayId);
+            await _overlayService.removeOverlay(overlayId);
+          }
+          continue;
+        }
+
+        if (result.coordinates != null && result.size != null) {
           final newX = result.coordinates!['x']!.toDouble();
           final newY = result.coordinates!['y']!.toDouble();
           final newWidth = result.size!['width']!.toDouble();

@@ -588,6 +588,99 @@ void main() {
       verify(() => mockOverlayService.createOverlay(any(), any())).called(2);
       verify(() => mockOverlayService.removeAllOverlays()).called(1);
     });
+
+    test('Should handle dynamic changes of multiple overlays in same rule',
+        () async {
+      // Setup test rules
+      final rules = await loadTestRules();
+      when(() => mockRuleProvider.rules).thenReturn(rules);
+
+      // Setup element search results with different scenarios
+      var searchCount = 0;
+      when(() => mockAccessibilityService.findElements(any()))
+          .thenAnswer((_) async {
+        searchCount++;
+        switch (searchCount) {
+          case 1:
+            // First event: only find Test Style 1
+            return [
+              ElementResult(
+                success: true,
+                coordinates: {'x': 100, 'y': 100},
+                size: {'width': 200, 'height': 100},
+              ),
+              ElementResult(success: false), // Test Style 2 not found
+            ];
+          case 2:
+            // Second event: find both styles
+            return [
+              ElementResult(
+                success: true,
+                coordinates: {'x': 100, 'y': 100}, // Same position for Style 1
+                size: {'width': 200, 'height': 100},
+              ),
+              ElementResult(
+                success: true,
+                coordinates: {'x': 300, 'y': 300}, // Style 2 appears
+                size: {'width': 150, 'height': 50},
+              ),
+            ];
+          case 3:
+            // Third event: only find Test Style 1 again
+            return [
+              ElementResult(
+                success: true,
+                coordinates: {'x': 100, 'y': 100}, // Same position for Style 1
+                size: {'width': 200, 'height': 100},
+              ),
+              ElementResult(success: false), // Style 2 disappears
+            ];
+          default:
+            return [];
+        }
+      });
+
+      when(() => mockAccessibilityService.updateRuleMatchStatus(any()))
+          .thenAnswer((_) async => {});
+
+      // Setup overlay creation and removal
+      when(() => mockOverlayService.createOverlay(any(), any()))
+          .thenAnswer((_) async => const OverlayResult(success: true));
+      when(() => mockOverlayService.removeOverlay(any()))
+          .thenAnswer((_) async => true);
+
+      // First window event - should create only Style 1
+      mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
+        type: 'WINDOW_STATE_CHANGED',
+      ));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Verify first overlay created
+      verify(() => mockOverlayService.createOverlay('overlay_0', any()))
+          .called(1);
+      verifyNever(() => mockOverlayService.createOverlay('overlay_1', any()));
+
+      // Second window event - should keep Style 1 and create Style 2
+      mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
+        type: 'WINDOW_STATE_CHANGED',
+      ));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Verify Style 2 created without recreating Style 1
+      verifyNever(() => mockOverlayService.removeOverlay('overlay_0'));
+      verify(() => mockOverlayService.createOverlay('overlay_1', any()))
+          .called(1);
+
+      // Third window event - should keep Style 1 and remove Style 2
+      mockAccessibilityService.emitWindowEvent(createTestWindowEvent(
+        type: 'WINDOW_STATE_CHANGED',
+      ));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Verify Style 1 kept and Style 2 removed
+      verifyNever(() => mockOverlayService.removeOverlay('overlay_0'));
+      verify(() => mockOverlayService.removeOverlay('overlay_1')).called(1);
+    });
   });
 
   group('Error Recovery Tests', () {

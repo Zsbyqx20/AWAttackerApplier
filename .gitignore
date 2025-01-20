@@ -81,4 +81,4 @@ coverage/**
 target/
 lib/generated
 android/app/src/main/java/com/mobilellm/awattackerapplier/proto/
-test*
+test_*
