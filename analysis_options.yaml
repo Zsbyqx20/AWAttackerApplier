@@ -10,7 +10,11 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
-  exclude: [build/**]
+  exclude: 
+    - "build/**"
+    - '**/*.g.dart'
+    - '**/*.freezed.dart'
+    - "lib/generated/*.dart"
   language:
     strict-casts: true
     strict-inference: true
@@ -33,3 +37,7 @@ linter:
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
+
+dart_code_metrics:
+  extends:
+    - package:dart_code_metrics_presets/all.yaml
