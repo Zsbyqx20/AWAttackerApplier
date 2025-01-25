@@ -12,6 +12,12 @@ class RuleRepository {
 
   RuleRepository(this._prefs);
 
+  /// 清空规则列表（仅用于测试）
+  @visibleForTesting
+  Future<void> clearRules() async {
+    await _prefs.remove(_storageKey);
+  }
+
   Future<List<Rule>> loadRules() async {
     try {
       final String? rulesJson = _prefs.getString(_storageKey);
@@ -19,7 +25,7 @@ class RuleRepository {
 
       final decoded = jsonDecode(rulesJson);
       if (decoded is! List) return [];
-      final List<dynamic> rules = decoded;
+      final List<Object?> rules = decoded;
       if (rules.isEmpty) return [];
 
       // 验证解码后的数据是否为有效的规则列表
@@ -28,6 +34,7 @@ class RuleRepository {
           debugPrint('Invalid rule data format, clearing storage');
         }
         await _prefs.remove(_storageKey);
+
         return [];
       }
 
@@ -40,6 +47,7 @@ class RuleRepository {
       }
       // 清除无效的数据
       await _prefs.remove(_storageKey);
+
       return [];
     }
   }
@@ -52,6 +60,7 @@ class RuleRepository {
     }
     rules.add(rule);
     await _saveRules(rules);
+
     return rule;
   }
 
@@ -96,11 +105,5 @@ class RuleRepository {
       }
       rethrow;
     }
-  }
-
-  /// 清空规则列表（仅用于测试）
-  @visibleForTesting
-  Future<void> clearRules() async {
-    await _prefs.remove(_storageKey);
   }
 }

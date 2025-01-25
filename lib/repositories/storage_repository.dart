@@ -14,12 +14,16 @@ class StorageRepository {
   Future<Set<String>> loadActiveTags() async {
     if (_prefs == null) throw Exception('Storage not initialized');
 
-    final json = _prefs!.getString(StorageKeys.activeTagsKey);
+    final prefs = _prefs;
+    if (prefs == null) return {};
+
+    final json = prefs.getString(StorageKeys.activeTagsKey);
     if (json == null) return {};
 
     try {
       final decoded = jsonDecode(json);
       if (decoded is! List) return {};
+
       return decoded.map((e) => e as String).toSet();
     } catch (e) {
       return {};
@@ -29,7 +33,10 @@ class StorageRepository {
   Future<void> saveActiveTags(Set<String> tags) async {
     if (_prefs == null) throw Exception('Storage not initialized');
 
+    final prefs = _prefs;
+    if (prefs == null) return;
+
     final json = jsonEncode(tags.toList());
-    await _prefs!.setString(StorageKeys.activeTagsKey, json);
+    await prefs.setString(StorageKeys.activeTagsKey, json);
   }
 }
