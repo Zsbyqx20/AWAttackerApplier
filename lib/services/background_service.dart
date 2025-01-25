@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 
 class BackgroundService {
+  /// 前台服务通知ID
+  static const int foregroundNotificationId = 888;
+
   static Future<void> initializeService() async {
     final service = FlutterBackgroundService();
 
@@ -17,7 +20,7 @@ class BackgroundService {
         notificationChannelId: 'awattacker_service',
         initialNotificationTitle: 'AWAttacker Service',
         initialNotificationContent: 'Initializing...',
-        foregroundServiceNotificationId: 888,
+        foregroundServiceNotificationId: foregroundNotificationId,
       ),
       iosConfiguration: IosConfiguration(
         autoStart: false,

@@ -10,22 +10,21 @@ import 'native_overlay_service.dart';
 /// 单例模式实现，管理所有悬浮窗操作
 class OverlayService implements IOverlayService {
   static final OverlayService _instance = OverlayService._internal();
-  factory OverlayService() => _instance;
-
+  // ignore: avoid-late-keyword
   late final IOverlayService _nativeService;
   bool _isServiceRunning = false;
+  bool get isServiceRunning => _isServiceRunning;
+  factory OverlayService() => _instance;
 
   OverlayService._internal() {
     _nativeService = NativeOverlayService();
   }
 
-  /// 获取服务运行状态
-  bool get isServiceRunning => _isServiceRunning;
-
   /// 启动服务
   Future<bool> start() async {
     if (_isServiceRunning) {
       debugPrint('🟢 悬浮窗服务已经在运行');
+
       return true;
     }
 
@@ -33,6 +32,7 @@ class OverlayService implements IOverlayService {
       // 检查权限
       if (!await checkPermission()) {
         debugPrint('🔒 悬浮窗权限未授予，无法启动服务');
+
         return false;
       }
 
@@ -42,10 +42,12 @@ class OverlayService implements IOverlayService {
       // 设置服务状态
       _isServiceRunning = true;
       debugPrint('✅ 悬浮窗服务启动成功');
+
       return true;
     } catch (e) {
       debugPrint('❌ 启动悬浮窗服务时发生错误: $e');
       _isServiceRunning = false;
+
       return false;
     }
   }
@@ -76,6 +78,7 @@ class OverlayService implements IOverlayService {
       return await _nativeService.checkPermission();
     } catch (e) {
       debugPrint('🔒 检查悬浮窗权限时发生错误: $e');
+
       return false;
     }
   }
@@ -86,6 +89,7 @@ class OverlayService implements IOverlayService {
       return await _nativeService.requestPermission();
     } catch (e) {
       debugPrint('🔐 请求悬浮窗权限时发生错误: $e');
+
       return false;
     }
   }
@@ -94,6 +98,7 @@ class OverlayService implements IOverlayService {
   Future<OverlayResult> createOverlay(String id, OverlayStyle style) async {
     if (!_isServiceRunning) {
       debugPrint('🚫 服务未运行，无法创建悬浮窗');
+
       return OverlayResult.failure('服务未运行');
     }
 
@@ -101,6 +106,7 @@ class OverlayService implements IOverlayService {
     if (!await checkPermission()) {
       debugPrint('🔒 权限已失效，无法创建悬浮窗');
       _isServiceRunning = false; // 更新服务状态
+
       return OverlayResult.failure('权限已失效');
     }
 
@@ -108,6 +114,7 @@ class OverlayService implements IOverlayService {
       // 验证样式
       if (!style.isValid()) {
         final error = style.getValidationError();
+
         return OverlayResult.failure(error ?? '无效的样式配置');
       }
 
@@ -115,6 +122,7 @@ class OverlayService implements IOverlayService {
       if (!result.success) {
         debugPrint('❌ 创建悬浮窗失败: ${result.error}');
       }
+
       return result;
     } catch (e) {
       debugPrint('🪟 创建悬浮窗时发生错误: $e');
@@ -125,6 +133,7 @@ class OverlayService implements IOverlayService {
       if (e is OverlayException) {
         return OverlayResult.failure(e.message);
       }
+
       return OverlayResult.failure(e.toString());
     }
   }
@@ -133,6 +142,7 @@ class OverlayService implements IOverlayService {
   Future<OverlayResult> updateOverlay(String id, OverlayStyle style) async {
     if (!_isServiceRunning) {
       debugPrint('🚫 服务未运行，无法更新悬浮窗');
+
       return OverlayResult.failure('服务未运行');
     }
 
@@ -140,6 +150,7 @@ class OverlayService implements IOverlayService {
     if (!await checkPermission()) {
       debugPrint('🔒 权限已失效，无法更新悬浮窗');
       _isServiceRunning = false; // 更新服务状态
+
       return OverlayResult.failure('权限已失效');
     }
 
@@ -147,6 +158,7 @@ class OverlayService implements IOverlayService {
       // 验证样式
       if (!style.isValid()) {
         final error = style.getValidationError();
+
         return OverlayResult.failure(error ?? '无效的样式配置');
       }
 
@@ -159,6 +171,7 @@ class OverlayService implements IOverlayService {
       if (!result.success) {
         debugPrint('❌ 更新悬浮窗失败: ${result.error}');
       }
+
       return result;
     } catch (e) {
       debugPrint('🔄 更新悬浮窗时发生错误: $e');
@@ -169,6 +182,7 @@ class OverlayService implements IOverlayService {
       if (e is OverlayException) {
         return OverlayResult.failure(e.message);
       }
+
       return OverlayResult.failure(e.toString());
     }
   }
@@ -177,6 +191,7 @@ class OverlayService implements IOverlayService {
   Future<bool> removeOverlay(String id) async {
     if (!_isServiceRunning) {
       debugPrint('🚫 服务未运行，无法移除悬浮窗');
+
       return false;
     }
 
@@ -190,6 +205,7 @@ class OverlayService implements IOverlayService {
       if (!result) {
         debugPrint('❌ 移除悬浮窗失败');
       }
+
       return result;
     } catch (e) {
       debugPrint('🗑️ 移除悬浮窗时发生错误: $e');
@@ -197,6 +213,7 @@ class OverlayService implements IOverlayService {
           e.code == OverlayException.permissionDeniedCode) {
         _isServiceRunning = false; // 权限错误时更新服务状态
       }
+
       return false;
     }
   }
@@ -216,6 +233,7 @@ class OverlayService implements IOverlayService {
     if (!_isServiceRunning) {
       return [];
     }
+
     return _nativeService.getActiveOverlayIds();
   }
 
@@ -224,6 +242,7 @@ class OverlayService implements IOverlayService {
     if (!_isServiceRunning) {
       return false;
     }
+
     return _nativeService.hasOverlay(id);
   }
 }

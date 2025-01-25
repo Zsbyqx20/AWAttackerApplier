@@ -14,11 +14,18 @@ class AccessibilityService extends ChangeNotifier {
       AccessibilityService._internal();
   bool _initialized = false;
   bool _isDetectionEnabled = false;
+  bool _isServiceRunning = false;
+  // ignore: avoid-late-keyword
+  late StreamController<WindowEvent> _windowEventController;
 
   bool get isDetectionEnabled => _isDetectionEnabled;
+  Stream<WindowEvent> get windowEvents => _windowEventController.stream;
+
+  bool get isServiceRunning => _isServiceRunning;
 
   factory AccessibilityService() {
     debugPrint('🏭 获取AccessibilityService实例');
+
     return _instance;
   }
 
@@ -26,11 +33,11 @@ class AccessibilityService extends ChangeNotifier {
     debugPrint('🏗️ 创建AccessibilityService单例');
   }
 
-  late StreamController<WindowEvent> _windowEventController;
-  Stream<WindowEvent> get windowEvents => _windowEventController.stream;
-
-  bool _isServiceRunning = false;
-  bool get isServiceRunning => _isServiceRunning;
+  @override
+  void dispose() {
+    _windowEventController.close();
+    super.dispose();
+  }
 
   /// 获取最新的无障碍树数据
   Future<Uint8List?> getLatestState() async {
@@ -38,49 +45,16 @@ class AccessibilityService extends ChangeNotifier {
       final result = await _channel.invokeMethod<Uint8List>('getLatestState');
       if (result != null) {
         debugPrint('✅ 成功获取无障碍树数据: ${result.length} bytes');
+
         return result;
       }
       debugPrint('❌ 获取无障碍树数据失败: 返回为空');
+
       return null;
     } catch (e) {
       debugPrint('❌ 获取无障碍树数据时发生错误: $e');
+
       return null;
-    }
-  }
-
-  Future<void> initialize() async {
-    debugPrint('🚀 开始初始化AccessibilityService');
-
-    // 重新初始化事件流
-    if (_initialized) {
-      await _windowEventController.close();
-    }
-    _windowEventController = StreamController<WindowEvent>.broadcast();
-
-    _channel.setMethodCallHandler(_handleMethodCall);
-    debugPrint('✅ 设置MethodCallHandler完成');
-
-    // 只检查权限状态，不自动请求
-    final hasPermission =
-        await _channel.invokeMethod<bool>('checkAccessibilityPermission') ??
-            false;
-    _isServiceRunning = hasPermission;
-    debugPrint('🔒 无障碍服务状态: ${hasPermission ? "已启用" : "未启用"}');
-
-    _initialized = true;
-    notifyListeners();
-  }
-
-  Future<dynamic> _handleMethodCall(MethodCall call) async {
-    switch (call.method) {
-      case 'onWindowEvent':
-        debugPrint('📨 收到窗口事件: ${call.arguments}');
-        final event = WindowEvent.fromJson(call.arguments as String);
-        _windowEventController.add(event);
-        debugPrint('✅ 事件已广播: $event');
-        break;
-      default:
-        debugPrint('❓ 未知的方法调用: ${call.method}');
     }
   }
 
@@ -94,11 +68,13 @@ class AccessibilityService extends ChangeNotifier {
       }
       _isServiceRunning = hasPermission;
       notifyListeners();
+
       return hasPermission;
     } catch (e) {
       debugPrint('检查权限时发生错误: $e');
       _isServiceRunning = false;
       notifyListeners();
+
       return false;
     }
   }
@@ -106,7 +82,7 @@ class AccessibilityService extends ChangeNotifier {
   Future<ElementResult?> findElement(OverlayStyle style) async {
     try {
       final result =
-          await _channel.invokeMethod<Map<dynamic, dynamic>>('findElement', {
+          await _channel.invokeMethod<Map<Object?, Object?>>('findElement', {
         'style': style.toNative(),
       });
 
@@ -115,6 +91,7 @@ class AccessibilityService extends ChangeNotifier {
           : null;
     } catch (e) {
       debugPrint('查找元素时发生错误: $e');
+
       return null;
     }
   }
@@ -167,7 +144,7 @@ class AccessibilityService extends ChangeNotifier {
   Future<List<ElementResult>> findElements(List<OverlayStyle> styles) async {
     try {
       final result =
-          await _channel.invokeMethod<List<dynamic>>('findElements', {
+          await _channel.invokeMethod<List<Object?>>('findElements', {
         'styles': styles.map((style) => style.toNative()).toList(),
       });
 
@@ -177,6 +154,7 @@ class AccessibilityService extends ChangeNotifier {
           .toList();
     } catch (e) {
       debugPrint('批量查找元素时发生错误: $e');
+
       return [];
     }
   }
@@ -194,9 +172,39 @@ class AccessibilityService extends ChangeNotifier {
     }
   }
 
-  @override
-  void dispose() {
-    _windowEventController.close();
-    super.dispose();
+  Future<void> initialize() async {
+    debugPrint('🚀 开始初始化AccessibilityService');
+
+    // 重新初始化事件流
+    if (_initialized) {
+      await _windowEventController.close();
+    }
+    _windowEventController = StreamController<WindowEvent>.broadcast();
+
+    _channel.setMethodCallHandler(_handleMethodCall);
+    debugPrint('✅ 设置MethodCallHandler完成');
+
+    // 只检查权限状态，不自动请求
+    final hasPermission =
+        await _channel.invokeMethod<bool>('checkAccessibilityPermission') ??
+            false;
+    _isServiceRunning = hasPermission;
+    debugPrint('🔒 无障碍服务状态: ${hasPermission ? "已启用" : "未启用"}');
+
+    _initialized = true;
+    notifyListeners();
+  }
+
+  Future<void> _handleMethodCall(MethodCall call) async {
+    switch (call.method) {
+      case 'onWindowEvent':
+        debugPrint('📨 收到窗口事件: ${call.arguments}');
+        final event = WindowEvent.fromJson(call.arguments as String);
+        _windowEventController.add(event);
+        debugPrint('✅ 事件已广播: $event');
+        break;
+      default:
+        debugPrint('❓ 未知的方法调用: ${call.method}');
+    }
   }
 }
