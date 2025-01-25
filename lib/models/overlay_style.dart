@@ -4,6 +4,51 @@ import '../exceptions/rule_import_exception.dart';
 import '../utils/overlay_converter.dart';
 
 class OverlayStyle {
+  /// 颜色通道位移值
+  static const int alphaShift = 24;
+  static const int redShift = 16;
+  static const int greenShift = 8;
+  static const int blueShift = 0;
+
+  /// 颜色通道最大值
+  static const int channelMax = 0xFF;
+
+  /// 默认字体大小
+  static const double defaultFontSize = 14.0;
+
+  /// RGB颜色字符串长度
+  static const int rgbHexLength = 6;
+
+  /// ARGB颜色字符串长度
+  static const int argbHexLength = 8;
+
+  /// 十六进制基数
+  static const int hexRadix = 16;
+
+  /// 完全不透明的Alpha通道值
+  static const String opaqueAlpha = 'FF';
+
+  /// 默认位置和尺寸
+  static const double defaultPosition = 0.0;
+
+  /// 默认尺寸
+  static const double defaultSize = 0.0;
+
+  /// 默认文本
+  static const String defaultText = '';
+
+  /// 默认UI自动化代码
+  static const String defaultUiAutomatorCode = '';
+
+  /// 默认内边距
+  static const double defaultPadding = 0.0;
+
+  /// 颜色通道最大值（0-255）
+  static const int colorChannelMaxValue = 255;
+
+  /// 十六进制颜色位数
+  static const int hexColorDigits = 2;
+
   final double x;
   final double y;
   final double width;
@@ -17,23 +62,189 @@ class OverlayStyle {
   final String uiAutomatorCode;
   final EdgeInsets padding;
 
+  @override
+  int get hashCode {
+    return Object.hash(
+      x,
+      y,
+      width,
+      height,
+      text,
+      fontSize,
+      backgroundColor,
+      textColor,
+      horizontalAlign,
+      verticalAlign,
+      uiAutomatorCode,
+      padding,
+    );
+  }
+
   const OverlayStyle({
-    this.x = 0,
-    this.y = 0,
-    this.width = 0,
-    this.height = 0,
-    this.text = '',
-    this.fontSize = 14,
+    this.x = defaultPosition,
+    this.y = defaultPosition,
+    this.width = defaultSize,
+    this.height = defaultSize,
+    this.text = defaultText,
+    this.fontSize = defaultFontSize,
     this.backgroundColor = Colors.white,
     this.textColor = Colors.black,
     this.horizontalAlign = TextAlign.left,
     this.verticalAlign = TextAlign.center,
-    this.uiAutomatorCode = '',
+    this.uiAutomatorCode = defaultUiAutomatorCode,
     this.padding = const EdgeInsets.all(0),
   });
 
   factory OverlayStyle.defaultStyle() {
     return const OverlayStyle();
+  }
+
+  factory OverlayStyle.fromJson(Map<String, dynamic> json) {
+    // 验证必需字段
+    if (!json.containsKey('text')) {
+      throw RuleImportException.missingField('text');
+    }
+    if (!json.containsKey('fontSize')) {
+      throw RuleImportException.missingField('fontSize');
+    }
+
+    // 解析 padding
+    final paddingMap = json['padding'] as Map<String, dynamic>? ?? {};
+    try {
+      final padding = EdgeInsets.fromLTRB(
+        (paddingMap['left'] as num?)?.toDouble() ?? defaultPadding,
+        (paddingMap['top'] as num?)?.toDouble() ?? defaultPadding,
+        (paddingMap['right'] as num?)?.toDouble() ?? defaultPadding,
+        (paddingMap['bottom'] as num?)?.toDouble() ?? defaultPadding,
+      );
+      // 验证 padding 不能为负数
+      if (padding.left < 0 ||
+          padding.top < 0 ||
+          padding.right < 0 ||
+          padding.bottom < 0) {
+        throw RuleImportException.invalidFieldValue('padding', '内边距不能为负数');
+      }
+    } catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        RuleImportException.invalidFieldValue('padding', '无效的内边距格式'),
+        stackTrace,
+      );
+    }
+
+    // 处理颜色值，支持整数和十六进制字符串
+    int parseColorValue(Object? value, String fieldName, int defaultColor) {
+      if (value == null) return defaultColor;
+      try {
+        if (value is int) return value;
+        if (value is String) {
+          final hexString = value.startsWith('#')
+              ? value.characters.getRange(1).string
+              : value;
+          if (hexString.length == rgbHexLength) {
+            // 如果是6位的RGB值，添加FF作为alpha通道
+            return int.parse('$opaqueAlpha$hexString', radix: hexRadix);
+          }
+          if (hexString.length == argbHexLength) {
+            // 如果是8位的ARGB值，直接解析
+            return int.parse(hexString, radix: hexRadix);
+          }
+        }
+        throw RuleImportException.invalidFieldValue(fieldName, '无效的颜色格式');
+      } catch (e, stackTrace) {
+        Error.throwWithStackTrace(
+            RuleImportException.invalidFieldValue(fieldName, '无效的颜色格式'),
+            stackTrace);
+      }
+    }
+
+    final defaultBackgroundColor = (channelMax << alphaShift) |
+        (channelMax << redShift) |
+        (channelMax << greenShift) |
+        channelMax;
+    final defaultTextColor =
+        (channelMax << alphaShift) | (0 << redShift) | (0 << greenShift) | 0;
+
+    // 处理文本对齐方式
+    TextAlign parseTextAlign(
+        Object? value, TextAlign defaultValue, bool isHorizontal) {
+      if (value == null) return defaultValue;
+      if (value is int) return TextAlign.values[value];
+      if (value is String) {
+        switch (value.toLowerCase()) {
+          case 'left':
+            return TextAlign.left;
+          case 'start':
+            return isHorizontal ? TextAlign.left : TextAlign.start;
+          case 'center':
+            return TextAlign.center;
+          case 'right':
+            return TextAlign.right;
+          case 'end':
+            return isHorizontal ? TextAlign.right : TextAlign.end;
+          default:
+            return defaultValue;
+        }
+      }
+
+      return defaultValue;
+    }
+
+    try {
+      return OverlayStyle(
+        x: (json['x'] as num?)?.toDouble() ?? defaultPosition,
+        y: (json['y'] as num?)?.toDouble() ?? defaultPosition,
+        width: (json['width'] as num?)?.toDouble() ?? defaultSize,
+        height: (json['height'] as num?)?.toDouble() ?? defaultSize,
+        text: json['text'] as String? ?? defaultText,
+        fontSize: (json['fontSize'] as num?)?.toDouble() ?? defaultFontSize,
+        backgroundColor: Color(parseColorValue(json['backgroundColor'],
+            'backgroundColor', defaultBackgroundColor)),
+        textColor: Color(
+            parseColorValue(json['textColor'], 'textColor', defaultTextColor)),
+        horizontalAlign:
+            parseTextAlign(json['horizontalAlign'], TextAlign.left, true),
+        verticalAlign:
+            parseTextAlign(json['verticalAlign'], TextAlign.center, false),
+        uiAutomatorCode: json['uiAutomatorCode'] as String? ?? '',
+        padding: EdgeInsets.fromLTRB(
+          (paddingMap['left'] as num?)?.toDouble() ?? defaultPadding,
+          (paddingMap['top'] as num?)?.toDouble() ?? defaultPadding,
+          (paddingMap['right'] as num?)?.toDouble() ?? defaultPadding,
+          (paddingMap['bottom'] as num?)?.toDouble() ?? defaultPadding,
+        ),
+      );
+    } catch (e, stackTrace) {
+      if (e is RuleImportException) {
+        rethrow;
+      }
+      Error.throwWithStackTrace(
+          RuleImportException.invalidFieldValue('overlayStyle', e.toString()),
+          stackTrace);
+    }
+  }
+
+  @override
+  String toString() {
+    return 'OverlayStyle{x: $x, y: $y, width: $width, height: $height, text: $text, fontSize: $fontSize}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is OverlayStyle &&
+        other.x == x &&
+        other.y == y &&
+        other.width == width &&
+        other.height == height &&
+        other.text == text &&
+        other.fontSize == fontSize &&
+        other.backgroundColor == backgroundColor &&
+        other.textColor == textColor &&
+        other.horizontalAlign == horizontalAlign &&
+        other.verticalAlign == verticalAlign &&
+        other.uiAutomatorCode == uiAutomatorCode &&
+        other.padding == padding;
   }
 
   OverlayStyle copyWith({
@@ -82,15 +293,16 @@ class OverlayStyle {
     if (height < 0) return '高度不能为负数';
     if (fontSize <= 0) return '字体大小必须大于0';
     if (text.isEmpty) return '文本内容不能为空';
+
     return null;
   }
 
   Map<String, dynamic> toJson() {
     String colorToHex(Color color) {
-      return '#${(color.a * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}'
-          '${(color.r * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}'
-          '${(color.g * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}'
-          '${(color.b * 255).toInt().toRadixString(16).padLeft(2, '0').toUpperCase()}';
+      return '#${(color.a * colorChannelMaxValue).toInt().toRadixString(hexRadix).padLeft(hexColorDigits, '0').toUpperCase()}'
+          '${(color.r * colorChannelMaxValue).toInt().toRadixString(hexRadix).padLeft(hexColorDigits, '0').toUpperCase()}'
+          '${(color.g * colorChannelMaxValue).toInt().toRadixString(hexRadix).padLeft(hexColorDigits, '0').toUpperCase()}'
+          '${(color.b * colorChannelMaxValue).toInt().toRadixString(hexRadix).padLeft(hexColorDigits, '0').toUpperCase()}';
     }
 
     return {
@@ -128,157 +340,5 @@ class OverlayStyle {
       case TextAlign.justify:
         return 'center';
     }
-  }
-
-  factory OverlayStyle.fromJson(Map<String, dynamic> json) {
-    // 验证必需字段
-    if (!json.containsKey('text')) {
-      throw RuleImportException.missingField('text');
-    }
-    if (!json.containsKey('fontSize')) {
-      throw RuleImportException.missingField('fontSize');
-    }
-
-    // 解析 padding
-    final paddingMap = json['padding'] as Map<String, dynamic>? ?? {};
-    try {
-      final padding = EdgeInsets.fromLTRB(
-        (paddingMap['left'] as num?)?.toDouble() ?? 0,
-        (paddingMap['top'] as num?)?.toDouble() ?? 0,
-        (paddingMap['right'] as num?)?.toDouble() ?? 0,
-        (paddingMap['bottom'] as num?)?.toDouble() ?? 0,
-      );
-      // 验证 padding 不能为负数
-      if (padding.left < 0 ||
-          padding.top < 0 ||
-          padding.right < 0 ||
-          padding.bottom < 0) {
-        throw RuleImportException.invalidFieldValue('padding', '内边距不能为负数');
-      }
-    } catch (e) {
-      throw RuleImportException.invalidFieldValue('padding', '无效的内边距格式');
-    }
-
-    // 处理颜色值，支持整数和十六进制字符串
-    int parseColorValue(dynamic value, String fieldName, int defaultColor) {
-      if (value == null) return defaultColor;
-      try {
-        if (value is int) return value;
-        if (value is String) {
-          final hexString = value.startsWith('#') ? value.substring(1) : value;
-          if (hexString.length == 6) {
-            // 如果是6位的RGB值，添加FF作为alpha通道
-            return int.parse('FF$hexString', radix: 16);
-          }
-          if (hexString.length == 8) {
-            // 如果是8位的ARGB值，直接解析
-            return int.parse(hexString, radix: 16);
-          }
-        }
-        throw RuleImportException.invalidFieldValue(fieldName, '无效的颜色格式');
-      } catch (e) {
-        throw RuleImportException.invalidFieldValue(fieldName, '无效的颜色格式');
-      }
-    }
-
-    final defaultBackgroundColor =
-        (0xFF << 24) | (0xFF << 16) | (0xFF << 8) | 0xFF;
-    final defaultTextColor = (0xFF << 24) | (0 << 16) | (0 << 8) | 0;
-
-    // 处理文本对齐方式
-    TextAlign parseTextAlign(
-        dynamic value, TextAlign defaultValue, bool isHorizontal) {
-      if (value == null) return defaultValue;
-      if (value is int) return TextAlign.values[value];
-      if (value is String) {
-        switch (value.toLowerCase()) {
-          case 'left':
-            return TextAlign.left;
-          case 'start':
-            return isHorizontal ? TextAlign.left : TextAlign.start;
-          case 'center':
-            return TextAlign.center;
-          case 'right':
-            return TextAlign.right;
-          case 'end':
-            return isHorizontal ? TextAlign.right : TextAlign.end;
-          default:
-            return defaultValue;
-        }
-      }
-      return defaultValue;
-    }
-
-    try {
-      return OverlayStyle(
-        x: (json['x'] as num?)?.toDouble() ?? 0,
-        y: (json['y'] as num?)?.toDouble() ?? 0,
-        width: (json['width'] as num?)?.toDouble() ?? 0,
-        height: (json['height'] as num?)?.toDouble() ?? 0,
-        text: json['text'] as String? ?? '',
-        fontSize: (json['fontSize'] as num?)?.toDouble() ?? 14,
-        backgroundColor: Color(parseColorValue(json['backgroundColor'],
-            'backgroundColor', defaultBackgroundColor)),
-        textColor: Color(
-            parseColorValue(json['textColor'], 'textColor', defaultTextColor)),
-        horizontalAlign:
-            parseTextAlign(json['horizontalAlign'], TextAlign.left, true),
-        verticalAlign:
-            parseTextAlign(json['verticalAlign'], TextAlign.center, false),
-        uiAutomatorCode: json['uiAutomatorCode'] as String? ?? '',
-        padding: EdgeInsets.fromLTRB(
-          (paddingMap['left'] as num?)?.toDouble() ?? 0,
-          (paddingMap['top'] as num?)?.toDouble() ?? 0,
-          (paddingMap['right'] as num?)?.toDouble() ?? 0,
-          (paddingMap['bottom'] as num?)?.toDouble() ?? 0,
-        ),
-      );
-    } catch (e) {
-      if (e is RuleImportException) {
-        rethrow;
-      }
-      throw RuleImportException.invalidFieldValue('overlayStyle', e.toString());
-    }
-  }
-
-  @override
-  String toString() {
-    return 'OverlayStyle{x: $x, y: $y, width: $width, height: $height, text: $text, fontSize: $fontSize}';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is OverlayStyle &&
-        other.x == x &&
-        other.y == y &&
-        other.width == width &&
-        other.height == height &&
-        other.text == text &&
-        other.fontSize == fontSize &&
-        other.backgroundColor == backgroundColor &&
-        other.textColor == textColor &&
-        other.horizontalAlign == horizontalAlign &&
-        other.verticalAlign == verticalAlign &&
-        other.uiAutomatorCode == uiAutomatorCode &&
-        other.padding == padding;
-  }
-
-  @override
-  int get hashCode {
-    return Object.hash(
-      x,
-      y,
-      width,
-      height,
-      text,
-      fontSize,
-      backgroundColor,
-      textColor,
-      horizontalAlign,
-      verticalAlign,
-      uiAutomatorCode,
-      padding,
-    );
   }
 }

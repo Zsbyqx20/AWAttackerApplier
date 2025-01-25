@@ -2,12 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-/// 权限类型枚举
-enum PermissionType {
-  overlay,
-  accessibility,
-}
-
 /// 权限状态模型
 class PermissionStatus {
   final PermissionType type;
@@ -28,7 +22,11 @@ class PermissionStatus {
     required bool isGranted,
     required BuildContext context,
   }) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      throw Exception('Localizations not found in context');
+    }
+
     return PermissionStatus(
       type: PermissionType.overlay,
       isGranted: isGranted,
@@ -42,7 +40,11 @@ class PermissionStatus {
     required bool isGranted,
     required BuildContext context,
   }) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      throw Exception('Localizations not found in context');
+    }
+
     return PermissionStatus(
       type: PermissionType.accessibility,
       isGranted: isGranted,
@@ -51,4 +53,10 @@ class PermissionStatus {
       notGrantedText: l10n.permissionNotGranted,
     );
   }
+}
+
+/// 权限类型枚举
+enum PermissionType {
+  overlay,
+  accessibility,
 }

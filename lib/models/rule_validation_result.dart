@@ -6,7 +6,7 @@ class RuleValidationResult {
   final String? fieldName;
   final String? errorMessage;
   final String? errorCode;
-  final dynamic errorDetails;
+  final Object? errorDetails;
 
   const RuleValidationResult({
     required this.isValid,
@@ -47,7 +47,7 @@ class RuleValidationResult {
     String fieldName,
     String message, {
     String? code,
-    dynamic details,
+    Object? details,
   }) {
     return RuleValidationResult(
       isValid: false,
@@ -73,6 +73,7 @@ class RuleValidationResult {
     if (errorDetails != null) {
       buffer.write('\nDetails: $errorDetails');
     }
+
     return buffer.toString();
   }
 }

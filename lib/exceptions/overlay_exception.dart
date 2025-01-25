@@ -1,16 +1,5 @@
 /// 悬浮窗操作异常
 class OverlayException implements Exception {
-  /// 错误代码
-  final String code;
-
-  /// 错误消息
-  final String message;
-
-  /// 详细信息
-  final dynamic details;
-
-  const OverlayException(this.code, this.message, [this.details]);
-
   /// 预定义错误代码：权限错误
   static const String permissionDeniedCode = 'PERMISSION_DENIED';
 
@@ -29,6 +18,17 @@ class OverlayException implements Exception {
 
   /// 预定义错误代码：移除失败
   static const String removeFailedCode = 'REMOVE_FAILED';
+
+  /// 错误代码
+  final String code;
+
+  /// 错误消息
+  final String message;
+
+  /// 详细信息
+  final Object? details;
+
+  const OverlayException(this.code, this.message, [this.details]);
 
   /// 创建权限错误异常
   factory OverlayException.permissionDenied([String? details]) {
@@ -57,7 +57,7 @@ class OverlayException implements Exception {
   }
 
   /// 创建悬浮窗创建失败异常
-  factory OverlayException.createFailed(String message, [dynamic details]) {
+  factory OverlayException.createFailed(String message, [Object? details]) {
     return OverlayException(
       createFailedCode,
       '创建悬浮窗失败: $message',
@@ -66,7 +66,7 @@ class OverlayException implements Exception {
   }
 
   /// 创建悬浮窗更新失败异常
-  factory OverlayException.updateFailed(String message, [dynamic details]) {
+  factory OverlayException.updateFailed(String message, [Object? details]) {
     return OverlayException(
       updateFailedCode,
       '更新悬浮窗失败: $message',
@@ -75,7 +75,7 @@ class OverlayException implements Exception {
   }
 
   /// 创建悬浮窗移除失败异常
-  factory OverlayException.removeFailed(String message, [dynamic details]) {
+  factory OverlayException.removeFailed(String message, [Object? details]) {
     return OverlayException(
       removeFailedCode,
       '移除悬浮窗失败: $message',
@@ -88,6 +88,7 @@ class OverlayException implements Exception {
     if (details != null) {
       return 'OverlayException: [$code] $message\nDetails: $details';
     }
+
     return 'OverlayException: [$code] $message';
   }
 

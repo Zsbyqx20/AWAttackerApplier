@@ -1,10 +1,5 @@
 import 'dart:convert';
 
-enum WindowEventType {
-  serviceConnected,
-  windowEvent,
-}
-
 class WindowEvent {
   final WindowEventType type;
   final int timestamp;
@@ -18,12 +13,17 @@ class WindowEvent {
 
   factory WindowEvent.fromJson(String jsonStr) {
     final json = jsonDecode(jsonStr);
+
     return WindowEvent(
       type: _parseEventType(json['type'] as String),
       timestamp: json['timestamp'] as int,
       isFirstConnect: json['is_first_connect'] as bool? ?? false,
     );
   }
+
+  @override
+  String toString() =>
+      'WindowEvent(type: $type, timestamp: $timestamp, isFirstConnect: $isFirstConnect)';
 
   static WindowEventType _parseEventType(String type) {
     switch (type) {
@@ -35,8 +35,9 @@ class WindowEvent {
         throw ArgumentError('Unknown event type: $type');
     }
   }
+}
 
-  @override
-  String toString() =>
-      'WindowEvent(type: $type, timestamp: $timestamp, isFirstConnect: $isFirstConnect)';
+enum WindowEventType {
+  serviceConnected,
+  windowEvent,
 }

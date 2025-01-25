@@ -5,50 +5,6 @@ import '../utils/rule_import_validator.dart';
 import 'overlay_style.dart';
 import 'rule.dart';
 
-/// 规则导入结果
-class RuleImportResult {
-  final int totalCount;
-  final int successCount;
-  final int failureCount;
-  final List<String> errors;
-
-  const RuleImportResult({
-    required this.totalCount,
-    required this.successCount,
-    required this.failureCount,
-    this.errors = const [],
-  });
-
-  bool get hasErrors => failureCount > 0;
-
-  factory RuleImportResult.success(int count) {
-    return RuleImportResult(
-      totalCount: count,
-      successCount: count,
-      failureCount: 0,
-    );
-  }
-
-  factory RuleImportResult.failure(String error) {
-    return RuleImportResult(
-      totalCount: 1,
-      successCount: 0,
-      failureCount: 1,
-      errors: [error],
-    );
-  }
-
-  factory RuleImportResult.partial(
-      int successCount, int failureCount, List<String> errors) {
-    return RuleImportResult(
-      totalCount: successCount + failureCount,
-      successCount: successCount,
-      failureCount: failureCount,
-      errors: errors,
-    );
-  }
-}
-
 /// 规则导入数据
 class RuleImport {
   static const String currentVersion = '1.0';
@@ -69,8 +25,9 @@ class RuleImport {
     Map<String, dynamic> json;
     try {
       json = jsonDecode(jsonStr) as Map<String, dynamic>;
-    } catch (e) {
-      throw RuleImportException.invalidFormat();
+    } catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+          RuleImportException.invalidFormat(), stackTrace);
     }
 
     // 验证版本号
@@ -100,12 +57,14 @@ class RuleImport {
       try {
         final rule = _parseRule(ruleList[i]);
         rules.add(rule);
-      } catch (e) {
-        throw RuleImportException(
-          'Parse rule failed',
-          code: 'RULE_PARSE_ERROR',
-          details: 'Rule index: $i, Error: $e',
-        );
+      } catch (e, stackTrace) {
+        Error.throwWithStackTrace(
+            RuleImportException(
+              'Parse rule failed',
+              code: 'RULE_PARSE_ERROR',
+              details: 'Rule index: $i, Error: $e',
+            ),
+            stackTrace);
       }
     }
 
@@ -115,8 +74,16 @@ class RuleImport {
     );
   }
 
+  /// 转换为JSON字符串
+  String toJson() {
+    return jsonEncode({
+      'version': version,
+      'rules': rules.map((r) => r.toJson()).toList(),
+    });
+  }
+
   /// 解析单个规则
-  static Rule _parseRule(dynamic jsonData) {
+  static Rule _parseRule(Object? jsonData) {
     if (jsonData is! Map<String, dynamic>) {
       throw RuleImportException.invalidFieldValue('rule', 'Rule format error');
     }
@@ -171,9 +138,13 @@ class RuleImport {
         final error = e.toString();
         final fieldMatch = RegExp(r'Field (.*?):').firstMatch(error);
         if (fieldMatch != null) {
-          final field = fieldMatch.group(1)!;
-          final message = error.replaceFirst(RegExp(r'Field .*?: '), '');
-          styleErrors.add('Style ${i + 1} $field: $message');
+          final field = fieldMatch.group(1);
+          if (field == null) {
+            styleErrors.add('Style ${i + 1}: $error');
+          } else {
+            final message = error.replaceFirst(RegExp(r'Field .*?: '), '');
+            styleErrors.add('Style ${i + 1} $field: $message');
+          }
         } else {
           styleErrors.add('Style ${i + 1}: $error');
         }
@@ -197,12 +168,48 @@ class RuleImport {
       tags: tags,
     );
   }
+}
 
-  /// 转换为JSON字符串
-  String toJson() {
-    return jsonEncode({
-      'version': version,
-      'rules': rules.map((r) => r.toJson()).toList(),
-    });
+/// 规则导入结果
+class RuleImportResult {
+  final int totalCount;
+  final int successCount;
+  final int failureCount;
+  final List<String> errors;
+
+  bool get hasErrors => failureCount > 0;
+
+  const RuleImportResult({
+    required this.totalCount,
+    required this.successCount,
+    required this.failureCount,
+    this.errors = const [],
+  });
+
+  factory RuleImportResult.success(int count) {
+    return RuleImportResult(
+      totalCount: count,
+      successCount: count,
+      failureCount: 0,
+    );
+  }
+
+  factory RuleImportResult.failure(String error) {
+    return RuleImportResult(
+      totalCount: 1,
+      successCount: 0,
+      failureCount: 1,
+      errors: [error],
+    );
+  }
+
+  factory RuleImportResult.partial(
+      int successCount, int failureCount, List<String> errors) {
+    return RuleImportResult(
+      totalCount: successCount + failureCount,
+      successCount: successCount,
+      failureCount: failureCount,
+      errors: errors,
+    );
   }
 }

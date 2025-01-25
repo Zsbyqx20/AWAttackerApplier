@@ -1,7 +1,7 @@
 class RuleImportException implements Exception {
   final String message;
   final String? code;
-  final dynamic details;
+  final Object? details;
 
   RuleImportException(this.message, {this.code, this.details});
 
@@ -10,6 +10,7 @@ class RuleImportException implements Exception {
     final buffer = StringBuffer(message);
     if (code != null) buffer.write(' [$code]');
     if (details != null) buffer.write('\nDetails: $details');
+
     return buffer.toString();
   }
 
