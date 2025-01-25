@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ConfirmDialog extends StatelessWidget {
-  final String title;
-  final String content;
-  final String? cancelText;
-  final String? confirmText;
-  final VoidCallback onConfirm;
-  final Color? confirmColor;
-  final IconData? icon;
+  const ConfirmDialog._({
+    required this.title,
+    required this.content,
+    this.cancelText,
+    this.confirmText,
+    this.confirmColor,
+    this.icon,
+  }) : onConfirm = _noOp;
 
   const ConfirmDialog({
     super.key,
@@ -21,6 +22,18 @@ class ConfirmDialog extends StatelessWidget {
     this.confirmColor,
     this.icon,
   });
+  static const double _iconSize = 48.0;
+  static const double _iconInnerSize = 24.0;
+  static const double _dialogPadding = 24.0;
+  static const double _dialogRadius = 16.0;
+  static const double _iconRadius = 12.0;
+  static const double _buttonRadius = 8.0;
+  static const double _titleFontSize = 18.0;
+  static const double _textFontSize = 14.0;
+  static const double _spacing = 16.0;
+  static const double _smallSpacing = 8.0;
+  static const double _buttonPadding = 12.0;
+  static const int _iconAlpha = 26;
 
   /// 显示确认对话框
   static Future<bool?> show({
@@ -45,78 +58,85 @@ class ConfirmDialog extends StatelessWidget {
     );
   }
 
-  const ConfirmDialog._({
-    required this.title,
-    required this.content,
-    this.cancelText,
-    this.confirmText,
-    this.confirmColor,
-    this.icon,
-  }) : onConfirm = _noOp;
-
+  // ignore: no-empty-block
   static void _noOp() {}
+  final String title;
+  final String content;
+  final String? cancelText;
+  final String? confirmText;
+  final VoidCallback onConfirm;
+  final Color? confirmColor;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
 
     return Dialog(
       elevation: 0,
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: const BorderRadius.all(Radius.circular(_dialogRadius)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(_dialogPadding),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
               Container(
-                width: 48,
-                height: 48,
+                width: _iconSize,
+                height: _iconSize,
                 decoration: BoxDecoration(
-                  color:
-                      (confirmColor ?? theme.colorScheme.error).withAlpha(26),
-                  borderRadius: BorderRadius.circular(12),
+                  color: (confirmColor ?? theme.colorScheme.error)
+                      .withAlpha(_iconAlpha),
+                  borderRadius:
+                      const BorderRadius.all(Radius.circular(_iconRadius)),
                 ),
                 child: Icon(
                   icon,
                   color: confirmColor ?? theme.colorScheme.error,
-                  size: 24,
+                  size: _iconInnerSize,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: _spacing),
             ],
             Text(
               title,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: _titleFontSize,
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: _smallSpacing),
             Text(
               content,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: _textFontSize,
                 color: Colors.grey[600],
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: _spacing),
             Row(
               children: [
                 Expanded(
                   child: TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
                     style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: _buttonPadding),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: Colors.grey[300]!),
+                        borderRadius: const BorderRadius.all(
+                            Radius.circular(_buttonRadius)),
+                        side: BorderSide(color: Colors.grey.shade300),
                       ),
                     ),
                     child: Text(
@@ -128,7 +148,7 @@ class ConfirmDialog extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: _buttonPadding),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
@@ -136,9 +156,11 @@ class ConfirmDialog extends StatelessWidget {
                       backgroundColor: confirmColor ?? theme.colorScheme.error,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: _buttonPadding),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: const BorderRadius.all(
+                            Radius.circular(_buttonRadius)),
                       ),
                     ),
                     child: Text(

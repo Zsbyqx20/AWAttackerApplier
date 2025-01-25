@@ -5,11 +5,15 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/rule_merge_result.dart';
 
 class RuleImportResultDialog extends StatelessWidget {
-  final List<RuleMergeResult> mergeResults;
-
   const RuleImportResultDialog._({
     required this.mergeResults,
   });
+
+  /// 导入结果的文字大小
+  static const double _textSize = 12;
+
+  /// decoration 透明度
+  static const double _decorationAlpha = 0.1;
 
   /// 显示导入结果对话框
   static Future<void> show({
@@ -24,10 +28,17 @@ class RuleImportResultDialog extends StatelessWidget {
     );
   }
 
+  final List<RuleMergeResult> mergeResults;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
     final totalCount = mergeResults.length;
     final successCount = mergeResults.where((r) => r.isSuccess).length;
     final mergeableCount = mergeResults.where((r) => r.isMergeable).length;
@@ -38,7 +49,7 @@ class RuleImportResultDialog extends StatelessWidget {
       elevation: 0,
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -46,20 +57,24 @@ class RuleImportResultDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
+              // ignore: no-magic-number
               width: 48,
+              // ignore: no-magic-number
               height: 48,
               decoration: BoxDecoration(
                 color: (hasErrors
                         ? theme.colorScheme.error
                         : theme.colorScheme.primary)
+                    // ignore: no-magic-number
                     .withAlpha(26),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
               ),
               child: Icon(
                 hasErrors ? Icons.error_outline : Icons.check_circle_outline,
                 color: hasErrors
                     ? theme.colorScheme.error
                     : theme.colorScheme.primary,
+                // ignore: no-magic-number
                 size: 24,
               ),
             ),
@@ -83,14 +98,14 @@ class RuleImportResultDialog extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.grey.shade200,
+                    borderRadius: const BorderRadius.all(Radius.circular(4)),
                   ),
                   child: Text(
                     l10n.ruleImportResultDetail(totalCount),
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[700],
+                      fontSize: _textSize,
+                      color: Colors.grey.shade700,
                     ),
                   ),
                 ),
@@ -103,14 +118,14 @@ class RuleImportResultDialog extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withValues(
-                        alpha: 0.1,
+                        alpha: _decorationAlpha,
                       ),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: const BorderRadius.all(Radius.circular(4)),
                     ),
                     child: Text(
                       l10n.ruleImportResultSuccess(successCount),
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: _textSize,
                         color: theme.colorScheme.primary,
                       ),
                     ),
@@ -124,14 +139,14 @@ class RuleImportResultDialog extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.secondary.withValues(
-                        alpha: 0.1,
+                        alpha: _decorationAlpha,
                       ),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: const BorderRadius.all(Radius.circular(4)),
                     ),
                     child: Text(
                       l10n.ruleImportResultMergeable(mergeableCount),
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: _textSize,
                         color: theme.colorScheme.secondary,
                       ),
                     ),
@@ -145,14 +160,14 @@ class RuleImportResultDialog extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.error.withValues(
-                        alpha: 0.1,
+                        alpha: _decorationAlpha,
                       ),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: const BorderRadius.all(Radius.circular(4)),
                     ),
                     child: Text(
                       l10n.ruleImportResultConflict(conflictCount),
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: _textSize,
                         color: theme.colorScheme.error,
                       ),
                     ),
@@ -164,8 +179,8 @@ class RuleImportResultDialog extends StatelessWidget {
               Container(
                 constraints: const BoxConstraints(maxHeight: 120),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey.shade100,
+                  borderRadius: const BorderRadius.all(Radius.circular(8)),
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(12),
@@ -176,8 +191,8 @@ class RuleImportResultDialog extends StatelessWidget {
                         .map((result) => Text(
                               result.errorMessage ?? l10n.unknown,
                               style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[700],
+                                fontSize: _textSize,
+                                color: Colors.grey.shade700,
                               ),
                             ))
                         .toList(),
@@ -198,7 +213,7 @@ class RuleImportResultDialog extends StatelessWidget {
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: const BorderRadius.all(Radius.circular(8)),
                   ),
                 ),
                 child: Text(

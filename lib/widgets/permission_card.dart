@@ -5,14 +5,22 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/permission_status.dart';
 
 class PermissionCard extends StatefulWidget {
-  final List<PermissionStatus> permissions;
-  final Future<void> Function(PermissionType) onRequestPermission;
-
   const PermissionCard({
     super.key,
     required this.permissions,
     required this.onRequestPermission,
   });
+  static const double _iconSize = 28.0;
+  static const double _progressSize = 24.0;
+  static const double _progressStrokeWidth = 2.0;
+  static const double _buttonPaddingHorizontal = 24.0;
+  static const double _buttonPaddingVertical = 12.0;
+  static const double _buttonRadius = 6.0;
+  static const double _cardRadius = 12.0;
+  static const double _cardElevation = 1.0;
+
+  final List<PermissionStatus> permissions;
+  final Future<void> Function(PermissionType) onRequestPermission;
 
   @override
   State<PermissionCard> createState() => _PermissionCardState();
@@ -42,7 +50,12 @@ class _PermissionCardState extends State<PermissionCard> {
   Widget _buildPermissionItem(PermissionStatus status) {
     final theme = Theme.of(context);
     final isRequesting = _isRequesting[status.type] == true;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
 
     return Column(
       children: [
@@ -52,7 +65,7 @@ class _PermissionCardState extends State<PermissionCard> {
                 ? Icons.picture_in_picture
                 : Icons.accessibility_new,
             color: theme.colorScheme.primary,
-            size: 28,
+            size: PermissionCard._iconSize,
           ),
           title: Text(status.title),
           subtitle: Text(
@@ -64,10 +77,10 @@ class _PermissionCardState extends State<PermissionCard> {
           trailing: !status.isGranted
               ? isRequesting
                   ? SizedBox(
-                      width: 24,
-                      height: 24,
+                      width: PermissionCard._progressSize,
+                      height: PermissionCard._progressSize,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                        strokeWidth: PermissionCard._progressStrokeWidth,
                         valueColor: AlwaysStoppedAnimation<Color>(
                           theme.colorScheme.primary,
                         ),
@@ -80,11 +93,13 @@ class _PermissionCardState extends State<PermissionCard> {
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                          horizontal: PermissionCard._buttonPaddingHorizontal,
+                          vertical: PermissionCard._buttonPaddingVertical,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(PermissionCard._buttonRadius),
+                          ),
                         ),
                       ),
                       child: Text(
@@ -94,7 +109,7 @@ class _PermissionCardState extends State<PermissionCard> {
               : Icon(
                   Icons.check_circle,
                   color: Colors.green,
-                  size: 28,
+                  size: PermissionCard._iconSize,
                 ),
         ),
         if (widget.permissions.last != status) Divider(color: Colors.grey[200]),
@@ -105,11 +120,12 @@ class _PermissionCardState extends State<PermissionCard> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 1,
+      elevation: PermissionCard._cardElevation,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
+        borderRadius:
+            const BorderRadius.all(Radius.circular(PermissionCard._cardRadius)),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Column(
         children: widget.permissions.map(_buildPermissionItem).toList(),

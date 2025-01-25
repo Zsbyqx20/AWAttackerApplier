@@ -3,14 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class TagChip extends StatelessWidget {
-  final String label;
-  final VoidCallback? onDeleted;
-  final VoidCallback? onTap;
-  final Color? backgroundColor;
-  final bool isSelected;
-  final bool isActive;
-  final bool showActiveState;
-
   const TagChip({
     super.key,
     required this.label,
@@ -21,16 +13,25 @@ class TagChip extends StatelessWidget {
     this.isActive = false,
     this.showActiveState = false,
   });
+  final String label;
+  final VoidCallback? onDeleted;
+  final VoidCallback? onTap;
+  final Color? backgroundColor;
+  final bool isSelected;
+  final bool isActive;
+  final bool showActiveState;
 
   Color _getBackgroundColor(BuildContext context) {
     if (isActive && showActiveState) {
+      // ignore: no-magic-number
       return Theme.of(context).colorScheme.primary.withValues(alpha: 0.12);
     }
     if (isSelected) {
+      // ignore: no-magic-number
       return Theme.of(context).colorScheme.primary.withValues(alpha: 0.1);
     }
     if (backgroundColor != null) {
-      return backgroundColor!;
+      return backgroundColor ?? Theme.of(context).colorScheme.surface;
     }
 
     // 根据标签文本生成一个稳定的浅色背景
@@ -49,6 +50,8 @@ class TagChip extends StatelessWidget {
     ];
 
     final baseColor = baseColors[hash.abs() % baseColors.length];
+
+    // ignore: no-magic-number
     return baseColor.withValues(alpha: 0.12);
   }
 
@@ -83,6 +86,7 @@ class TagChip extends StatelessWidget {
       label: Text(
         label,
         style: TextStyle(
+          // ignore: no-magic-number
           fontSize: 12,
           color: _getTextColor(context),
         ),
@@ -91,6 +95,7 @@ class TagChip extends StatelessWidget {
       deleteIcon: onDeleted != null
           ? Icon(
               Icons.cancel,
+              // ignore: no-magic-number
               size: 14,
               color: _getTextColor(context),
             )
@@ -99,10 +104,11 @@ class TagChip extends StatelessWidget {
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
       labelPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: -2),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       avatar: showActiveState && isActive
           ? Icon(
               Icons.check_circle_outline,
+              // ignore: no-magic-number
               size: 14,
               color: _getTextColor(context),
             )
@@ -122,14 +128,6 @@ class TagChip extends StatelessWidget {
 }
 
 class TagChipsRow extends StatelessWidget {
-  final List<String> tags;
-  final void Function(String)? onTagDeleted;
-  final void Function(String)? onTagTap;
-  final ScrollController? scrollController;
-  final bool showDeleteButton;
-  final bool showActiveState;
-  final Set<String> activeTags;
-
   const TagChipsRow({
     super.key,
     required this.tags,
@@ -140,6 +138,13 @@ class TagChipsRow extends StatelessWidget {
     this.showActiveState = false,
     this.activeTags = const {},
   });
+  final List<String> tags;
+  final void Function(String)? onTagDeleted;
+  final void Function(String)? onTagTap;
+  final ScrollController? scrollController;
+  final bool showDeleteButton;
+  final bool showActiveState;
+  final Set<String> activeTags;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +154,7 @@ class TagChipsRow extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       controller: scrollController,
       child: Wrap(
+        // ignore: no-magic-number
         spacing: 4,
         runSpacing: 0,
         children: tags.map((tag) {
@@ -166,11 +172,6 @@ class TagChipsRow extends StatelessWidget {
 }
 
 class TagChipsInput extends StatefulWidget {
-  final List<String> tags;
-  final List<String> suggestions;
-  final ValueChanged<List<String>> onChanged;
-  final int? maxTags;
-
   const TagChipsInput({
     super.key,
     required this.tags,
@@ -178,6 +179,10 @@ class TagChipsInput extends StatefulWidget {
     this.suggestions = const [],
     this.maxTags,
   });
+  final List<String> tags;
+  final List<String> suggestions;
+  final ValueChanged<List<String>> onChanged;
+  final int? maxTags;
 
   @override
   State<TagChipsInput> createState() => _TagChipsInputState();
@@ -189,26 +194,26 @@ class _TagChipsInputState extends State<TagChipsInput> {
   bool _showSuggestions = false;
   List<String> _filteredSuggestions = [];
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
   void _addTag(String tag) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return;
+    }
     if (tag.isEmpty) return;
-    if (widget.maxTags != null && widget.tags.length >= widget.maxTags!) {
+    final maxTags = widget.maxTags;
+    if (maxTags != null && widget.tags.length >= maxTags) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.tagChipsLimitHint(widget.maxTags!))),
+        SnackBar(content: Text(l10n.tagChipsLimitHint(maxTags))),
       );
+
       return;
     }
 
     final newTag = tag.trim();
     if (newTag.isNotEmpty && !widget.tags.contains(newTag)) {
-      final newTags = List<String>.from(widget.tags)..add(newTag);
+      final newTags = List<String>.of(widget.tags)..add(newTag);
       widget.onChanged(newTags);
       _controller.clear();
       setState(() {
@@ -219,7 +224,7 @@ class _TagChipsInputState extends State<TagChipsInput> {
   }
 
   void _removeTag(String tag) {
-    final newTags = List<String>.from(widget.tags)..remove(tag);
+    final newTags = List<String>.of(widget.tags)..remove(tag);
     widget.onChanged(newTags);
   }
 
@@ -229,6 +234,7 @@ class _TagChipsInputState extends State<TagChipsInput> {
         _showSuggestions = false;
         _filteredSuggestions = [];
       });
+
       return;
     }
 
@@ -245,8 +251,21 @@ class _TagChipsInputState extends State<TagChipsInput> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -267,29 +286,32 @@ class _TagChipsInputState extends State<TagChipsInput> {
           decoration: InputDecoration(
             hintText: l10n.tagChipsHint,
             hintStyle: TextStyle(
+              // ignore: no-magic-number
               fontSize: 14,
-              color: Colors.grey[400],
+              color: Colors.grey.shade400,
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             suffixIcon: IconButton(
               icon: const Icon(Icons.add),
               onPressed: () => _addTag(_controller.text),
+              // ignore: no-magic-number
               iconSize: 20,
+              // ignore: no-magic-number
               splashRadius: 24,
               padding: const EdgeInsets.all(12),
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[200]!),
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: Colors.grey.shade200),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[200]!),
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: Colors.grey.shade200),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[400]!),
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: Colors.grey.shade400),
             ),
           ),
           style: const TextStyle(
@@ -303,11 +325,12 @@ class _TagChipsInputState extends State<TagChipsInput> {
             margin: const EdgeInsets.only(top: 8),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
-              border: Border.all(color: Colors.grey[200]!),
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.grey.shade50,
+              border: Border.all(color: Colors.grey.shade200),
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
             ),
             child: Wrap(
+              // ignore: no-magic-number
               spacing: 8,
               children: _filteredSuggestions
                   .map((tag) => ActionChip(

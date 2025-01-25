@@ -1,26 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../models/overlay_style.dart';
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-class UpperCaseTextFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    return TextEditingValue(
-      text: newValue.text.toUpperCase(),
-      selection: newValue.selection,
-    );
-  }
-}
-
 class ColorPickerField extends StatelessWidget {
-  final String label;
-  final Color color;
-  final ValueChanged<Color> onColorChanged;
-
   const ColorPickerField({
     super.key,
     required this.label,
@@ -28,35 +12,40 @@ class ColorPickerField extends StatelessWidget {
     required this.onColorChanged,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => _showColorPicker(context),
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        height: 36,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: Colors.grey[300]!,
-            width: 1,
-          ),
-        ),
-      ),
-    );
-  }
+  static const double _titleFontSize = 16.0;
+  static const double _textFontSize = 14.0;
+  static const double _previewHeight = 40.0;
+  static const double _previewWidth = 100.0;
+  static const double _containerHeight = 36.0;
+  static const double _borderWidth = 1.0;
+  static const double _focusedBorderWidth = 1.5;
+  static const double _borderRadius = 6.0;
+  static const double _dialogBorderRadius = 12.0;
+  static const double _dialogPaddingHorizontal = 16.0;
+  static const double _dialogPaddingVertical = 8.0;
+  static const double _previewSpacing = 16.0;
+
+  final String label;
+  final Color color;
+  final ValueChanged<Color> onColorChanged;
 
   Future<void> _showColorPicker(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return;
+    }
+
     final String currentHex =
-        '${(color.a * 255).toInt().toRadixString(16).padLeft(2, '0')}'
-        '${(color.r * 255).toInt().toRadixString(16).padLeft(2, '0')}'
-        '${(color.g * 255).toInt().toRadixString(16).padLeft(2, '0')}'
-        '${(color.b * 255).toInt().toRadixString(16).padLeft(2, '0')}';
+        '${(color.a * OverlayStyle.colorChannelMaxValue).toInt().toRadixString(OverlayStyle.hexRadix).padLeft(OverlayStyle.hexColorDigits, '0')}'
+        '${(color.r * OverlayStyle.colorChannelMaxValue).toInt().toRadixString(OverlayStyle.hexRadix).padLeft(OverlayStyle.hexColorDigits, '0')}'
+        '${(color.g * OverlayStyle.colorChannelMaxValue).toInt().toRadixString(OverlayStyle.hexRadix).padLeft(OverlayStyle.hexColorDigits, '0')}'
+        '${(color.b * OverlayStyle.colorChannelMaxValue).toInt().toRadixString(OverlayStyle.hexRadix).padLeft(OverlayStyle.hexColorDigits, '0')}';
     debugPrint('Current color: ${color.toString()} (hex: #$currentHex)');
-    final TextEditingController hexController =
-        TextEditingController(text: currentHex.substring(2));
+    final TextEditingController hexController = TextEditingController(
+        text:
+            currentHex.characters.getRange(OverlayStyle.hexColorDigits).string);
     Color previewColor = color;
 
     final String? newHex = await showDialog<String>(
@@ -67,7 +56,7 @@ class ColorPickerField extends StatelessWidget {
             label.isNotEmpty ? label : l10n.selectColor,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: _titleFontSize,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -75,15 +64,15 @@ class ColorPickerField extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                height: 40,
-                width: 100,
+                height: _previewHeight,
+                width: _previewWidth,
                 decoration: BoxDecoration(
                   color: previewColor,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: const BorderRadius.all(Radius.circular(8)),
+                  border: Border.all(color: Colors.grey.shade300),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: _previewSpacing),
               TextField(
                 controller: hexController,
                 decoration: InputDecoration(
@@ -93,31 +82,35 @@ class ColorPickerField extends StatelessWidget {
                   filled: true,
                   fillColor: Colors.grey[50],
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[200]!),
+                    borderRadius: const BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(color: Colors.grey.shade200),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[200]!),
+                    borderRadius: const BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(color: Colors.grey.shade200),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: const BorderRadius.all(Radius.circular(8)),
                     borderSide: BorderSide(
                       color: Theme.of(context).colorScheme.primary,
-                      width: 1.5,
+                      width: _focusedBorderWidth,
                     ),
                   ),
                 ),
                 inputFormatters: [
                   UpperCaseTextFormatter(),
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9A-Fa-f]')),
-                  LengthLimitingTextInputFormatter(8),
+                  LengthLimitingTextInputFormatter(OverlayStyle.argbHexLength),
                 ],
                 onChanged: (value) {
-                  if (value.length == 6 || value.length == 8) {
+                  if (value.length == OverlayStyle.rgbHexLength ||
+                      value.length == OverlayStyle.argbHexLength) {
                     try {
-                      final colorHex = value.length == 6 ? 'FF$value' : value;
-                      final newColor = Color(int.parse(colorHex, radix: 16));
+                      final colorHex = value.length == OverlayStyle.rgbHexLength
+                          ? 'FF$value'
+                          : value;
+                      final newColor = Color(
+                          int.parse(colorHex, radix: OverlayStyle.hexRadix));
                       debugPrint(
                           'New color from hex: ${newColor.toString()} (hex: #$value)');
                       setState(() {
@@ -137,7 +130,7 @@ class ColorPickerField extends StatelessWidget {
               child: Text(
                 l10n.cancel,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: _textFontSize,
                   color: Colors.grey[600],
                 ),
               ),
@@ -145,10 +138,13 @@ class ColorPickerField extends StatelessWidget {
             TextButton(
               onPressed: () {
                 final hex = hexController.text;
-                if (hex.length == 6 || hex.length == 8) {
+                if (hex.length == OverlayStyle.rgbHexLength ||
+                    hex.length == OverlayStyle.argbHexLength) {
                   try {
-                    final colorHex = hex.length == 6 ? 'FF$hex' : hex;
-                    Color(int.parse(colorHex, radix: 16));
+                    final colorHex = hex.length == OverlayStyle.rgbHexLength
+                        ? 'FF$hex'
+                        : hex;
+                    Color(int.parse(colorHex, radix: OverlayStyle.hexRadix));
                     Navigator.of(context).pop(colorHex);
                   } catch (e) {
                     // 忽略无效的颜色值
@@ -158,7 +154,7 @@ class ColorPickerField extends StatelessWidget {
               child: Text(
                 l10n.confirm,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: _textFontSize,
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.w600,
                 ),
@@ -166,11 +162,12 @@ class ColorPickerField extends StatelessWidget {
             ),
           ],
           actionsPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
+            horizontal: _dialogPaddingHorizontal,
+            vertical: _dialogPaddingVertical,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius:
+                const BorderRadius.all(Radius.circular(_dialogBorderRadius)),
           ),
           backgroundColor: Colors.white,
         ),
@@ -178,9 +175,41 @@ class ColorPickerField extends StatelessWidget {
     );
 
     if (newHex != null) {
-      final newColor = Color(int.parse(newHex, radix: 16));
+      final newColor = Color(int.parse(newHex, radix: OverlayStyle.hexRadix));
       debugPrint('Selected color: ${newColor.toString()} (hex: #$newHex)');
       onColorChanged(newColor);
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => _showColorPicker(context),
+      borderRadius: const BorderRadius.all(Radius.circular(_borderRadius)),
+      child: Container(
+        height: _containerHeight,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: const BorderRadius.all(Radius.circular(_borderRadius)),
+          border: Border.all(
+            color: Colors.grey.shade300,
+            width: _borderWidth,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return TextEditingValue(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+    );
   }
 }

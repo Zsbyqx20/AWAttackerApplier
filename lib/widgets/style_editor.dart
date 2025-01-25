@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../models/overlay_style.dart';
@@ -7,19 +6,6 @@ import 'color_picker_field.dart';
 import 'text_input_field.dart';
 
 class StyleEditor extends StatelessWidget {
-  final OverlayStyle style;
-  final TextEditingController textController;
-  final TextEditingController uiAutomatorCodeController;
-  final ValueChanged<String> onTextChanged;
-  final ValueChanged<double> onFontSizeChanged;
-  final ValueChanged<String> onPositionChanged;
-  final ValueChanged<Color> onBackgroundColorChanged;
-  final ValueChanged<Color> onTextColorChanged;
-  final ValueChanged<TextAlign> onHorizontalAlignChanged;
-  final ValueChanged<TextAlign> onVerticalAlignChanged;
-  final ValueChanged<String> onUiAutomatorCodeChanged;
-  final ValueChanged<String> onPaddingChanged;
-
   const StyleEditor({
     super.key,
     required this.style,
@@ -35,10 +21,27 @@ class StyleEditor extends StatelessWidget {
     required this.onUiAutomatorCodeChanged,
     required this.onPaddingChanged,
   });
+  final OverlayStyle style;
+  final TextEditingController textController;
+  final TextEditingController uiAutomatorCodeController;
+  final ValueChanged<String> onTextChanged;
+  final ValueChanged<double> onFontSizeChanged;
+  final ValueChanged<String> onPositionChanged;
+  final ValueChanged<Color> onBackgroundColorChanged;
+  final ValueChanged<Color> onTextColorChanged;
+  final ValueChanged<TextAlign> onHorizontalAlignChanged;
+  final ValueChanged<TextAlign> onVerticalAlignChanged;
+  final ValueChanged<String> onUiAutomatorCodeChanged;
+  final ValueChanged<String> onPaddingChanged;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,15 +53,30 @@ class StyleEditor extends StatelessWidget {
           onChanged: onTextChanged,
         ),
         const SizedBox(height: 16),
-        _buildFontSizeField(context),
+        FontSizeField(
+            style: style,
+            onFontSizeChanged: onFontSizeChanged,
+            context: context),
         const SizedBox(height: 16),
-        _buildColorPickers(context),
+        ColorPickers(
+            style: style,
+            onBackgroundColorChanged: onBackgroundColorChanged,
+            onTextColorChanged: onTextColorChanged,
+            context: context),
         const SizedBox(height: 16),
-        _buildPositionFields(context),
+        PositionFields(
+            style: style,
+            onPositionChanged: onPositionChanged,
+            context: context),
         const SizedBox(height: 16),
-        _buildAlignmentFields(context),
+        AlignmentFields(
+            style: style,
+            onHorizontalAlignChanged: onHorizontalAlignChanged,
+            onVerticalAlignChanged: onVerticalAlignChanged,
+            context: context),
         const SizedBox(height: 16),
-        _buildPaddingFields(context),
+        PaddingFields(
+            style: style, onPaddingChanged: onPaddingChanged, context: context),
         const SizedBox(height: 16),
         TextInputField(
           label: l10n.uiAutomatorCode,
@@ -69,34 +87,263 @@ class StyleEditor extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildFontSizeField(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+class PaddingFields extends StatelessWidget {
+  const PaddingFields({
+    super.key,
+    required this.style,
+    required this.onPaddingChanged,
+    required this.context,
+  });
+
+  final OverlayStyle style;
+  final ValueChanged<String> onPaddingChanged;
+  final BuildContext context;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${l10n.fontSize}: ${style.fontSize.toStringAsFixed(1)}',
+          l10n.padding,
           style: TextStyle(
+            // ignore: no-magic-number
             fontSize: 14,
-            color: Colors.grey[700],
+            color: Colors.grey.shade700,
             fontWeight: FontWeight.w500,
           ),
         ),
-        Slider(
-          value: style.fontSize,
-          min: 8,
-          max: 32,
-          divisions: 48,
-          label: style.fontSize.toStringAsFixed(1),
-          onChanged: onFontSizeChanged,
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: NumberField(
+                  label: 'L',
+                  value: style.padding.left,
+                  onChanged: (value) => onPaddingChanged('left:$value')),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: NumberField(
+                  label: 'T',
+                  value: style.padding.top,
+                  onChanged: (value) => onPaddingChanged('top:$value')),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: NumberField(
+                  label: 'R',
+                  value: style.padding.right,
+                  onChanged: (value) => onPaddingChanged('right:$value')),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: NumberField(
+                  label: 'B',
+                  value: style.padding.bottom,
+                  onChanged: (value) => onPaddingChanged('bottom:$value')),
+            ),
+          ],
         ),
       ],
     );
   }
+}
 
-  Widget _buildColorPickers(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+class AlignmentFields extends StatelessWidget {
+  const AlignmentFields({
+    super.key,
+    required this.style,
+    required this.onHorizontalAlignChanged,
+    required this.onVerticalAlignChanged,
+    required this.context,
+  });
+
+  final OverlayStyle style;
+  final ValueChanged<TextAlign> onHorizontalAlignChanged;
+  final ValueChanged<TextAlign> onVerticalAlignChanged;
+  final BuildContext context;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.alignment,
+          style: TextStyle(
+            // ignore: no-magic-number
+            fontSize: 14,
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: AlignmentSelector(
+                  context: context,
+                  currentAlign: style.horizontalAlign,
+                  onChanged: onHorizontalAlignChanged,
+                  alignments: [
+                    TextAlign.left,
+                    TextAlign.center,
+                    TextAlign.right
+                  ],
+                  icons: const [
+                    Icons.format_align_left,
+                    Icons.format_align_center,
+                    Icons.format_align_right,
+                  ]),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: AlignmentSelector(
+                  context: context,
+                  currentAlign: style.verticalAlign,
+                  onChanged: onVerticalAlignChanged,
+                  alignments: [
+                    TextAlign.start,
+                    TextAlign.center,
+                    TextAlign.end
+                  ],
+                  icons: const [
+                    Icons.align_vertical_top,
+                    Icons.align_vertical_center,
+                    Icons.align_vertical_bottom,
+                  ]),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class PositionFields extends StatelessWidget {
+  const PositionFields({
+    super.key,
+    required this.style,
+    required this.onPositionChanged,
+    required this.context,
+  });
+
+  final OverlayStyle style;
+  final ValueChanged<String> onPositionChanged;
+  final BuildContext context;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.position,
+          style: TextStyle(
+            // ignore: no-magic-number
+            fontSize: 14,
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: NumberField(
+                  label: 'x',
+                  value: style.x,
+                  onChanged: (value) => onPositionChanged('x:$value')),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: NumberField(
+                  label: 'y',
+                  value: style.y,
+                  onChanged: (value) => onPositionChanged('y:$value')),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          l10n.size,
+          style: TextStyle(
+            // ignore: no-magic-number
+            fontSize: 14,
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: NumberField(
+                  label: l10n.width,
+                  value: style.width,
+                  onChanged: (value) => onPositionChanged('width:$value')),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: NumberField(
+                  label: l10n.height,
+                  value: style.height,
+                  onChanged: (value) => onPositionChanged('height:$value')),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class ColorPickers extends StatelessWidget {
+  const ColorPickers({
+    super.key,
+    required this.style,
+    required this.onBackgroundColorChanged,
+    required this.onTextColorChanged,
+    required this.context,
+  });
+
+  final OverlayStyle style;
+  final ValueChanged<Color> onBackgroundColorChanged;
+  final ValueChanged<Color> onTextColorChanged;
+  final BuildContext context;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
+
     return Row(
       children: [
         Expanded(
@@ -106,8 +353,9 @@ class StyleEditor extends StatelessWidget {
               Text(
                 l10n.backgroundColor,
                 style: TextStyle(
+                  // ignore: no-magic-number
                   fontSize: 14,
-                  color: Colors.grey[700],
+                  color: Colors.grey.shade700,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -128,8 +376,9 @@ class StyleEditor extends StatelessWidget {
               Text(
                 l10n.textColor,
                 style: TextStyle(
+                  // ignore: no-magic-number
                   fontSize: 14,
-                  color: Colors.grey[700],
+                  color: Colors.grey.shade700,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -145,204 +394,79 @@ class StyleEditor extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildPositionFields(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+class FontSizeField extends StatelessWidget {
+  const FontSizeField({
+    super.key,
+    required this.style,
+    required this.onFontSizeChanged,
+    required this.context,
+  });
+
+  final OverlayStyle style;
+  final ValueChanged<double> onFontSizeChanged;
+  final BuildContext context;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l10n.position,
+          '${l10n.fontSize}: ${style.fontSize.toStringAsFixed(1)}',
           style: TextStyle(
+            // ignore: no-magic-number
             fontSize: 14,
             color: Colors.grey[700],
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildNumberField(
-                'x',
-                style.x,
-                (value) => onPositionChanged('x:$value'),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildNumberField(
-                'y',
-                style.y,
-                (value) => onPositionChanged('y:$value'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          l10n.size,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[700],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildNumberField(
-                l10n.width,
-                style.width,
-                (value) => onPositionChanged('width:$value'),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildNumberField(
-                l10n.height,
-                style.height,
-                (value) => onPositionChanged('height:$value'),
-              ),
-            ),
-          ],
+        Slider(
+          value: style.fontSize,
+          // ignore: no-magic-number
+          min: 8,
+          // ignore: no-magic-number
+          max: 32,
+          // ignore: no-magic-number
+          divisions: 48,
+          label: style.fontSize.toStringAsFixed(1),
+          onChanged: onFontSizeChanged,
         ),
       ],
     );
   }
+}
 
-  Widget _buildAlignmentFields(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.alignment,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[700],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildAlignmentSelector(
-                context,
-                style.horizontalAlign,
-                onHorizontalAlignChanged,
-                [TextAlign.left, TextAlign.center, TextAlign.right],
-                const [
-                  Icons.format_align_left,
-                  Icons.format_align_center,
-                  Icons.format_align_right,
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildAlignmentSelector(
-                context,
-                style.verticalAlign,
-                onVerticalAlignChanged,
-                [TextAlign.start, TextAlign.center, TextAlign.end],
-                const [
-                  Icons.align_vertical_top,
-                  Icons.align_vertical_center,
-                  Icons.align_vertical_bottom,
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+class AlignmentSelector extends StatelessWidget {
+  const AlignmentSelector({
+    super.key,
+    required this.context,
+    required this.currentAlign,
+    required this.onChanged,
+    required this.alignments,
+    required this.icons,
+  });
 
-  Widget _buildPaddingFields(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.padding,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[700],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildNumberField(
-                'L',
-                style.padding.left,
-                (value) => onPaddingChanged('left:$value'),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildNumberField(
-                'T',
-                style.padding.top,
-                (value) => onPaddingChanged('top:$value'),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildNumberField(
-                'R',
-                style.padding.right,
-                (value) => onPaddingChanged('right:$value'),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildNumberField(
-                'B',
-                style.padding.bottom,
-                (value) => onPaddingChanged('bottom:$value'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  final BuildContext context;
+  final TextAlign currentAlign;
+  final ValueChanged<TextAlign> onChanged;
+  final List<TextAlign> alignments;
+  final List<IconData> icons;
 
-  Widget _buildNumberField(
-    String label,
-    double value,
-    ValueChanged<String> onChanged,
-  ) {
-    return TextField(
-      controller: TextEditingController(text: value.toString()),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      ),
-      style: const TextStyle(fontSize: 14),
-      onChanged: onChanged,
-    );
-  }
-
-  Widget _buildAlignmentSelector(
-    BuildContext context,
-    TextAlign currentAlign,
-    ValueChanged<TextAlign> onChanged,
-    List<TextAlign> alignments,
-    List<IconData> icons,
-  ) {
+  @override
+  Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey.shade100,
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
       ),
       child: Row(
         children: List.generate(
@@ -351,17 +475,20 @@ class StyleEditor extends StatelessWidget {
             child: InkWell(
               onTap: () => onChanged(alignments[index]),
               child: Container(
+                // ignore: no-magic-number
                 height: 40,
                 decoration: BoxDecoration(
                   color: currentAlign == alignments[index]
+                      // ignore: no-magic-number
                       ? Theme.of(context).colorScheme.primary.withAlpha(26)
                       : null,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: const BorderRadius.all(Radius.circular(8)),
                   border: currentAlign == alignments[index]
                       ? Border.all(
                           color: Theme.of(context)
                               .colorScheme
                               .primary
+                              // ignore: no-magic-number
                               .withAlpha(51),
                         )
                       : null,
@@ -370,7 +497,8 @@ class StyleEditor extends StatelessWidget {
                   icons[index],
                   color: currentAlign == alignments[index]
                       ? Theme.of(context).colorScheme.primary
-                      : Colors.grey[600],
+                      : Colors.grey.shade600,
+                  // ignore: no-magic-number
                   size: 20,
                 ),
               ),
@@ -378,6 +506,34 @@ class StyleEditor extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class NumberField extends StatelessWidget {
+  const NumberField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final double value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: TextEditingController(text: value.toString()),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.all(8),
+      ),
+      style: const TextStyle(fontSize: 14),
+      onChanged: onChanged,
     );
   }
 }

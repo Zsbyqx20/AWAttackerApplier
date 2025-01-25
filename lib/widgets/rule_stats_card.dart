@@ -5,22 +5,27 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/rule.dart';
 
 class RuleStatsCard extends StatelessWidget {
-  final List<Rule> rules;
-
   const RuleStatsCard({
     super.key,
     required this.rules,
   });
+  final List<Rule> rules;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
+
     return Card(
       elevation: 1,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -31,6 +36,7 @@ class RuleStatsCard extends StatelessWidget {
               children: [
                 Icon(
                   Icons.info_outline,
+                  // ignore: no-magic-number
                   size: 20,
                   color: Theme.of(context).colorScheme.primary,
                 ),
@@ -81,24 +87,23 @@ class RuleStatsCard extends StatelessWidget {
 }
 
 class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-
   const _StatCard({
     required this.icon,
     required this.value,
     required this.label,
   });
+  final IconData icon;
+  final String value;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[200]!),
+        color: Colors.grey.shade50,
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
         children: [
@@ -115,8 +120,9 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
+              // ignore: no-magic-number
               fontSize: 12,
-              color: Colors.grey[600],
+              color: Colors.grey.shade600,
             ),
           ),
         ],

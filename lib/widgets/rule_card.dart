@@ -6,35 +6,52 @@ import 'package:provider/provider.dart';
 import '../models/rule.dart';
 import '../providers/rule_provider.dart';
 import 'confirm_dialog.dart';
-import 'tag_chips.dart';
+import 'tag_chip.dart';
 
 class RuleCard extends StatelessWidget {
-  final Rule rule;
-  final VoidCallback onTap;
-
   const RuleCard({
     super.key,
     required this.rule,
     required this.onTap,
   });
 
+  /// packageName 的图标大小
+  static const double _packageNameIconSize = 14;
+
+  /// packageName 的文字大小
+  static const double _packageNameTextSize = 13;
+
+  /// activityName 的图标大小
+  static const double _activityNameIconSize = 14;
+
+  /// activityName 的文字大小
+  static const double _activityNameTextSize = 13;
+
+  final Rule rule;
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final provider = context.watch<RuleProvider>();
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 1,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
         child: Container(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -47,15 +64,20 @@ class RuleCard extends StatelessWidget {
                     child: Row(
                       children: [
                         Container(
+                          // ignore: no-magic-number
                           width: 40,
+                          // ignore: no-magic-number
                           height: 40,
                           decoration: BoxDecoration(
+                            // ignore: no-magic-number
                             color: theme.colorScheme.primary.withAlpha(26),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(12)),
                           ),
                           child: Icon(
                             Icons.rule_folder_outlined,
                             color: theme.colorScheme.primary,
+                            // ignore: no-magic-number
                             size: 20,
                           ),
                         ),
@@ -84,19 +106,22 @@ class RuleCard extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       color: rule.isEnabled
                                           ? theme.colorScheme.primary
+                                              // ignore: no-magic-number
                                               .withAlpha(26)
                                           : Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(6),
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(6)),
                                     ),
                                     child: Text(
                                       rule.isEnabled
                                           ? l10n.ruleCardEnabled
                                           : l10n.ruleCardDisabled,
                                       style: TextStyle(
+                                        // ignore: no-magic-number
                                         fontSize: 12,
                                         color: rule.isEnabled
                                             ? theme.colorScheme.primary
-                                            : Colors.grey[600],
+                                            : Colors.grey.shade600,
                                       ),
                                     ),
                                   ),
@@ -107,23 +132,26 @@ class RuleCard extends StatelessWidget {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(6),
+                                      color: Colors.grey.shade100,
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(6)),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
                                           Icons.layers_outlined,
+                                          // ignore: no-magic-number
                                           size: 12,
-                                          color: Colors.grey[600],
+                                          color: Colors.grey.shade600,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
                                           '${rule.overlayStyles.length}',
                                           style: TextStyle(
+                                            // ignore: no-magic-number
                                             fontSize: 12,
-                                            color: Colors.grey[600],
+                                            color: Colors.grey.shade600,
                                           ),
                                         ),
                                       ],
@@ -141,6 +169,7 @@ class RuleCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Transform.scale(
+                        // ignore: no-magic-number
                         scale: 0.8,
                         child: Switch(
                           value: rule.isEnabled,
@@ -165,6 +194,7 @@ class RuleCard extends StatelessWidget {
                         icon: Icon(
                           Icons.delete_outline,
                           color: Colors.red[400],
+                          // ignore: no-magic-number
                           size: 20,
                         ),
                         tooltip: '删除规则',
@@ -173,6 +203,7 @@ class RuleCard extends StatelessWidget {
                           minWidth: 32,
                           minHeight: 32,
                         ),
+                        // ignore: no-magic-number
                         splashRadius: 24,
                       ),
                     ],
@@ -183,9 +214,9 @@ class RuleCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[200]!),
+                  color: Colors.grey.shade50,
+                  borderRadius: const BorderRadius.all(Radius.circular(8)),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,16 +225,16 @@ class RuleCard extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.android_outlined,
-                          size: 14,
-                          color: Colors.grey[600],
+                          size: _packageNameIconSize,
+                          color: Colors.grey.shade600,
                         ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             rule.packageName,
                             style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[700],
+                              fontSize: _packageNameTextSize,
+                              color: Colors.grey.shade700,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -216,16 +247,16 @@ class RuleCard extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.apps_outlined,
-                          size: 14,
-                          color: Colors.grey[600],
+                          size: _activityNameIconSize,
+                          color: Colors.grey.shade600,
                         ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             rule.activityName,
                             style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[700],
+                              fontSize: _activityNameTextSize,
+                              color: Colors.grey.shade700,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
