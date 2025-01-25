@@ -8,8 +8,8 @@ import 'package:provider/provider.dart';
 
 import '../models/permission_status.dart';
 import '../providers/connection_provider.dart';
-import '../widgets/permission_card.dart';
 import '../widgets/grpc_config_card.dart';
+import '../widgets/permission_card.dart';
 
 class ServerConfigPage extends StatefulWidget {
   const ServerConfigPage({

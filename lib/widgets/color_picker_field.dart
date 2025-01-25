@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/overlay_style.dart';
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import '../models/overlay_style.dart';
 
 class ColorPickerField extends StatelessWidget {
   const ColorPickerField({

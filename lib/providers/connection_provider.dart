@@ -8,13 +8,13 @@ import '../exceptions/overlay_exception.dart';
 import '../generated/window_info.pbgrpc.dart';
 import '../models/overlay_style.dart';
 import '../models/rule.dart';
+import '../models/rule_import.dart';
 import '../models/window_event.dart';
 import '../services/accessibility_service.dart';
 import '../services/grpc_service.dart';
 import '../services/overlay_service.dart';
 import 'connection_provider_broadcast.dart';
 import 'rule_provider.dart';
-import '../models/rule_import.dart';
 
 class ConnectionProvider extends ChangeNotifier
     with ConnectionProviderBroadcast {
