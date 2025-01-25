@@ -10,8 +10,22 @@ class OverlayStyle {
   static const int greenShift = 8;
   static const int blueShift = 0;
 
+  /// 文本对齐值
+  static const int alignStart = 0;
+  static const int alignCenter = 1;
+  static const int alignEnd = 2;
+
   /// 颜色通道最大值
   static const int channelMax = 0xFF;
+
+  /// Alpha通道掩码 (用于Java端的值)
+  static const int alphaMask = 0x7F;
+
+  /// 颜色掩码 (不包含alpha通道)
+  static const int colorMask = 0x00FFFFFF;
+
+  /// 规则名称最大长度
+  static const int maxRuleNameLength = 50;
 
   /// 默认字体大小
   static const double defaultFontSize = 14.0;

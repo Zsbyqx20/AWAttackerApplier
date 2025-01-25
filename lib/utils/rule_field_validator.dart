@@ -16,6 +16,7 @@ class RuleFieldValidator {
 
     try {
       RuleImportValidator.validatePackageName(packageName);
+
       return RuleValidationResult.success();
     } on RuleImportException catch (e) {
       return RuleValidationResult.fromException(e);
@@ -33,6 +34,7 @@ class RuleFieldValidator {
 
     try {
       RuleImportValidator.validateActivityName(activityName);
+
       return RuleValidationResult.success();
     } on RuleImportException catch (e) {
       return RuleValidationResult.fromException(e);
@@ -47,10 +49,11 @@ class RuleFieldValidator {
       return RuleValidationResult.fieldError(
           'name', 'Rule name cannot be empty');
     }
-    if (name.length > 50) {
-      return RuleValidationResult.fieldError(
-          'name', 'Rule name cannot exceed 50 characters');
+    if (name.length > OverlayStyle.maxRuleNameLength) {
+      return RuleValidationResult.fieldError('name',
+          'Rule name cannot exceed ${OverlayStyle.maxRuleNameLength} characters');
     }
+
     return RuleValidationResult.success();
   }
 
@@ -58,6 +61,7 @@ class RuleFieldValidator {
   static RuleValidationResult validateTag(String tag) {
     try {
       RuleImportValidator.validateTags([tag]);
+
       return RuleValidationResult.success();
     } on RuleImportException catch (e) {
       return RuleValidationResult.fromException(e);
@@ -74,6 +78,7 @@ class RuleFieldValidator {
 
     try {
       RuleImportValidator.validateTags(tags);
+
       return RuleValidationResult.success();
     } on RuleImportException catch (e) {
       return RuleValidationResult.fromException(e);
@@ -91,6 +96,7 @@ class RuleFieldValidator {
 
     try {
       RuleImportValidator.validateOverlayStyle(style);
+
       return RuleValidationResult.success();
     } on RuleImportException catch (e) {
       return RuleValidationResult.fromException(e);
@@ -108,6 +114,7 @@ class RuleFieldValidator {
 
     try {
       RuleImportValidator.validateColor(color, fieldName);
+
       return RuleValidationResult.success();
     } on RuleImportException catch (e) {
       return RuleValidationResult.fromException(e);

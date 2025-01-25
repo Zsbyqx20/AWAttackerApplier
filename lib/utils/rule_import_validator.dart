@@ -41,9 +41,9 @@ class RuleImportValidator {
         throw RuleImportException.invalidFieldValue(
             'tags', 'Tag cannot be empty');
       }
-      if (tag.length > 50) {
-        throw RuleImportException.invalidFieldValue(
-            'tags', 'Tag length cannot exceed 50 characters');
+      if (tag.length > OverlayStyle.maxRuleNameLength) {
+        throw RuleImportException.invalidFieldValue('tags',
+            'Tag length cannot exceed ${OverlayStyle.maxRuleNameLength} characters');
       }
     }
   }

@@ -6,14 +6,25 @@ import '../models/overlay_style.dart';
 class OverlayConverter {
   /// 将OverlayStyle转换为原生平台可用的格式
   static Map<String, dynamic> styleToNative(OverlayStyle style) {
-    final backgroundColor = ((style.backgroundColor.r * 255).toInt() << 16) |
-        ((style.backgroundColor.g * 255).toInt() << 8) |
-        (style.backgroundColor.b * 255).toInt() |
-        (0xFF << 24);
-    final textColor = ((style.textColor.r * 255).toInt() << 16) |
-        ((style.textColor.g * 255).toInt() << 8) |
-        (style.textColor.b * 255).toInt() |
-        (0xFF << 24);
+    final backgroundColor =
+        ((style.backgroundColor.r * OverlayStyle.colorChannelMaxValue)
+                    .toInt() <<
+                OverlayStyle.redShift) |
+            ((style.backgroundColor.g * OverlayStyle.colorChannelMaxValue)
+                    .toInt() <<
+                OverlayStyle.greenShift) |
+            ((style.backgroundColor.b * OverlayStyle.colorChannelMaxValue)
+                    .toInt() <<
+                OverlayStyle.blueShift) |
+            (OverlayStyle.channelMax << OverlayStyle.alphaShift);
+    final textColor =
+        ((style.textColor.r * OverlayStyle.colorChannelMaxValue).toInt() <<
+                OverlayStyle.redShift) |
+            ((style.textColor.g * OverlayStyle.colorChannelMaxValue).toInt() <<
+                OverlayStyle.greenShift) |
+            ((style.textColor.b * OverlayStyle.colorChannelMaxValue).toInt() <<
+                OverlayStyle.blueShift) |
+            (OverlayStyle.channelMax << OverlayStyle.alphaShift);
 
     return {
       'x': style.x,
@@ -36,52 +47,29 @@ class OverlayConverter {
     };
   }
 
-  /// 将TextAlign转换为整数值
-  /// 0: left/top, 1: center, 2: right/bottom
-  static int _convertTextAlign(TextAlign align) {
-    switch (align) {
-      case TextAlign.center:
-        return 1;
-      case TextAlign.right:
-      case TextAlign.end:
-        return 2;
-      case TextAlign.left:
-      case TextAlign.start:
-      default:
-        return 0;
-    }
-  }
-
-  /// 将整数值转换为TextAlign
-  static TextAlign _convertToTextAlign(int value) {
-    switch (value) {
-      case 1:
-        return TextAlign.center;
-      case 2:
-        return TextAlign.right;
-      case 0:
-      default:
-        return TextAlign.left;
-    }
-  }
-
   /// 从原生平台响应创建OverlayStyle
   static OverlayStyle styleFromNative(Map<String, dynamic> map) {
     final backgroundColor = map['backgroundColor'] as int;
     final textColor = map['textColor'] as int;
 
     // 从 Java 端的值恢复完整的 alpha 通道
-    final bgAlpha = (backgroundColor >> 24) & 0x7F;
-    final txtAlpha = (textColor >> 24) & 0x7F;
+    final bgAlpha =
+        (backgroundColor >> OverlayStyle.alphaShift) & OverlayStyle.alphaMask;
+    final txtAlpha =
+        (textColor >> OverlayStyle.alphaShift) & OverlayStyle.alphaMask;
 
     // 将 0x7F 映射回 0xFF
-    final restoredBgAlpha = (bgAlpha * 0xFF) ~/ 0x7F;
-    final restoredTxtAlpha = (txtAlpha * 0xFF) ~/ 0x7F;
+    final restoredBgAlpha =
+        (bgAlpha * OverlayStyle.channelMax) ~/ OverlayStyle.alphaMask;
+    final restoredTxtAlpha =
+        (txtAlpha * OverlayStyle.channelMax) ~/ OverlayStyle.alphaMask;
 
-    final restoredBgColor =
-        ((restoredBgAlpha & 0xFF) << 24) | (backgroundColor & 0x00FFFFFF);
-    final restoredTxtColor =
-        ((restoredTxtAlpha & 0xFF) << 24) | (textColor & 0x00FFFFFF);
+    final restoredBgColor = ((restoredBgAlpha & OverlayStyle.channelMax) <<
+            OverlayStyle.alphaShift) |
+        (backgroundColor & OverlayStyle.colorMask);
+    final restoredTxtColor = ((restoredTxtAlpha & OverlayStyle.channelMax) <<
+            OverlayStyle.alphaShift) |
+        (textColor & OverlayStyle.colorMask);
 
     return OverlayStyle(
       x: (map['x'] as num).toDouble(),
@@ -102,5 +90,34 @@ class OverlayConverter {
       ),
       uiAutomatorCode: map['uiAutomatorCode'] as String,
     );
+  }
+
+  /// 将TextAlign转换为整数值
+  /// 0: left/top, 1: center, 2: right/bottom
+  static int _convertTextAlign(TextAlign align) {
+    switch (align) {
+      case TextAlign.center:
+        return OverlayStyle.alignCenter;
+      case TextAlign.right:
+      case TextAlign.end:
+        return OverlayStyle.alignEnd;
+      case TextAlign.left:
+      case TextAlign.start:
+      default:
+        return OverlayStyle.alignStart;
+    }
+  }
+
+  /// 将整数值转换为TextAlign
+  static TextAlign _convertToTextAlign(int value) {
+    switch (value) {
+      case OverlayStyle.alignCenter:
+        return TextAlign.center;
+      case OverlayStyle.alignEnd:
+        return TextAlign.right;
+      case OverlayStyle.alignStart:
+      default:
+        return TextAlign.left;
+    }
   }
 }
