@@ -15,6 +15,37 @@ class TagListPage extends StatefulWidget {
 }
 
 class _TagListPageState extends State<TagListPage> {
+  void _handleTagActivation(BuildContext context, RuleProvider provider,
+      String tag, bool active) async {
+    if (active) {
+      final l10n = AppLocalizations.of(context);
+      if (l10n == null) {
+        debugPrint('Error: AppLocalizations not found');
+
+        return;
+      }
+      final affectedRules = provider.rules.where((r) => r.tags.contains(tag));
+      final confirmed = await ConfirmDialog.show(
+        context: context,
+        title: l10n.activateTag,
+        content: l10n.activateTagConfirm(tag, affectedRules.length),
+        confirmText: l10n.activate,
+        icon: Icons.local_offer_outlined,
+        confirmColor: Theme.of(context).colorScheme.primary,
+      );
+      if (confirmed == true) {
+        await provider.toggleTagActivation(tag);
+      }
+    } else {
+      await provider.toggleTagActivation(tag);
+    }
+  }
+
+  void _handleTagDelete(BuildContext context, RuleProvider provider, String tag,
+      int ruleCount) async {
+    await provider.deleteTag(tag);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<RuleProvider>(
@@ -70,41 +101,9 @@ class _TagListPageState extends State<TagListPage> {
       },
     );
   }
-
-  void _handleTagActivation(BuildContext context, RuleProvider provider,
-      String tag, bool active) async {
-    if (active) {
-      final l10n = AppLocalizations.of(context)!;
-      final affectedRules = provider.rules.where((r) => r.tags.contains(tag));
-      final confirmed = await ConfirmDialog.show(
-        context: context,
-        title: l10n.activateTag,
-        content: l10n.activateTagConfirm(tag, affectedRules.length),
-        confirmText: l10n.activate,
-        icon: Icons.local_offer_outlined,
-        confirmColor: Theme.of(context).colorScheme.primary,
-      );
-      if (confirmed == true) {
-        await provider.toggleTagActivation(tag);
-      }
-    } else {
-      await provider.toggleTagActivation(tag);
-    }
-  }
-
-  void _handleTagDelete(BuildContext context, RuleProvider provider, String tag,
-      int ruleCount) async {
-    await provider.deleteTag(tag);
-  }
 }
 
 class _TagListItem extends StatelessWidget {
-  final String tag;
-  final int ruleCount;
-  final bool isActive;
-  final ValueChanged<bool> onActiveChanged;
-  final VoidCallback onDelete;
-
   const _TagListItem({
     required this.tag,
     required this.ruleCount,
@@ -112,6 +111,11 @@ class _TagListItem extends StatelessWidget {
     required this.onActiveChanged,
     required this.onDelete,
   });
+  final String tag;
+  final int ruleCount;
+  final bool isActive;
+  final ValueChanged<bool> onActiveChanged;
+  final VoidCallback onDelete;
 
   Color _getTagColor(BuildContext context) {
     // 根据标签文本生成一个稳定的颜色
@@ -128,23 +132,29 @@ class _TagListItem extends StatelessWidget {
       Colors.amber,
       Colors.deepPurple,
     ];
+
     return baseColors[hash.abs() % baseColors.length];
   }
 
   @override
   Widget build(BuildContext context) {
     final tagColor = _getTagColor(context);
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
 
     return Card(
       elevation: 1,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
         child: Dismissible(
           key: Key(tag),
           direction: DismissDirection.endToStart,
@@ -156,16 +166,19 @@ class _TagListItem extends StatelessWidget {
             padding: const EdgeInsets.only(right: 24),
             color: Colors.white,
             child: Container(
+              // ignore: no-magic-number
               width: 40,
+              // ignore: no-magic-number
               height: 40,
               decoration: BoxDecoration(
                 color: Colors.red[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red[100]!),
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+                border: Border.all(color: Colors.red.shade100),
               ),
               child: Icon(
                 Icons.delete_outline,
                 color: Colors.red[400],
+                // ignore: no-magic-number
                 size: 20,
               ),
             ),
@@ -181,27 +194,32 @@ class _TagListItem extends StatelessWidget {
             if (confirmed == true) {
               onDelete();
             }
+
             return confirmed ?? false;
           },
           child: InkWell(
             onTap: () => onActiveChanged(!isActive),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: const BorderRadius.all(Radius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   Container(
+                    // ignore: no-magic-number
                     width: 40,
+                    // ignore: no-magic-number
                     height: 40,
                     decoration: BoxDecoration(
                       color: isActive
+                          // ignore: no-magic-number
                           ? tagColor.withValues(alpha: 0.1)
-                          : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
+                          : Colors.grey.shade100,
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
                     ),
                     child: Icon(
                       Icons.local_offer_outlined,
-                      color: isActive ? tagColor : Colors.grey[600],
+                      color: isActive ? tagColor : Colors.grey.shade600,
+                      // ignore: no-magic-number
                       size: 20,
                     ),
                   ),
@@ -221,14 +239,16 @@ class _TagListItem extends StatelessWidget {
                         Text(
                           l10n.usedInRules(ruleCount),
                           style: TextStyle(
+                            // ignore: no-magic-number
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: Colors.grey.shade600,
                           ),
                         ),
                       ],
                     ),
                   ),
                   Transform.scale(
+                    // ignore: no-magic-number
                     scale: 0.8,
                     child: Switch(
                       value: isActive,

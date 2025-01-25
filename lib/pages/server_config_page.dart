@@ -9,15 +9,15 @@ import 'package:provider/provider.dart';
 import '../models/permission_status.dart';
 import '../providers/connection_provider.dart';
 import '../widgets/permission_card.dart';
+import '../widgets/grpc_config_card.dart';
 
 class ServerConfigPage extends StatefulWidget {
-  final void Function({bool? overlayPermission, bool? accessibilityPermission})
-      onPermissionsChanged;
-
   const ServerConfigPage({
     super.key,
     required this.onPermissionsChanged,
   });
+  final void Function({bool? overlayPermission, bool? accessibilityPermission})
+      onPermissionsChanged;
 
   @override
   State<ServerConfigPage> createState() => _ServerConfigPageState();
@@ -71,21 +71,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     });
   }
 
-  @override
-  void dispose() {
-    _hostController.dispose();
-    _portController.dispose();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _checkPermissions();
-    }
-  }
-
   Future<void> _checkPermissions() async {
     try {
       final result = await _channel.invokeMethod<String>('checkAllPermissions');
@@ -133,7 +118,12 @@ class _ServerConfigPageState extends State<ServerConfigPage>
       _isStartingService = true;
     });
 
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return;
+    }
 
     try {
       final provider = context.read<ConnectionProvider>();
@@ -149,8 +139,10 @@ class _ServerConfigPageState extends State<ServerConfigPage>
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(8),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              side: BorderSide(color: Colors.grey.shade200),
+            ),
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: l10n.confirm,
@@ -173,8 +165,9 @@ class _ServerConfigPageState extends State<ServerConfigPage>
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(8),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+            ),
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: l10n.confirm,
@@ -220,110 +213,6 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     }
   }
 
-  Widget _buildGrpcConfigCard(ConnectionProvider provider) {
-    final l10n = AppLocalizations.of(context)!;
-    final isServiceRunning = provider.isServiceRunning;
-    final connectionStatus = provider.status;
-
-    return Card(
-      elevation: 1,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Colors.grey[100]!,
-          width: 1,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.dns_rounded,
-                  color: Theme.of(context).primaryColor,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.grpcSettings,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const Spacer(),
-                _buildConnectionStatusChip(connectionStatus, l10n),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _hostController,
-              decoration: InputDecoration(
-                labelText: l10n.grpcHost,
-                hintText: 'auto',
-                border: const OutlineInputBorder(),
-                enabled: !isServiceRunning,
-              ),
-              onChanged: (value) => _updateGrpcConfig(provider),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _portController,
-              decoration: InputDecoration(
-                labelText: l10n.grpcPort,
-                hintText: '50051',
-                border: const OutlineInputBorder(),
-                enabled: !isServiceRunning,
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              onChanged: (value) => _updateGrpcConfig(provider),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildConnectionStatusChip(
-      ConnectionStatus status, AppLocalizations l10n) {
-    Color chipColor;
-    String label;
-    IconData icon;
-
-    switch (status) {
-      case ConnectionStatus.connected:
-        chipColor = Colors.green;
-        label = l10n.grpcConnected;
-        icon = Icons.check_circle;
-        break;
-      case ConnectionStatus.disconnected:
-        chipColor = Colors.grey;
-        label = l10n.grpcDisconnected;
-        icon = Icons.cancel;
-        break;
-      case ConnectionStatus.connecting:
-        chipColor = Colors.orange;
-        label = l10n.grpcConnecting;
-        icon = Icons.sync;
-        break;
-      case ConnectionStatus.disconnecting:
-        chipColor = Colors.orange;
-        label = l10n.grpcDisconnecting;
-        icon = Icons.sync;
-        break;
-    }
-
-    return Chip(
-      avatar: Icon(icon, color: Colors.white, size: 16),
-      label: Text(
-        label,
-        style: const TextStyle(color: Colors.white, fontSize: 12),
-      ),
-      backgroundColor: chipColor,
-    );
-  }
-
   void _updateGrpcConfig(ConnectionProvider provider) {
     if (provider.isServiceRunning) return;
 
@@ -333,13 +222,22 @@ class _ServerConfigPageState extends State<ServerConfigPage>
     if (portStr.isEmpty) return;
 
     final port = int.tryParse(portStr);
+    // ignore: no-magic-number
     if (port == null || port <= 0 || port > 65535) {
+      final l10n = AppLocalizations.of(context);
+      if (l10n == null) {
+        debugPrint('Error: AppLocalizations not found');
+
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.grpcInvalidPort),
+          content: Text(l10n.grpcInvalidPort),
           behavior: SnackBarBehavior.floating,
         ),
       );
+
       return;
     }
 
@@ -356,8 +254,28 @@ class _ServerConfigPageState extends State<ServerConfigPage>
   }
 
   @override
+  void dispose() {
+    _hostController.dispose();
+    _portController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkPermissions();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
     final provider = context.watch<ConnectionProvider>();
     _updateControllersFromProvider(provider);
     final allPermissionsGranted =
@@ -382,15 +300,20 @@ class _ServerConfigPageState extends State<ServerConfigPage>
             onRequestPermission: _requestPermission,
           ),
           const SizedBox(height: 16),
-          _buildGrpcConfigCard(provider),
+          GrpcConfigCard(
+            provider: provider,
+            hostController: _hostController,
+            portController: _portController,
+            onConfigChanged: _updateGrpcConfig,
+          ),
           const SizedBox(height: 24),
           Card(
             elevation: 1,
             color: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: const BorderRadius.all(Radius.circular(12)),
               side: BorderSide(
-                color: Colors.grey[100]!,
+                color: Colors.grey.shade100,
                 width: 1,
               ),
             ),
@@ -406,28 +329,36 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                       : null,
                   icon: _isStartingService
                       ? SizedBox(
+                          // ignore: no-magic-number
                           width: 20,
+                          // ignore: no-magic-number
                           height: 20,
                           child: CircularProgressIndicator(
+                            // ignore: no-magic-number
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               allPermissionsGranted
                                   ? Colors.white
-                                  : Colors.grey[400]!,
+                                  : Colors.grey.shade400,
                             ),
                           ),
                         )
                       : Container(
+                          // ignore: no-magic-number
                           width: 32,
+                          // ignore: no-magic-number
                           height: 32,
                           decoration: BoxDecoration(
+                            // ignore: no-magic-number
                             color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(8)),
                           ),
                           child: Icon(
                             provider.isServiceRunning
                                 ? Icons.power_settings_new_rounded
                                 : Icons.play_circle_outline_rounded,
+                            // ignore: no-magic-number
                             size: 18,
                             color: Colors.white,
                           ),
@@ -452,10 +383,10 @@ class _ServerConfigPageState extends State<ServerConfigPage>
                       horizontal: 24,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
                     ),
-                    disabledBackgroundColor: Colors.grey[300],
-                    disabledForegroundColor: Colors.grey[400],
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    disabledForegroundColor: Colors.grey.shade400,
                   ),
                 ),
               ),

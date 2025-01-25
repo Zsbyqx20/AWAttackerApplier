@@ -23,6 +23,11 @@ class RuleListPage extends StatefulWidget {
 
 class _RuleListPageState extends State<RuleListPage>
     with SingleTickerProviderStateMixin {
+  /// FAB 按钮的宽度
+  static const double _fabWidth = 140;
+
+  /// FAB 按钮的 elevation
+  static const double _fabElevation = 4;
   bool _isExpanded = false;
   late final AnimationController _controller;
 
@@ -38,169 +43,13 @@ class _RuleListPageState extends State<RuleListPage>
     });
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Consumer<RuleProvider>(
-      builder: (context, provider, child) {
-        final rules = provider.rules;
-
-        return Scaffold(
-          backgroundColor: Colors.grey[100],
-          body: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              RuleStatsCard(
-                rules: rules,
-              ),
-              const SizedBox(height: 16),
-              if (rules.isEmpty)
-                Center(
-                  child: Text(l10n.noRules),
-                )
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: rules.length,
-                  itemBuilder: (context, index) {
-                    final rule = rules[index];
-                    return RuleCard(
-                      rule: rule,
-                      onTap: () => _handleEdit(rule),
-                    );
-                  },
-                ),
-            ],
-          ),
-          floatingActionButton: Padding(
-            padding: const EdgeInsets.only(right: 24, bottom: 24),
-            child: Stack(
-              alignment: Alignment.bottomRight,
-              clipBehavior: Clip.none,
-              children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (_isExpanded) ...[
-                      ScaleTransition(
-                        scale: CurvedAnimation(
-                          parent: _controller,
-                          curve: Curves.easeOutBack,
-                          reverseCurve: Curves.easeInBack,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: SizedBox(
-                            width: 140,
-                            child: FloatingActionButton.extended(
-                              heroTag: 'add',
-                              elevation: 4,
-                              backgroundColor: const Color(0xFFE3F2FD),
-                              foregroundColor: const Color(0xFF1565C0),
-                              onPressed: () {
-                                setState(() => _isExpanded = false);
-                                _controller.reverse();
-                                _handleAdd();
-                              },
-                              icon: const Icon(Icons.add_box),
-                              label: Text(l10n.addRule),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ScaleTransition(
-                        scale: CurvedAnimation(
-                          parent: _controller,
-                          curve: Curves.easeOutBack,
-                          reverseCurve: Curves.easeInBack,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: SizedBox(
-                            width: 140,
-                            child: FloatingActionButton.extended(
-                              heroTag: 'import',
-                              elevation: 4,
-                              backgroundColor: const Color(0xFFE8EAF6),
-                              foregroundColor: const Color(0xFF3949AB),
-                              onPressed: () {
-                                setState(() => _isExpanded = false);
-                                _controller.reverse();
-                                _handleImport();
-                              },
-                              icon: const Icon(Icons.file_open_outlined),
-                              label: Text(l10n.importRules),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ScaleTransition(
-                        scale: CurvedAnimation(
-                          parent: _controller,
-                          curve: Curves.easeOutBack,
-                          reverseCurve: Curves.easeInBack,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: SizedBox(
-                            width: 140,
-                            child: FloatingActionButton.extended(
-                              heroTag: 'export',
-                              elevation: 4,
-                              backgroundColor: const Color(0xFFF3E5F5),
-                              foregroundColor: const Color(0xFF6A1B9A),
-                              onPressed: () {
-                                setState(() => _isExpanded = false);
-                                _controller.reverse();
-                                _handleExport();
-                              },
-                              icon: const Icon(Icons.save_alt_outlined),
-                              label: Text(l10n.exportRules),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    FloatingActionButton(
-                      elevation: 6,
-                      onPressed: () {
-                        setState(() => _isExpanded = !_isExpanded);
-                        if (_isExpanded) {
-                          _controller.forward();
-                        } else {
-                          _controller.reverse();
-                        }
-                      },
-                      child: AnimatedRotation(
-                        duration: const Duration(milliseconds: 200),
-                        turns: _isExpanded ? 0.125 : 0,
-                        child: const Icon(Icons.add),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Future<void> _handleImport() async {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return;
+    }
     try {
       final jsonStr = await const MethodChannel(
               'com.mobilellm.awattackerapplier/overlay_service')
@@ -258,7 +107,12 @@ class _RuleListPageState extends State<RuleListPage>
   }
 
   Future<void> _handleExport() async {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return;
+    }
     try {
       final rules = context.read<RuleProvider>().rules;
       if (rules.isEmpty) {
@@ -266,6 +120,7 @@ class _RuleListPageState extends State<RuleListPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.noRules)),
         );
+
         return;
       }
 
@@ -333,5 +188,171 @@ class _RuleListPageState extends State<RuleListPage>
     if (editedRule != null && mounted) {
       await context.read<RuleProvider>().updateRule(editedRule);
     }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
+
+    return Consumer<RuleProvider>(
+      builder: (context, provider, child) {
+        final rules = provider.rules;
+
+        return Scaffold(
+          backgroundColor: Colors.grey[100],
+          body: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    RuleStatsCard(
+                      rules: rules,
+                    ),
+                    const SizedBox(height: 16),
+                    if (rules.isEmpty)
+                      Center(
+                        child: Text(l10n.noRules),
+                      )
+                    else
+                      ...rules.map((rule) => RuleCard(
+                            rule: rule,
+                            onTap: () => _handleEdit(rule),
+                          )),
+                  ]),
+                ),
+              ),
+            ],
+          ),
+          floatingActionButton: Padding(
+            padding: const EdgeInsets.only(right: 24, bottom: 24),
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              clipBehavior: Clip.none,
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (_isExpanded) ...[
+                      ScaleTransition(
+                        scale: CurvedAnimation(
+                          parent: _controller,
+                          curve: Curves.easeOutBack,
+                          reverseCurve: Curves.easeInBack,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: SizedBox(
+                            width: _fabWidth,
+                            child: FloatingActionButton.extended(
+                              heroTag: 'add',
+                              elevation: _fabElevation,
+                              backgroundColor: const Color(0xFFE3F2FD),
+                              foregroundColor: const Color(0xFF1565C0),
+                              onPressed: () {
+                                setState(() => _isExpanded = false);
+                                _controller.reverse();
+                                _handleAdd();
+                              },
+                              icon: const Icon(Icons.add_box),
+                              label: Text(l10n.addRule),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ScaleTransition(
+                        scale: CurvedAnimation(
+                          parent: _controller,
+                          curve: Curves.easeOutBack,
+                          reverseCurve: Curves.easeInBack,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: SizedBox(
+                            width: _fabWidth,
+                            child: FloatingActionButton.extended(
+                              heroTag: 'import',
+                              elevation: _fabElevation,
+                              backgroundColor: const Color(0xFFE8EAF6),
+                              foregroundColor: const Color(0xFF3949AB),
+                              onPressed: () {
+                                setState(() => _isExpanded = false);
+                                _controller.reverse();
+                                _handleImport();
+                              },
+                              icon: const Icon(Icons.file_open_outlined),
+                              label: Text(l10n.importRules),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ScaleTransition(
+                        scale: CurvedAnimation(
+                          parent: _controller,
+                          curve: Curves.easeOutBack,
+                          reverseCurve: Curves.easeInBack,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: SizedBox(
+                            width: _fabWidth,
+                            child: FloatingActionButton.extended(
+                              heroTag: 'export',
+                              elevation: _fabElevation,
+                              backgroundColor: const Color(0xFFF3E5F5),
+                              foregroundColor: const Color(0xFF6A1B9A),
+                              onPressed: () {
+                                setState(() => _isExpanded = false);
+                                _controller.reverse();
+                                _handleExport();
+                              },
+                              icon: const Icon(Icons.save_alt_outlined),
+                              label: Text(l10n.exportRules),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    FloatingActionButton(
+                      // ignore: no-magic-number
+                      elevation: 6,
+                      onPressed: () {
+                        setState(() => _isExpanded = !_isExpanded);
+                        if (_isExpanded) {
+                          _controller.forward();
+                        } else {
+                          _controller.reverse();
+                        }
+                      },
+                      child: AnimatedRotation(
+                        duration: const Duration(milliseconds: 200),
+                        // ignore: no-magic-number
+                        turns: _isExpanded ? 0.125 : 0,
+                        child: const Icon(Icons.add),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

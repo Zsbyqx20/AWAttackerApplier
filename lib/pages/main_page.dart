@@ -15,26 +15,32 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage>
     with SingleTickerProviderStateMixin {
+  // ignore: avoid-late-keyword
   late TabController _tabController;
   bool _hasOverlayPermission = false;
   bool _hasAccessibilityPermission = false;
 
+  /// tab 图标高度
+  static const double tabIconHeight = 60;
+
+  /// controller 个数
+  static const int controllerLength = 3;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: controllerLength, vsync: this);
     _tabController.addListener(_handleTabChange);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   void _handleTabChange() {
     if (_tabController.index > 0) {
-      final l10n = AppLocalizations.of(context)!;
+      final l10n = AppLocalizations.of(context);
+      if (l10n == null) {
+        debugPrint('Error: AppLocalizations not found');
+
+        return;
+      }
       if (!_hasOverlayPermission) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.overlayPermissionRequired)),
@@ -47,6 +53,12 @@ class _MainPageState extends State<MainPage>
         _tabController.animateTo(0);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   void updatePermissions(
@@ -63,10 +75,15 @@ class _MainPageState extends State<MainPage>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
@@ -75,7 +92,7 @@ class _MainPageState extends State<MainPage>
           controller: _tabController,
           indicatorColor: Theme.of(context).colorScheme.primary,
           labelColor: Theme.of(context).colorScheme.primary,
-          unselectedLabelColor: Colors.grey[600],
+          unselectedLabelColor: Colors.grey.shade600,
           indicatorSize: TabBarIndicatorSize.label,
           tabs: [
             Container(
@@ -83,7 +100,7 @@ class _MainPageState extends State<MainPage>
               child: Tab(
                 icon: const Icon(Icons.settings_outlined),
                 text: l10n.configTab,
-                height: 60,
+                height: tabIconHeight,
               ),
             ),
             Container(
@@ -92,10 +109,10 @@ class _MainPageState extends State<MainPage>
                 icon: Icon(Icons.rule_folder_outlined,
                     color:
                         !_hasOverlayPermission || !_hasAccessibilityPermission
-                            ? Colors.grey[400]
+                            ? Colors.grey.shade400
                             : null),
                 text: l10n.rulesTab,
-                height: 60,
+                height: tabIconHeight,
               ),
             ),
             Container(
@@ -104,10 +121,10 @@ class _MainPageState extends State<MainPage>
                 icon: Icon(Icons.sell_outlined,
                     color:
                         !_hasOverlayPermission || !_hasAccessibilityPermission
-                            ? Colors.grey[400]
+                            ? Colors.grey.shade400
                             : null),
                 text: l10n.tagsTab,
-                height: 60,
+                height: tabIconHeight,
               ),
             ),
           ],

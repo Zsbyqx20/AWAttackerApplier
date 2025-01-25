@@ -8,14 +8,13 @@ import '../../models/rule.dart';
 import '../../providers/rule_provider.dart';
 import '../../providers/rule_validation_provider.dart';
 import '../../widgets/style_editor.dart';
-import '../../widgets/tag_chips.dart';
+import '../../widgets/tag_chip.dart';
 import '../../widgets/text_input_field.dart';
 import '../../widgets/validation_error_widget.dart';
 
 class RuleEditPage extends StatefulWidget {
-  final Rule? rule;
-
   const RuleEditPage({super.key, this.rule});
+  final Rule? rule;
 
   @override
   State<RuleEditPage> createState() => _RuleEditPageState();
@@ -23,12 +22,19 @@ class RuleEditPage extends StatefulWidget {
 
 class _RuleEditPageState extends State<RuleEditPage>
     with TickerProviderStateMixin {
+  // ignore: avoid-late-keyword
   late final TextEditingController _nameController;
+  // ignore: avoid-late-keyword
   late final TextEditingController _packageNameController;
+  // ignore: avoid-late-keyword
   late final TextEditingController _activityNameController;
+  // ignore: avoid-late-keyword
   late final TextEditingController _textController;
+  // ignore: avoid-late-keyword
   late final TextEditingController _uiAutomatorCodeController;
+  // ignore: avoid-late-keyword
   late TabController _tabController;
+  // ignore: avoid-late-keyword
   late final RuleValidationProvider _validationProvider;
   final ScrollController _scrollController = ScrollController();
 
@@ -36,25 +42,13 @@ class _RuleEditPageState extends State<RuleEditPage>
   List<String> _tags = [];
   int _currentTabIndex = 0;
 
+  // 添加字段的GlobalKey
+  final _nameFieldKey = GlobalKey();
+  final _packageNameFieldKey = GlobalKey();
+  final _activityNameFieldKey = GlobalKey();
+  final _tagsFieldKey = GlobalKey();
+
   OverlayStyle get _currentStyle => _overlayStyles[_currentTabIndex];
-
-  void _initTabController({int initialIndex = 0}) {
-    _tabController = TabController(
-      length: _overlayStyles.length,
-      vsync: this,
-      initialIndex: initialIndex,
-    );
-
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) return;
-      setState(() {
-        _currentTabIndex = _tabController.index;
-        _textController.text = _currentStyle.text;
-        _uiAutomatorCodeController.text = _currentStyle.uiAutomatorCode;
-      });
-    });
-  }
-
   @override
   void initState() {
     super.initState();
@@ -67,8 +61,10 @@ class _RuleEditPageState extends State<RuleEditPage>
         TextEditingController(text: widget.rule?.activityName ?? '');
 
     if (widget.rule != null) {
-      _overlayStyles = List.from(widget.rule!.overlayStyles);
-      _tags = List.from(widget.rule!.tags);
+      final rule = widget.rule;
+      if (rule == null) return;
+      _overlayStyles = List.of(rule.overlayStyles);
+      _tags = List.of(rule.tags);
     } else {
       _overlayStyles = [OverlayStyle.defaultStyle()];
     }
@@ -93,6 +89,23 @@ class _RuleEditPageState extends State<RuleEditPage>
     _activityNameController.addListener(() {
       _validationProvider.validateField(
           'activityName', _activityNameController.text);
+    });
+  }
+
+  void _initTabController({int initialIndex = 0}) {
+    _tabController = TabController(
+      length: _overlayStyles.length,
+      vsync: this,
+      initialIndex: initialIndex,
+    );
+
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) return;
+      setState(() {
+        _currentTabIndex = _tabController.index;
+        _textController.text = _currentStyle.text;
+        _uiAutomatorCodeController.text = _currentStyle.uiAutomatorCode;
+      });
     });
   }
 
@@ -149,9 +162,10 @@ class _RuleEditPageState extends State<RuleEditPage>
 
   void _updatePosition(String value) {
     final parts = value.split(':');
+    // ignore: no-magic-number
     if (parts.length != 2) return;
 
-    final field = parts[0];
+    final field = parts.first;
     final doubleValue = double.tryParse(parts[1]);
     if (doubleValue == null) return;
 
@@ -212,10 +226,11 @@ class _RuleEditPageState extends State<RuleEditPage>
 
   void _updatePadding(String value) {
     final parts = value.split(':');
+    // ignore: no-magic-number
     if (parts.length != 2) return;
 
-    final field = parts[0];
-    final doubleValue = double.tryParse(parts[1]);
+    final field = parts.first;
+    final doubleValue = double.tryParse(parts.last);
     if (doubleValue == null) return;
 
     setState(() {
@@ -287,6 +302,7 @@ class _RuleEditPageState extends State<RuleEditPage>
             tags: _tags,
           );
       Navigator.of(context).pop(rule);
+
       return;
     }
 
@@ -305,7 +321,12 @@ class _RuleEditPageState extends State<RuleEditPage>
     };
 
     // 获取字段的显示名称
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return;
+    }
     final fieldDisplayNames = {
       'name': l10n.ruleName,
       'packageName': l10n.packageName,
@@ -315,11 +336,13 @@ class _RuleEditPageState extends State<RuleEditPage>
     };
 
     final errorFieldKey = fieldKeys[firstErrorField];
-    if (errorFieldKey?.currentContext != null) {
+    final errorContext = errorFieldKey?.currentContext;
+    if (errorContext != null) {
       Scrollable.ensureVisible(
-        errorFieldKey!.currentContext!,
+        errorContext,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
+        // ignore: no-magic-number
         alignment: 0.2,
       );
     }
@@ -337,8 +360,9 @@ class _RuleEditPageState extends State<RuleEditPage>
     errorMessage.write(validationResult?.errorMessage ?? l10n.error);
 
     // 如果有错误代码，添加错误代码
-    if (validationResult?.errorCode != null) {
-      errorMessage.write(' [${validationResult!.errorCode}]');
+    final errorCode = validationResult?.errorCode;
+    if (errorCode != null) {
+      errorMessage.write(' [$errorCode]');
     }
 
     // 如果有详细信息，添加详细信息
@@ -360,7 +384,8 @@ class _RuleEditPageState extends State<RuleEditPage>
         backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.all(Radius.circular(8))),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: l10n.confirm,
@@ -373,11 +398,15 @@ class _RuleEditPageState extends State<RuleEditPage>
     );
   }
 
-  // 添加字段的GlobalKey
-  final _nameFieldKey = GlobalKey();
-  final _packageNameFieldKey = GlobalKey();
-  final _activityNameFieldKey = GlobalKey();
-  final _tagsFieldKey = GlobalKey();
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -395,7 +424,12 @@ class _RuleEditPageState extends State<RuleEditPage>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ruleProvider = context.watch<RuleProvider>();
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('Error: AppLocalizations not found');
+
+      return const SizedBox.shrink();
+    }
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -411,6 +445,7 @@ class _RuleEditPageState extends State<RuleEditPage>
             child: Text(
               l10n.save,
               style: TextStyle(
+                // ignore: no-magic-number
                 fontSize: 16,
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w600,
@@ -442,6 +477,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                         label: l10n.ruleName,
                         hint: l10n.ruleNameHint,
                         controller: _nameController,
+                        // ignore: no-empty-block
                         onChanged: (value) => setState(() {}),
                       ),
                     ),
@@ -454,6 +490,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                         label: l10n.packageName,
                         hint: l10n.packageNameHint,
                         controller: _packageNameController,
+                        // ignore: no-empty-block
                         onChanged: (value) => setState(() {}),
                       ),
                     ),
@@ -466,6 +503,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                         label: l10n.activityName,
                         hint: l10n.activityNameHint,
                         controller: _activityNameController,
+                        // ignore: no-empty-block
                         onChanged: (value) => setState(() {}),
                       ),
                     ),
@@ -480,6 +518,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                           Text(
                             l10n.tags,
                             style: TextStyle(
+                              // ignore: no-magic-number
                               fontSize: 14,
                               color: Colors.grey[700],
                               fontWeight: FontWeight.w500,
@@ -490,6 +529,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                             tags: _tags,
                             suggestions: ruleProvider.allTags.toList(),
                             onChanged: _updateTags,
+                            // ignore: no-magic-number
                             maxTags: 10,
                           ),
                         ],
@@ -518,6 +558,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                                 color: Colors.red[400],
                               ),
                               tooltip: l10n.removeStyle,
+                              // ignore: no-magic-number
                               splashRadius: 24,
                             ),
                             IconButton(
@@ -527,6 +568,7 @@ class _RuleEditPageState extends State<RuleEditPage>
                                 color: theme.colorScheme.primary,
                               ),
                               tooltip: l10n.addStyle,
+                              // ignore: no-magic-number
                               splashRadius: 24,
                             ),
                           ],
@@ -537,8 +579,9 @@ class _RuleEditPageState extends State<RuleEditPage>
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[200]!),
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(12)),
+                        border: Border.all(color: Colors.grey.shade200),
                       ),
                       padding: const EdgeInsets.all(4),
                       child: Center(
@@ -556,9 +599,12 @@ class _RuleEditPageState extends State<RuleEditPage>
                             fontWeight: FontWeight.w400,
                           ),
                           indicator: BoxDecoration(
+                            // ignore: no-magic-number
                             color: theme.colorScheme.primary.withAlpha(26),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(8)),
                             border: Border.all(
+                              // ignore: no-magic-number
                               color: theme.colorScheme.primary.withAlpha(51),
                             ),
                           ),
@@ -571,7 +617,9 @@ class _RuleEditPageState extends State<RuleEditPage>
                           tabs: List.generate(
                             _overlayStyles.length,
                             (index) => Container(
+                              // ignore: no-magic-number
                               width: 80,
+                              // ignore: no-magic-number
                               height: 36,
                               alignment: Alignment.center,
                               child: Text(l10n.styleNumber(index + 1)),
@@ -601,16 +649,6 @@ class _RuleEditPageState extends State<RuleEditPage>
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
       ),
     );
   }
