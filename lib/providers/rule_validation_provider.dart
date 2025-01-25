@@ -12,7 +12,7 @@ class RuleValidationProvider extends ChangeNotifier {
   RuleValidationState get state => _state;
 
   /// 验证单个字段
-  void validateField(String fieldName, dynamic value) {
+  void validateField(String fieldName, Object? value) {
     RuleValidationResult result;
 
     switch (fieldName) {
@@ -98,12 +98,14 @@ class RuleValidationProvider extends ChangeNotifier {
   /// 检查字段是否有效
   bool isFieldValid(String fieldName) {
     final result = _state.fieldResults[fieldName];
+
     return result?.isValid ?? true;
   }
 
   /// 获取字段错误信息
   String? getFieldError(String fieldName) {
     final result = _state.fieldResults[fieldName];
+
     return result?.isValid == false ? result?.errorMessage : null;
   }
 }

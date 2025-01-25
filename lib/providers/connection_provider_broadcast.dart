@@ -1,16 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// 表示命令执行结果的类
-class CommandResult {
-  final bool success;
-  final String? error;
-
-  CommandResult({required this.success, this.error});
-}
-
 /// 处理广播命令的Mixin
-mixin BroadcastCommandHandler on ChangeNotifier {
+mixin ConnectionProviderBroadcast on ChangeNotifier {
   static const _channel =
       MethodChannel('com.mobilellm.awattackerapplier/connection');
 
@@ -21,13 +13,14 @@ mixin BroadcastCommandHandler on ChangeNotifier {
   }
 
   /// 处理来自原生层的方法调用
-  Future<dynamic> _handleMethodCall(MethodCall call) async {
+  Future<Map<String, Object?>> _handleMethodCall(MethodCall call) async {
     debugPrint(
         'BroadcastCommandHandler: Received method call: ${call.method} with arguments: ${call.arguments}');
 
     if (call.method == 'handleServiceCommand') {
       final command = call.arguments['command'] as String?;
       final result = await _handleCommand(command, call);
+
       return {
         'success': result.success,
         'error': result.error,
@@ -57,10 +50,12 @@ mixin BroadcastCommandHandler on ChangeNotifier {
               'BroadcastCommandHandler: Extracted host: $host, port: $port');
 
           await handleSetGrpcConfig(host, port);
+
           return CommandResult(success: true);
         } catch (e, stackTrace) {
           debugPrint('BroadcastCommandHandler: Error details: $e');
           debugPrint('BroadcastCommandHandler: Stack trace: $stackTrace');
+
           return CommandResult(success: false, error: e.toString());
         }
       case 'START_SERVICE':
@@ -68,9 +63,11 @@ mixin BroadcastCommandHandler on ChangeNotifier {
           debugPrint('BroadcastCommandHandler: Starting service');
           await handleStartService();
           debugPrint('BroadcastCommandHandler: Service started successfully');
+
           return CommandResult(success: true);
         } catch (e) {
           debugPrint('BroadcastCommandHandler: Error starting service: $e');
+
           return CommandResult(success: false, error: e.toString());
         }
       case 'STOP_SERVICE':
@@ -78,9 +75,11 @@ mixin BroadcastCommandHandler on ChangeNotifier {
           debugPrint('BroadcastCommandHandler: Stopping service');
           await handleStopService();
           debugPrint('BroadcastCommandHandler: Service stopped successfully');
+
           return CommandResult(success: true);
         } catch (e) {
           debugPrint('BroadcastCommandHandler: Error stopping service: $e');
+
           return CommandResult(success: false, error: e.toString());
         }
       case 'CLEAR_RULES':
@@ -88,9 +87,11 @@ mixin BroadcastCommandHandler on ChangeNotifier {
           debugPrint('BroadcastCommandHandler: Clearing rules');
           await handleClearRules();
           debugPrint('BroadcastCommandHandler: Rules cleared successfully');
+
           return CommandResult(success: true);
         } catch (e) {
           debugPrint('BroadcastCommandHandler: Error clearing rules: $e');
+
           return CommandResult(success: false, error: e.toString());
         }
       case 'IMPORT_RULES':
@@ -101,13 +102,16 @@ mixin BroadcastCommandHandler on ChangeNotifier {
           final rulesJson = argumentsMap['rules_json'] as String;
           await handleImportRules(rulesJson);
           debugPrint('BroadcastCommandHandler: Rules imported successfully');
+
           return CommandResult(success: true);
         } catch (e) {
           debugPrint('BroadcastCommandHandler: Error importing rules: $e');
+
           return CommandResult(success: false, error: e.toString());
         }
       default:
         debugPrint('BroadcastCommandHandler: Unknown command: $command');
+
         return CommandResult(
             success: false, error: 'Unknown command: $command');
     }
@@ -133,4 +137,12 @@ mixin BroadcastCommandHandler on ChangeNotifier {
     _channel.setMethodCallHandler(null);
     super.dispose();
   }
+}
+
+/// 表示命令执行结果的类
+class CommandResult {
+  final bool success;
+  final String? error;
+
+  CommandResult({required this.success, this.error});
 }

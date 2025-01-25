@@ -20,13 +20,6 @@ class RuleProvider extends ChangeNotifier {
   Set<String> _activeTags = {};
   String? _error;
   bool _isLoading = false;
-
-  RuleProvider(
-    this._repository,
-    this._storageRepository,
-    this._validationProvider,
-  );
-
   List<Rule> get rules => _rules;
   Set<String> get activeTags => _activeTags;
   String? get error => _error;
@@ -38,8 +31,15 @@ class RuleProvider extends ChangeNotifier {
     for (final rule in _rules) {
       tagSet.addAll(rule.tags);
     }
+
     return tagSet;
   }
+
+  RuleProvider(
+    this._repository,
+    this._storageRepository,
+    this._validationProvider,
+  );
 
   // 获取标签关联的规则
   List<Rule> getRulesByTag(String tag) {
@@ -49,6 +49,7 @@ class RuleProvider extends ChangeNotifier {
   // 获取激活标签关联的规则
   List<Rule> getRulesByActiveTags() {
     if (_activeTags.isEmpty) return [];
+
     return _rules
         .where((rule) => rule.tags.any((tag) => _activeTags.contains(tag)))
         .toList();
@@ -97,9 +98,10 @@ class RuleProvider extends ChangeNotifier {
       }
 
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       _activeTags.remove(tag);
-      throw TagActivationException.storageError();
+      Error.throwWithStackTrace(
+          TagActivationException.storageError(), stackTrace);
     }
   }
 
@@ -126,9 +128,10 @@ class RuleProvider extends ChangeNotifier {
       }
 
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       _activeTags.add(tag);
-      throw TagActivationException.storageError();
+      Error.throwWithStackTrace(
+          TagActivationException.storageError(), stackTrace);
     }
   }
 
@@ -144,6 +147,7 @@ class RuleProvider extends ChangeNotifier {
   // 根据标签筛选规则
   List<Rule> getRulesByTags(List<String> tags) {
     if (tags.isEmpty) return rules;
+
     return _rules.where((rule) {
       return rule.tags.any((tag) => tags.contains(tag));
     }).toList();
@@ -172,6 +176,7 @@ class RuleProvider extends ChangeNotifier {
   bool validateRule(Rule rule) {
     try {
       _validationProvider.validateRule(rule);
+
       return _validationProvider.state.isValid;
     } catch (e) {
       if (e is RuleImportException) {
@@ -187,6 +192,7 @@ class RuleProvider extends ChangeNotifier {
         );
       }
       notifyListeners();
+
       return false;
     }
   }
@@ -199,6 +205,7 @@ class RuleProvider extends ChangeNotifier {
         return result;
       }
     }
+
     return RuleMergeResult.success(newRule);
   }
 
@@ -224,11 +231,11 @@ class RuleProvider extends ChangeNotifier {
 
       _validationProvider.clearAllValidations();
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (e is RuleImportException) {
         rethrow;
       }
-      throw RuleImportException(e.toString());
+      Error.throwWithStackTrace(RuleImportException(e.toString()), stackTrace);
     }
   }
 
@@ -251,13 +258,18 @@ class RuleProvider extends ChangeNotifier {
         final mergeResult = RuleMerger.checkConflict(existingRule, rule);
         if (mergeResult.isMergeable) {
           // 合并规则时，使用新规则的名称和样式，但保持原始规则的启用状态
-          final mergedRule = mergeResult.mergedRule!.copyWith(
+          final mergedRule = mergeResult.mergedRule;
+          if (mergedRule == null) {
+            throw RuleImportException('合并规则失败：合并结果为空');
+          }
+
+          final updatedRule = mergedRule.copyWith(
             name: rule.name,
             overlayStyles: rule.overlayStyles,
             isEnabled: existingRule.isEnabled,
           );
-          _rules[existingRuleIndex] = mergedRule;
-          await _repository.updateRule(mergedRule);
+          _rules[existingRuleIndex] = updatedRule;
+          await _repository.updateRule(updatedRule);
         } else {
           // 如果不能合并，直接替换，但保持原始规则的启用状态
           final updatedRule = rule.copyWith(
@@ -273,18 +285,18 @@ class RuleProvider extends ChangeNotifier {
       }
 
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (e is RuleImportException) {
         rethrow;
       }
-      throw RuleImportException(e.toString());
+      Error.throwWithStackTrace(RuleImportException(e.toString()), stackTrace);
     }
   }
 
   // 删除规则
   Future<void> deleteRule(Rule rule) async {
     try {
-      final tagsToCheck = List<String>.from(rule.tags);
+      final tagsToCheck = List<String>.of(rule.tags);
 
       // 删除规则
       await _repository.deleteRule(rule);
@@ -398,7 +410,10 @@ class RuleProvider extends ChangeNotifier {
 
         if (result.isMergeable) {
           // 更新现有规则
-          final mergedRule = result.mergedRule!;
+          final mergedRule = result.mergedRule;
+          if (mergedRule == null) {
+            throw RuleImportException('合并规则失败：合并结果为空');
+          }
           await _repository.updateRule(mergedRule);
           final index = _rules.indexWhere((r) =>
               r.packageName == mergedRule.packageName &&
@@ -408,7 +423,11 @@ class RuleProvider extends ChangeNotifier {
           }
         } else {
           // 添加新规则
-          final savedRule = await _repository.addRule(result.mergedRule!);
+          final newRule = result.mergedRule;
+          if (newRule == null) {
+            throw RuleImportException('导入规则失败：规则为空');
+          }
+          final savedRule = await _repository.addRule(newRule);
           _rules.add(savedRule);
         }
 
@@ -416,12 +435,13 @@ class RuleProvider extends ChangeNotifier {
       }
 
       notifyListeners();
+
       return results;
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (e is RuleImportException) {
         rethrow;
       }
-      throw RuleImportException(e.toString());
+      Error.throwWithStackTrace(RuleImportException(e.toString()), stackTrace);
     }
   }
 
@@ -429,7 +449,7 @@ class RuleProvider extends ChangeNotifier {
   String exportRules() {
     return RuleImport(
       version: RuleImport.currentVersion,
-      rules: List.from(_rules),
+      rules: List.of(_rules),
     ).toJson();
   }
 

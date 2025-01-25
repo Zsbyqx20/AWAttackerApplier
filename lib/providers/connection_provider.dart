@@ -16,28 +16,8 @@ import 'connection_provider_broadcast.dart';
 import 'rule_provider.dart';
 import '../models/rule_import.dart';
 
-enum ConnectionStatus {
-  connected,
-  disconnected,
-  connecting,
-  disconnecting,
-}
-
-class CachedOverlayPosition {
-  final String overlayId;
-  final OverlayStyle style;
-
-  CachedOverlayPosition({
-    required this.overlayId,
-    required this.style,
-  });
-
-  bool matchesPosition(OverlayStyle style) {
-    return this.style == style;
-  }
-}
-
-class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
+class ConnectionProvider extends ChangeNotifier
+    with ConnectionProviderBroadcast {
   bool _isServiceRunning = false;
   bool _isStopping = false;
   ConnectionStatus _status = ConnectionStatus.disconnected;
@@ -51,6 +31,13 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
   final Map<String, CachedOverlayPosition> _overlayPositionCache = {};
   String? _currentDeviceId;
   Timer? _grpcStatusCheckTimer;
+  String get grpcHost => _grpcHost;
+  int get grpcPort => _grpcPort;
+
+  // 状态获取器
+  bool get isServiceRunning => _isServiceRunning;
+  ConnectionStatus get status => _status;
+  String? get currentDeviceId => _currentDeviceId;
 
   ConnectionProvider(
     this._ruleProvider, {
@@ -67,55 +54,6 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
     initializeBroadcastHandler();
     // 设置当前设备ID为本机
     _currentDeviceId = 'local';
-  }
-
-  // 状态获取器
-  bool get isServiceRunning => _isServiceRunning;
-  ConnectionStatus get status => _status;
-  String? get currentDeviceId => _currentDeviceId;
-
-  void _setStatus(ConnectionStatus status) {
-    if (_status != status) {
-      _status = status;
-      notifyListeners();
-    }
-  }
-
-  // 处理AccessibilityService的变化
-  void _handleAccessibilityServiceChange() {
-    // 如果服务正在停止，不重新订阅
-    if (_isStopping) {
-      debugPrint('🚫 服务正在停止，不重新订阅事件');
-      return;
-    }
-    debugPrint('📡 AccessibilityService发生变化，重新设置事件订阅');
-    _setupEventSubscription();
-  }
-
-  // 设置事件订阅
-  void _setupEventSubscription() {
-    debugPrint('📡 开始设置窗口事件订阅');
-    _windowEventSubscription?.cancel(); // 确保之前的订阅被取消
-    _windowEventSubscription = _accessibilityService.windowEvents.listen(
-      _handleWindowEvent,
-      onError: (Object error) {
-        debugPrint('❌ 窗口事件流错误: $error');
-        _setStatus(ConnectionStatus.disconnected);
-      },
-      cancelOnError: false,
-    );
-    debugPrint('✅ 窗口事件订阅设置完成');
-  }
-
-  Future<void> _initialize() async {
-    debugPrint('🚀 开始初始化ConnectionProvider');
-
-    // 初始化AccessibilityService
-    await _accessibilityService.initialize();
-    debugPrint('✅ AccessibilityService初始化完成');
-
-    // 设置窗口事件监听
-    _setupEventSubscription();
   }
 
   // 检查并启动服务
@@ -135,6 +73,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
         if (!granted) {
           debugPrint('❌ 悬浮窗权限被拒绝');
           _setStatus(ConnectionStatus.disconnected);
+
           return false;
         }
       }
@@ -144,6 +83,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
       if (!started) {
         debugPrint('❌ 启动悬浮窗服务失败');
         _setStatus(ConnectionStatus.disconnected);
+
         return false;
       }
 
@@ -163,6 +103,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
         await _overlayService.stop();
         _setStatus(ConnectionStatus.disconnected);
         notifyListeners();
+
         return false;
       }
 
@@ -170,6 +111,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
       _setStatus(ConnectionStatus.connected);
       _startGrpcStatusMonitor();
       notifyListeners();
+
       return true;
     } catch (e) {
       debugPrint('🌐 启动服务错误: $e');
@@ -178,40 +120,8 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
       await _overlayService.stop();
       _setStatus(ConnectionStatus.disconnected);
       notifyListeners();
+
       return false;
-    }
-  }
-
-  void _startGrpcStatusMonitor() {
-    _grpcStatusCheckTimer?.cancel();
-    _grpcStatusCheckTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!_isServiceRunning) {
-        timer.cancel();
-        return;
-      }
-
-      final isConnected = _grpcService.isConnected;
-      if (!isConnected && _status == ConnectionStatus.connected) {
-        debugPrint('⚠️ 检测到gRPC连接断开，更新状态');
-        _isServiceRunning = false; // 确保服务状态也更新
-        _setStatus(ConnectionStatus.disconnected);
-        // 停止服务
-        _stopServices();
-      } else if (isConnected && _status == ConnectionStatus.disconnected) {
-        debugPrint('✅ 检测到gRPC重新连接，更新状态');
-        _isServiceRunning = true;
-        _setStatus(ConnectionStatus.connected);
-      }
-    });
-  }
-
-  // 抽取停止服务的逻辑为单独的方法
-  Future<void> _stopServices() async {
-    try {
-      await _accessibilityService.stopDetection();
-      await _overlayService.stop();
-    } catch (e) {
-      debugPrint('❌ 停止服务时发生错误: $e');
     }
   }
 
@@ -250,217 +160,36 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
     }
   }
 
-  void _handleWindowEvent(WindowEvent event) {
-    debugPrint('📥 ConnectionProvider收到窗口事件: $event');
-    debugPrint(
-        '📊 当前服务状态: running=$_isServiceRunning, status=$_status, deviceId=$_currentDeviceId');
+  // 获取当前窗口信息
+  Future<WindowInfoResponse> getCurrentWindowInfo(String deviceId) {
+    return _grpcService.getCurrentWindowInfo(deviceId);
+  }
 
-    if (!_isServiceRunning && event.type != WindowEventType.serviceConnected) {
-      debugPrint('🚫 服务未运行，忽略窗口事件');
-      return;
-    }
+  // 获取无障碍树数据
+  Future<Uint8List?> getAccessibilityTree(String deviceId) {
+    return _grpcService.getAccessibilityTree(deviceId);
+  }
 
-    debugPrint('🔄 处理窗口事件: ${event.type}');
-
-    switch (event.type) {
-      case WindowEventType.serviceConnected:
-        if (event.isFirstConnect) {
-          debugPrint('🔌 服务首次连接，执行初始化');
-          _initializeService();
-        } else {
-          debugPrint('🔌 服务重新连接，准备重建悬浮窗');
-          // 检查服务状态
-          if (_isServiceRunning && _status == ConnectionStatus.connected) {
-            debugPrint('🔄 服务状态正常，开始重建悬浮窗');
-            _rebuildOverlaysFromCache();
-          } else {
-            debugPrint('⚠️ 服务状态异常，跳过重建悬浮窗');
-            // 可能需要重新初始化服务
-            _initializeService();
-          }
-        }
-        break;
-      case WindowEventType.windowEvent:
-        // 当收到窗口事件时，通过gRPC获取当前窗口信息
-        debugPrint('🔍 准备通过gRPC获取窗口信息');
-        _handleWindowStateChange();
-        break;
+  // 设置当前设备ID
+  Future<void> setDeviceId(String deviceId) async {
+    if (_currentDeviceId != deviceId) {
+      _currentDeviceId = deviceId;
+      if (_isServiceRunning) {
+        // 如果服务正在运行，需要重新初始化
+        await _initializeService();
+      }
+      notifyListeners();
     }
   }
 
-  Future<void> _handleWindowStateChange() async {
-    debugPrint('🔄 开始处理窗口状态变化');
-    debugPrint('📊 gRPC服务状态: connected=${_grpcService.isConnected}');
-
-    if (_currentDeviceId == null) {
-      debugPrint('❌ 未设置设备ID，无法获取窗口信息');
-      return;
+  // 设置gRPC配置
+  Future<void> setGrpcConfig(String host, int port) async {
+    if (_isServiceRunning) {
+      throw Exception('Cannot change gRPC config while service is running');
     }
-
-    try {
-      // 获取当前窗口信息
-      final response =
-          await _grpcService.getCurrentWindowInfo(_currentDeviceId!);
-
-      // 检查是否是服务停止消息
-      if (response.type == ResponseType.SERVER_STOP) {
-        debugPrint('📢 收到服务器停止消息，准备停止服务');
-        await stop();
-        return;
-      }
-
-      if (!response.success) {
-        debugPrint('❌ 获取窗口信息失败: ${response.errorMessage}');
-        return;
-      }
-
-      debugPrint('🪟 收到窗口信息: ${response.packageName}/${response.activityName}');
-
-      // 获取匹配的规则
-      final matchedRules = _ruleProvider.rules.where((rule) {
-        return rule.packageName == response.packageName &&
-            rule.activityName == response.activityName &&
-            rule.isEnabled;
-      }).toList();
-
-      debugPrint('📋 规则匹配结果: 找到${matchedRules.length}个规则');
-
-      if (matchedRules.isEmpty) {
-        debugPrint('❌ 没有找到匹配的规则，清理现有悬浮窗');
-        _overlayPositionCache.clear(); // 清除位置缓存
-        await _overlayService.removeAllOverlays();
-        await _accessibilityService.updateRuleMatchStatus(false);
-        return;
-      }
-
-      debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则，开始检查元素');
-      await _accessibilityService.updateRuleMatchStatus(true);
-      await _sendBatchQuickSearch(matchedRules);
-    } catch (e) {
-      debugPrint('❌ 获取窗口信息时发生错误: $e');
-      if (e is GrpcError) {
-        // 检查是否是连接相关错误
-        if (e.code == StatusCode.unavailable ||
-            e.code == StatusCode.unknown ||
-            e.message?.contains('Connection') == true ||
-            e.message?.contains('terminated') == true) {
-          debugPrint('⚠️ gRPC连接已断开，准备停止服务');
-          await stop();
-        }
-      }
-    }
-  }
-
-  Future<void> _sendBatchQuickSearch(List<Rule> matchedRules) async {
-    try {
-      debugPrint('📤 准备批量查找元素...');
-      if (matchedRules.isEmpty) {
-        debugPrint('❌ 没有找到需要查询的规则');
-        return;
-      }
-
-      // 收集所有规则中的UI Automator代码
-      final List<String> uiAutomatorCodes = [];
-      final List<OverlayStyle> styles = [];
-      for (final rule in matchedRules) {
-        for (final style in rule.overlayStyles) {
-          if (style.uiAutomatorCode.isNotEmpty) {
-            uiAutomatorCodes.add(style.uiAutomatorCode);
-            styles.add(style);
-          }
-        }
-      }
-
-      // 批量查找元素
-      final elements = await _accessibilityService.findElements(styles);
-
-      // 处理查找结果
-      for (var i = 0; i < elements.length; i++) {
-        final result = elements[i];
-        final style = styles[i];
-        final overlayId = 'overlay_$i';
-
-        if (!result.success) {
-          // 只在悬浮窗存在于缓存中时才尝试移除
-          if (_overlayPositionCache.containsKey(overlayId)) {
-            debugPrint('❌ 元素搜索失败，移除悬浮窗: $overlayId');
-            popOverlayCache(overlayId);
-            await _overlayService.removeOverlay(overlayId);
-          }
-          continue;
-        }
-
-        if (result.coordinates != null && result.size != null) {
-          final newX = result.coordinates!['x']!.toDouble();
-          final newY = result.coordinates!['y']!.toDouble();
-          final newWidth = result.size!['width']!.toDouble();
-          final newHeight = result.size!['height']!.toDouble();
-
-          // 检查坐标是否合法
-          if (newX < 0 || newY < 0 || newWidth <= 0 || newHeight <= 0) {
-            debugPrint(
-                '❌ 元素坐标或尺寸不合法: ($newX, $newY), $newWidth x $newHeight，清理悬浮窗');
-            popOverlayCache(overlayId);
-            await _overlayService.removeOverlay(overlayId);
-            continue;
-          }
-
-          // 调整坐标和大小，考虑padding的影响
-          final adjustedX = newX + style.x;
-          final adjustedY = newY + style.y;
-          final adjustedWidth = newWidth + style.width;
-          final adjustedHeight = newHeight + style.height;
-
-          debugPrint('📐 调整后的坐标和大小:');
-          debugPrint('  原始: ($newX, $newY), $newWidth x $newHeight');
-          debugPrint(
-              '  调整: ($adjustedX, $adjustedY), $adjustedWidth x $adjustedHeight');
-          debugPrint('  Padding: ${style.padding}');
-
-          // 创建或更新悬浮窗
-          final overlayStyle = style.copyWith(
-            x: adjustedX,
-            y: adjustedY,
-            width: adjustedWidth,
-            height: adjustedHeight,
-          );
-
-          // 检查缓存
-          final cachedPosition = _overlayPositionCache[overlayId];
-          if (cachedPosition != null &&
-              cachedPosition.matchesPosition(overlayStyle)) {
-            debugPrint('📍 悬浮窗位置未变化，跳过更新: $overlayId');
-            continue;
-          }
-
-          final overlayResult = await _overlayService.createOverlay(
-            overlayId,
-            overlayStyle,
-          );
-
-          if (overlayResult.success) {
-            // 更新缓存
-            _overlayPositionCache[overlayId] = CachedOverlayPosition(
-              overlayId: overlayId,
-              style: overlayStyle,
-            );
-            debugPrint('✅ 悬浮窗位置已更新并缓存: $overlayId');
-          } else {
-            debugPrint('❌ 创建悬浮窗失败: ${overlayResult.error}');
-            // 清理旧的缓存和悬浮窗
-            popOverlayCache(overlayId);
-            await _overlayService.removeOverlay(overlayId);
-            debugPrint('🧹 已清理旧的悬浮窗和缓存: $overlayId');
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('❌ 批量查找元素时发生错误: $e');
-      if (e is OverlayException &&
-          e.code == OverlayException.permissionDeniedCode) {
-        await stop();
-      }
-    }
+    _grpcHost = host;
+    _grpcPort = port;
+    notifyListeners();
   }
 
   @override
@@ -475,6 +204,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
   /// 返回被移除的缓存，如果缓存不存在则返回null
   CachedOverlayPosition? popOverlayCache(String overlayId) {
     debugPrint('🗑️ 移除悬浮窗缓存: $overlayId');
+
     return _overlayPositionCache.remove(overlayId);
   }
 
@@ -620,6 +350,318 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
     }
   }
 
+  void _setStatus(ConnectionStatus status) {
+    if (_status != status) {
+      _status = status;
+      notifyListeners();
+    }
+  }
+
+  // 处理AccessibilityService的变化
+  void _handleAccessibilityServiceChange() {
+    // 如果服务正在停止，不重新订阅
+    if (_isStopping) {
+      debugPrint('🚫 服务正在停止，不重新订阅事件');
+
+      return;
+    }
+    debugPrint('📡 AccessibilityService发生变化，重新设置事件订阅');
+    _setupEventSubscription();
+  }
+
+  // 设置事件订阅
+  void _setupEventSubscription() {
+    debugPrint('📡 开始设置窗口事件订阅');
+    _windowEventSubscription?.cancel(); // 确保之前的订阅被取消
+    _windowEventSubscription = _accessibilityService.windowEvents.listen(
+      _handleWindowEvent,
+      onError: (Object error) {
+        debugPrint('❌ 窗口事件流错误: $error');
+        _setStatus(ConnectionStatus.disconnected);
+      },
+      cancelOnError: false,
+    );
+    debugPrint('✅ 窗口事件订阅设置完成');
+  }
+
+  Future<void> _initialize() async {
+    debugPrint('🚀 开始初始化ConnectionProvider');
+
+    // 初始化AccessibilityService
+    await _accessibilityService.initialize();
+    debugPrint('✅ AccessibilityService初始化完成');
+
+    // 设置窗口事件监听
+    _setupEventSubscription();
+  }
+
+  void _startGrpcStatusMonitor() {
+    _grpcStatusCheckTimer?.cancel();
+    _grpcStatusCheckTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!_isServiceRunning) {
+        timer.cancel();
+
+        return;
+      }
+
+      final isConnected = _grpcService.isConnected;
+      if (!isConnected && _status == ConnectionStatus.connected) {
+        debugPrint('⚠️ 检测到gRPC连接断开，更新状态');
+        _isServiceRunning = false; // 确保服务状态也更新
+        _setStatus(ConnectionStatus.disconnected);
+        // 停止服务
+        _stopServices();
+      } else if (isConnected && _status == ConnectionStatus.disconnected) {
+        debugPrint('✅ 检测到gRPC重新连接，更新状态');
+        _isServiceRunning = true;
+        _setStatus(ConnectionStatus.connected);
+      }
+    });
+  }
+
+  // 抽取停止服务的逻辑为单独的方法
+  Future<void> _stopServices() async {
+    try {
+      await _accessibilityService.stopDetection();
+      await _overlayService.stop();
+    } catch (e) {
+      debugPrint('❌ 停止服务时发生错误: $e');
+    }
+  }
+
+  void _handleWindowEvent(WindowEvent event) {
+    debugPrint('📥 ConnectionProvider收到窗口事件: $event');
+    debugPrint(
+        '📊 当前服务状态: running=$_isServiceRunning, status=$_status, deviceId=$_currentDeviceId');
+
+    if (!_isServiceRunning && event.type != WindowEventType.serviceConnected) {
+      debugPrint('🚫 服务未运行，忽略窗口事件');
+
+      return;
+    }
+
+    debugPrint('🔄 处理窗口事件: ${event.type}');
+
+    switch (event.type) {
+      case WindowEventType.serviceConnected:
+        if (event.isFirstConnect) {
+          debugPrint('🔌 服务首次连接，执行初始化');
+          _initializeService();
+        } else {
+          debugPrint('🔌 服务重新连接，准备重建悬浮窗');
+          // 检查服务状态
+          if (_isServiceRunning && _status == ConnectionStatus.connected) {
+            debugPrint('🔄 服务状态正常，开始重建悬浮窗');
+            _rebuildOverlaysFromCache();
+          } else {
+            debugPrint('⚠️ 服务状态异常，跳过重建悬浮窗');
+            // 可能需要重新初始化服务
+            _initializeService();
+          }
+        }
+        break;
+      case WindowEventType.windowEvent:
+        // 当收到窗口事件时，通过gRPC获取当前窗口信息
+        debugPrint('🔍 准备通过gRPC获取窗口信息');
+        _handleWindowStateChange();
+        break;
+    }
+  }
+
+  Future<void> _handleWindowStateChange() async {
+    debugPrint('🔄 开始处理窗口状态变化');
+    debugPrint('📊 gRPC服务状态: connected=${_grpcService.isConnected}');
+
+    final deviceId = _currentDeviceId;
+    if (deviceId == null) {
+      debugPrint('❌ 未设置设备ID，无法获取窗口信息');
+
+      return;
+    }
+
+    try {
+      // 获取当前窗口信息
+      final response = await _grpcService.getCurrentWindowInfo(deviceId);
+
+      // 检查是否是服务停止消息
+      if (response.type == ResponseType.SERVER_STOP) {
+        debugPrint('📢 收到服务器停止消息，准备停止服务');
+        await stop();
+
+        return;
+      }
+
+      if (!response.success) {
+        debugPrint('❌ 获取窗口信息失败: ${response.errorMessage}');
+
+        return;
+      }
+
+      debugPrint('🪟 收到窗口信息: ${response.packageName}/${response.activityName}');
+
+      // 获取匹配的规则
+      final matchedRules = _ruleProvider.rules.where((rule) {
+        return rule.packageName == response.packageName &&
+            rule.activityName == response.activityName &&
+            rule.isEnabled;
+      }).toList();
+
+      debugPrint('📋 规则匹配结果: 找到${matchedRules.length}个规则');
+
+      if (matchedRules.isEmpty) {
+        debugPrint('❌ 没有找到匹配的规则，清理现有悬浮窗');
+        _overlayPositionCache.clear(); // 清除位置缓存
+        await _overlayService.removeAllOverlays();
+        await _accessibilityService.updateRuleMatchStatus(false);
+
+        return;
+      }
+
+      debugPrint('✅ 找到 ${matchedRules.length} 个匹配规则，开始检查元素');
+      await _accessibilityService.updateRuleMatchStatus(true);
+      await _sendBatchQuickSearch(matchedRules);
+    } catch (e) {
+      debugPrint('❌ 获取窗口信息时发生错误: $e');
+      if (e is GrpcError) {
+        // 检查是否是连接相关错误
+        if (e.code == StatusCode.unavailable ||
+            e.code == StatusCode.unknown ||
+            e.message?.contains('Connection') == true ||
+            e.message?.contains('terminated') == true) {
+          debugPrint('⚠️ gRPC连接已断开，准备停止服务');
+          await stop();
+        }
+      }
+    }
+  }
+
+  Future<void> _sendBatchQuickSearch(List<Rule> matchedRules) async {
+    try {
+      debugPrint('📤 准备批量查找元素...');
+      if (matchedRules.isEmpty) {
+        debugPrint('❌ 没有找到需要查询的规则');
+
+        return;
+      }
+
+      // 收集所有规则中的UI Automator代码
+      final List<String> uiAutomatorCodes = [];
+      final List<OverlayStyle> styles = [];
+      for (final rule in matchedRules) {
+        for (final style in rule.overlayStyles) {
+          if (style.uiAutomatorCode.isNotEmpty) {
+            uiAutomatorCodes.add(style.uiAutomatorCode);
+            styles.add(style);
+          }
+        }
+      }
+
+      // 批量查找元素
+      final elements = await _accessibilityService.findElements(styles);
+
+      // 处理查找结果
+      for (var i = 0; i < elements.length; i++) {
+        final result = elements[i];
+        final style = styles[i];
+        final overlayId = 'overlay_$i';
+
+        if (!result.success) {
+          // 只在悬浮窗存在于缓存中时才尝试移除
+          if (_overlayPositionCache.containsKey(overlayId)) {
+            debugPrint('❌ 元素搜索失败，移除悬浮窗: $overlayId');
+            popOverlayCache(overlayId);
+            await _overlayService.removeOverlay(overlayId);
+          }
+          continue;
+        }
+
+        if (result.coordinates != null && result.size != null) {
+          final coordinates = result.coordinates;
+          final size = result.size;
+
+          // 提前检查所需的键是否存在
+          final x = coordinates?['x'];
+          final y = coordinates?['y'];
+          final width = size?['width'];
+          final height = size?['height'];
+
+          if (x == null || y == null || width == null || height == null) {
+            debugPrint('❌ 坐标或尺寸数据不完整，跳过处理');
+            continue;
+          }
+
+          final newX = x.toDouble();
+          final newY = y.toDouble();
+          final newWidth = width.toDouble();
+          final newHeight = height.toDouble();
+
+          // 检查坐标是否合法
+          if (newX < 0 || newY < 0 || newWidth <= 0 || newHeight <= 0) {
+            debugPrint(
+                '❌ 元素坐标或尺寸不合法: ($newX, $newY), $newWidth x $newHeight，清理悬浮窗');
+            popOverlayCache(overlayId);
+            await _overlayService.removeOverlay(overlayId);
+            continue;
+          }
+
+          // 调整坐标和大小，考虑padding的影响
+          final adjustedX = newX + style.x;
+          final adjustedY = newY + style.y;
+          final adjustedWidth = newWidth + style.width;
+          final adjustedHeight = newHeight + style.height;
+
+          debugPrint('📐 调整后的坐标和大小:');
+          debugPrint('  原始: ($newX, $newY), $newWidth x $newHeight');
+          debugPrint(
+              '  调整: ($adjustedX, $adjustedY), $adjustedWidth x $adjustedHeight');
+          debugPrint('  Padding: ${style.padding}');
+
+          // 创建或更新悬浮窗
+          final overlayStyle = style.copyWith(
+            x: adjustedX,
+            y: adjustedY,
+            width: adjustedWidth,
+            height: adjustedHeight,
+          );
+
+          // 检查缓存
+          final cachedPosition = _overlayPositionCache[overlayId];
+          if (cachedPosition != null &&
+              cachedPosition.matchesPosition(overlayStyle)) {
+            debugPrint('📍 悬浮窗位置未变化，跳过更新: $overlayId');
+            continue;
+          }
+
+          final overlayResult = await _overlayService.createOverlay(
+            overlayId,
+            overlayStyle,
+          );
+
+          if (overlayResult.success) {
+            // 更新缓存
+            _overlayPositionCache[overlayId] = CachedOverlayPosition(
+              overlayId: overlayId,
+              style: overlayStyle,
+            );
+            debugPrint('✅ 悬浮窗位置已更新并缓存: $overlayId');
+          } else {
+            debugPrint('❌ 创建悬浮窗失败: ${overlayResult.error}');
+            // 清理旧的缓存和悬浮窗
+            popOverlayCache(overlayId);
+            await _overlayService.removeOverlay(overlayId);
+            debugPrint('🧹 已清理旧的悬浮窗和缓存: $overlayId');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ 批量查找元素时发生错误: $e');
+      if (e is OverlayException &&
+          e.code == OverlayException.permissionDeniedCode) {
+        await stop();
+      }
+    }
+  }
+
   Future<void> _initializeService() async {
     debugPrint('🔄 开始初始化服务...');
 
@@ -642,6 +684,7 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
 
     if (_overlayPositionCache.isEmpty) {
       debugPrint('ℹ️ 没有找到缓存的悬浮窗位置信息');
+
       return;
     }
 
@@ -677,40 +720,25 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
 
     debugPrint('✅ 悬浮窗重建完成');
   }
+}
 
-  // 获取当前窗口信息
-  Future<WindowInfoResponse> getCurrentWindowInfo(String deviceId) {
-    return _grpcService.getCurrentWindowInfo(deviceId);
-  }
+enum ConnectionStatus {
+  connected,
+  disconnected,
+  connecting,
+  disconnecting,
+}
 
-  // 获取无障碍树数据
-  Future<Uint8List?> getAccessibilityTree(String deviceId) {
-    return _grpcService.getAccessibilityTree(deviceId);
-  }
+class CachedOverlayPosition {
+  final String overlayId;
+  final OverlayStyle style;
 
-  // 设置当前设备ID
-  Future<void> setDeviceId(String deviceId) async {
-    if (_currentDeviceId != deviceId) {
-      _currentDeviceId = deviceId;
-      if (_isServiceRunning) {
-        // 如果服务正在运行，需要重新初始化
-        await _initializeService();
-      }
-      notifyListeners();
-    }
-  }
+  CachedOverlayPosition({
+    required this.overlayId,
+    required this.style,
+  });
 
-  // 获取gRPC配置
-  String get grpcHost => _grpcHost;
-  int get grpcPort => _grpcPort;
-
-  // 设置gRPC配置
-  Future<void> setGrpcConfig(String host, int port) async {
-    if (_isServiceRunning) {
-      throw Exception('Cannot change gRPC config while service is running');
-    }
-    _grpcHost = host;
-    _grpcPort = port;
-    notifyListeners();
+  bool matchesPosition(OverlayStyle style) {
+    return this.style == style;
   }
 }
