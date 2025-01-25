@@ -59,7 +59,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
 
     // 添加去重相关的变量
     private var lastEventTime: Long = 0
-    private val EVENT_THROTTLE_TIME = 500L  // 500ms 内的相同事件将被忽略
+    private val EVENT_THROTTLE_TIME = 300L  // 300ms 内的相同事件将被忽略
     
     // 添加上一次事件的信息
     private var lastEventPackage: String? = null
@@ -118,11 +118,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
                 isFirstConnect = true
             )
         } else {
-            if (!isDetectionEnabled) {
-                isDetectionEnabled = true
-                Log.d(TAG, "重连时重新启用检测功能")
-            }
-            Log.d(TAG, "AccessibilityService 重新连接")
+            Log.d(TAG, "AccessibilityService 重新连接，当前检测状态: $isDetectionEnabled")
             sendWindowEvent(
                 type = "SERVICE_CONNECTED",
                 isFirstConnect = false
@@ -299,9 +295,11 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     // 元素查找功能
     suspend fun findElementByUiSelector(style: OverlayStyle): AccessibilityNodeInfo? = withContext(Dispatchers.Default) {
         var retryCount = 0
-        val maxRetries = 3
-        val retryDelay = 300L
+        val maxRetries = 5
+        val retryDelay = 150L
+        val requiredStableCount = 3  // 位置稳定次数要求
         var lastBounds: Rect? = null
+        var stablePositionCount = 0
 
         while (retryCount < maxRetries && isActive) {
             try {
@@ -332,6 +330,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
                 if (lastBounds == null) {
                     Log.d(TAG, "首次找到元素，位置: $boundsStr，等待位置稳定...")
                     lastBounds = Rect(bounds)
+                    stablePositionCount = 1
                     delay(retryDelay)
                     retryCount++
                     continue
@@ -339,15 +338,25 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
 
                 // 比较位置是否稳定
                 if (bounds == lastBounds) {
-                    Log.d(TAG, "元素位置稳定，最终位置: $boundsStr")
-                    WindowManagerHelper.getInstance(this@AWAccessibilityService)
-                        .addModifiedNode(node, style.text)
-                    Log.d(TAG, "Found matching node, recorded with modified text: ${style.text}")
-                    return@withContext node
+                    stablePositionCount++
+                    Log.d(TAG, "元素位置保持稳定，当前稳定次数: $stablePositionCount/$requiredStableCount")
+                    
+                    if (stablePositionCount >= requiredStableCount) {
+                        Log.d(TAG, "元素位置达到要求的稳定次数，最终位置: $boundsStr")
+                        WindowManagerHelper.getInstance(this@AWAccessibilityService)
+                            .addModifiedNode(node, style.text)
+                        Log.d(TAG, "Found matching node, recorded with modified text: ${style.text}")
+                        return@withContext node
+                    } else {
+                        delay(retryDelay)
+                        retryCount++
+                        continue
+                    }
                 } else {
-                    // 位置不稳定，更新记录并继续等待
-                    Log.d(TAG, "元素位置变化: ${lastBounds} -> $boundsStr，继续等待...")
+                    // 位置不稳定，重置计数并更新记录
+                    Log.d(TAG, "元素位置变化: ${lastBounds} -> $boundsStr，重置稳定计数")
                     lastBounds = Rect(bounds)
+                    stablePositionCount = 1
                     delay(retryDelay)
                     retryCount++
                     continue
@@ -472,6 +481,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
 
     override fun onDestroy() {
         super.onDestroy()
+        isDetectionEnabled = false  // Reset detection state
         job.cancel()
         retryJob?.cancel()
         lastEventSource?.recycle()
@@ -481,6 +491,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
+        isDetectionEnabled = false  // Reset detection state
         WindowManagerHelper.destroyInstance()
         instance = null
         Log.d(TAG, "AccessibilityService unbound")
