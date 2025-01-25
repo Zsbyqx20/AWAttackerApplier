@@ -207,13 +207,6 @@ class _RuleListPageState extends State<RuleListPage>
           .invokeMethod<String>('openFile');
 
       if (jsonStr == null) {
-        if (!mounted) return;
-        await RuleImportResultDialog.show(
-          context: context,
-          mergeResults: [
-            RuleMergeResult.conflict(errorMessage: l10n.importError)
-          ],
-        );
         return;
       }
 
