@@ -41,3 +41,7 @@ linter:
 dart_code_metrics:
   extends:
     - package:dart_code_metrics_presets/all.yaml
+  exclude:
+    rules:
+      - test/**
+      - lib/generated/**
