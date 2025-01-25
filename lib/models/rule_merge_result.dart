@@ -12,6 +12,15 @@ class RuleMergeResult {
   /// 错误信息
   final String? errorMessage;
 
+  /// 是否成功
+  bool get isSuccess => conflictType == RuleConflictType.none;
+
+  /// 是否可合并
+  bool get isMergeable => conflictType == RuleConflictType.mergeable;
+
+  /// 是否冲突
+  bool get isConflict => conflictType == RuleConflictType.conflict;
+
   const RuleMergeResult({
     this.mergedRule,
     required this.conflictType,
@@ -42,15 +51,6 @@ class RuleMergeResult {
     );
   }
 
-  /// 是否成功
-  bool get isSuccess => conflictType == RuleConflictType.none;
-
-  /// 是否可合并
-  bool get isMergeable => conflictType == RuleConflictType.mergeable;
-
-  /// 是否冲突
-  bool get isConflict => conflictType == RuleConflictType.conflict;
-
   @override
   String toString() {
     final buffer = StringBuffer('RuleMergeResult{');
@@ -62,6 +62,7 @@ class RuleMergeResult {
       buffer.write(', errorMessage: $errorMessage');
     }
     buffer.write('}');
+
     return buffer.toString();
   }
 }

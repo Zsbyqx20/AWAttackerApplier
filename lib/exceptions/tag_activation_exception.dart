@@ -10,6 +10,7 @@ class TagActivationException implements Exception {
     final buffer = StringBuffer(message);
     if (tag != null) buffer.write(' (Tag: $tag)');
     if (code != null) buffer.write(' [$code]');
+
     return buffer.toString();
   }
 

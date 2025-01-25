@@ -13,7 +13,7 @@ import 'package:awattackerapplier/repositories/rule_repository.dart';
 import 'package:awattackerapplier/repositories/storage_repository.dart';
 import 'package:awattackerapplier/widgets/color_picker_field.dart';
 import 'package:awattackerapplier/widgets/rule_card.dart';
-import 'package:awattackerapplier/widgets/tag_chips.dart';
+import 'package:awattackerapplier/widgets/tag_chip.dart';
 import 'package:awattackerapplier/widgets/text_input_field.dart';
 
 // 全局变量

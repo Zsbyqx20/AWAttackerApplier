@@ -44,13 +44,13 @@ void main() async {
         ChangeNotifierProvider.value(value: ruleProvider),
         ChangeNotifierProvider.value(value: connectionProvider),
       ],
-      child: const MyApp(),
+      child: const Main(),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class Main extends StatelessWidget {
+  const Main({super.key});
 
   @override
   Widget build(BuildContext context) {

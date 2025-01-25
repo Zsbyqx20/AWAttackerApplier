@@ -23,12 +23,15 @@ class NativeOverlayService implements IOverlayService {
       final result = await _channel.invokeMethod<String>('checkAllPermissions');
       if (result != null) {
         final permissions = jsonDecode(result) as Map<String, dynamic>;
+
         return permissions['overlay'] == true &&
             permissions['accessibility'] == true;
       }
+
       return false;
     } catch (e) {
       debugPrint('检查权限时发生错误: $e');
+
       return false;
     }
   }
@@ -38,9 +41,11 @@ class NativeOverlayService implements IOverlayService {
     try {
       final result =
           await _channel.invokeMethod<bool>('checkOverlayPermission');
+
       return result ?? false;
     } catch (e) {
       debugPrint('检查悬浮窗权限时发生错误: $e');
+
       return false;
     }
   }
@@ -50,9 +55,11 @@ class NativeOverlayService implements IOverlayService {
     try {
       final result =
           await _channel.invokeMethod<bool>('checkAccessibilityPermission');
+
       return result ?? false;
     } catch (e) {
       debugPrint('检查无障碍服务权限时发生错误: $e');
+
       return false;
     }
   }
@@ -73,12 +80,14 @@ class NativeOverlayService implements IOverlayService {
       if (!await checkAccessibilityPermission()) {
         await _channel.invokeMethod<bool>('requestAccessibilityPermission');
         // 由于无障碍服务权限需要用户手动开启，这里不等待结果
+
         return true;
       }
 
       return true;
     } catch (e) {
       debugPrint('请求权限时发生错误: $e');
+
       return false;
     }
   }
@@ -106,9 +115,11 @@ class NativeOverlayService implements IOverlayService {
 
       if (result != null && result['success'] == true) {
         _activeOverlayIds.add(id);
+
         return OverlayResult.success();
       } else {
         final error = result?['error'] as String? ?? '创建悬浮窗失败';
+
         return OverlayResult.failure(error);
       }
     } catch (e) {
@@ -116,6 +127,7 @@ class NativeOverlayService implements IOverlayService {
       if (e is OverlayException) {
         return OverlayResult.failure(e.message);
       }
+
       return OverlayResult.failure(e.toString());
     }
   }
@@ -149,6 +161,7 @@ class NativeOverlayService implements IOverlayService {
         return OverlayResult.success();
       } else {
         final error = result?['error'] as String? ?? '更新悬浮窗失败';
+
         return OverlayResult.failure(error);
       }
     } catch (e) {
@@ -156,6 +169,7 @@ class NativeOverlayService implements IOverlayService {
       if (e is OverlayException) {
         return OverlayResult.failure(e.message);
       }
+
       return OverlayResult.failure(e.toString());
     }
   }
@@ -168,9 +182,11 @@ class NativeOverlayService implements IOverlayService {
       if (result == true) {
         _activeOverlayIds.remove(id);
       }
+
       return result ?? false;
     } catch (e) {
       debugPrint('移除悬浮窗时发生错误: $e');
+
       return false;
     }
   }
@@ -181,6 +197,7 @@ class NativeOverlayService implements IOverlayService {
       debugPrint('📤 正在移除所有悬浮窗...');
       if (_activeOverlayIds.isEmpty) {
         debugPrint('💡 没有活动的悬浮窗需要移除');
+
         return;
       }
 

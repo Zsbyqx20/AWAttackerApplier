@@ -9,6 +9,14 @@ class OverlayResult {
   /// 额外的数据信息
   final Map<String, dynamic>? data;
 
+  /// 从JSON格式创建实例
+  factory OverlayResult.fromJson(Map<String, dynamic> json) {
+    return OverlayResult(
+      success: json['success'] as bool,
+      error: json['error'] as String?,
+      data: json['data'] as Map<String, dynamic>?,
+    );
+  }
   const OverlayResult({
     required this.success,
     this.error,
@@ -39,15 +47,6 @@ class OverlayResult {
       if (error != null) 'error': error,
       if (data != null) 'data': data,
     };
-  }
-
-  /// 从JSON格式创建实例
-  factory OverlayResult.fromJson(Map<String, dynamic> json) {
-    return OverlayResult(
-      success: json['success'] as bool,
-      error: json['error'] as String?,
-      data: json['data'] as Map<String, dynamic>?,
-    );
   }
 
   @override

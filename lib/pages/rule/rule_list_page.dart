@@ -68,6 +68,7 @@ class _RuleListPageState extends State<RuleListPage>
           context: context,
           mergeResults: [RuleMergeResult.conflict(errorMessage: l10n.noRules)],
         );
+
         return;
       }
 
