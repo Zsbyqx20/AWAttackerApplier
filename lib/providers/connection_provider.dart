@@ -14,6 +14,7 @@ import '../services/grpc_service.dart';
 import '../services/overlay_service.dart';
 import 'connection_provider_broadcast.dart';
 import 'rule_provider.dart';
+import '../models/rule_import.dart';
 
 enum ConnectionStatus {
   connected,
@@ -555,6 +556,66 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
       notifyListeners();
     } catch (e) {
       debugPrint('❌ 清空规则失败: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> handleImportRules(String rulesJson) async {
+    debugPrint('🔄 通过广播导入规则...');
+
+    if (_isServiceRunning) {
+      debugPrint('❌ 服务正在运行，无法导入规则');
+      throw Exception('Cannot import rules while service is running');
+    }
+
+    try {
+      // 解析规则
+      final ruleImport = RuleImport.fromJson(rulesJson);
+      final rules = ruleImport.rules;
+
+      if (rules.isEmpty) {
+        debugPrint('❌ 没有找到可导入的规则');
+        throw Exception('No rules to import');
+      }
+
+      // 导入规则
+      final results = await _ruleProvider.importRules(rules);
+
+      // 统计导入结果
+      final successCount = results.where((r) => r.isSuccess).length;
+      final mergeableCount = results.where((r) => r.isMergeable).length;
+      final conflictCount = results.where((r) => r.isConflict).length;
+
+      // 生成导入报告
+      final report = StringBuffer();
+      report.writeln('导入完成:');
+      if (successCount > 0) {
+        report.writeln('✅ $successCount 个规则导入成功');
+      }
+      if (mergeableCount > 0) {
+        report.writeln('🔄 $mergeableCount 个规则已合并');
+      }
+      if (conflictCount > 0) {
+        report.writeln('❌ $conflictCount 个规则因冲突已跳过:');
+        // 添加冲突详情
+        results
+            .where((r) => r.isConflict)
+            .forEach((r) => report.writeln('  - ${r.errorMessage}'));
+      }
+
+      debugPrint('✅ 规则导入完成');
+      debugPrint(report.toString());
+
+      // 通知UI更新
+      notifyListeners();
+
+      // 如果全部失败则抛出异常
+      if (successCount == 0 && mergeableCount == 0) {
+        throw Exception(report.toString());
+      }
+    } catch (e) {
+      debugPrint('❌ 导入规则失败: $e');
       rethrow;
     }
   }

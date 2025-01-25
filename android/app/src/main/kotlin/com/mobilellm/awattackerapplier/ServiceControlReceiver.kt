@@ -19,6 +19,7 @@ class ServiceControlReceiver : BroadcastReceiver() {
         const val ACTION_STOP_SERVICE = "com.mobilellm.awattackerapplier.STOP_SERVICE"
         const val ACTION_SET_GRPC_CONFIG = "com.mobilellm.awattackerapplier.SET_GRPC_CONFIG"
         const val ACTION_CLEAR_RULES = "com.mobilellm.awattackerapplier.CLEAR_RULES"
+        const val ACTION_IMPORT_RULES = "com.mobilellm.awattackerapplier.IMPORT_RULES"
         
         // 结果码
         const val RESULT_SUCCESS = 1           // 成功通知 Flutter
@@ -202,6 +203,57 @@ class ServiceControlReceiver : BroadcastReceiver() {
                         } catch (e: Exception) {
                             Log.e(TAG, "清空规则失败", e)
                             pendingResult.setResult(RESULT_ERROR, "Failed to clear rules: ${e.message}", null)
+                        }
+                    }
+                    ACTION_IMPORT_RULES -> {
+                        Log.i(TAG, "收到导入规则命令")
+                        
+                        // 检查服务状态
+                        val service = AWAccessibilityService.getInstance()
+                        val isServiceRunning = service?.isDetectionEnabled() == true
+                        
+                        if (isServiceRunning) {
+                            Log.w(TAG, "服务正在运行，无法导入规则")
+                            pendingResult.setResult(RESULT_INVALID_STATE, "Cannot import rules while service is running", null)
+                            return@launch
+                        }
+                        
+                        // 获取JSON内容
+                        val rulesJson = intent.getStringExtra("rules_json")
+                        if (rulesJson == null) {
+                            Log.w(TAG, "规则JSON内容为空")
+                            pendingResult.setResult(RESULT_INVALID_PARAMS, "Rules JSON content is missing", null)
+                            return@launch
+                        }
+                        
+                        try {
+                            withTimeout(TIMEOUT_MS) {
+                                val result = invokeMethodWithResult(
+                                    "handleServiceCommand",
+                                    mapOf(
+                                        "command" to "IMPORT_RULES",
+                                        "rules_json" to rulesJson
+                                    )
+                                )
+                                
+                                val success = result["success"] as? Boolean ?: false
+                                val error = result["error"] as? String
+                                
+                                if (success) {
+                                    // 成功导入（包括部分成功），返回导入报告
+                                    // 导入报告中会包含成功、合并和冲突的详细信息
+                                    pendingResult.setResult(RESULT_SUCCESS, error ?: "Rules imported successfully", null)
+                                } else {
+                                    // 导入完全失败的情况
+                                    pendingResult.setResult(RESULT_ERROR, error ?: "Failed to import rules", null)
+                                }
+                            }
+                        } catch (e: TimeoutCancellationException) {
+                            Log.e(TAG, "导入规则超时")
+                            pendingResult.setResult(RESULT_ERROR, "Import rules timeout", null)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "导入规则失败", e)
+                            pendingResult.setResult(RESULT_ERROR, "Failed to import rules: ${e.message}", null)
                         }
                     }
                     else -> {

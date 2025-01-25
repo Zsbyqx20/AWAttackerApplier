@@ -93,6 +93,19 @@ mixin BroadcastCommandHandler on ChangeNotifier {
           debugPrint('BroadcastCommandHandler: Error clearing rules: $e');
           return CommandResult(success: false, error: e.toString());
         }
+      case 'IMPORT_RULES':
+        try {
+          debugPrint('BroadcastCommandHandler: Importing rules');
+          final arguments = call.arguments;
+          final argumentsMap = Map<String, dynamic>.from(arguments as Map);
+          final rulesJson = argumentsMap['rules_json'] as String;
+          await handleImportRules(rulesJson);
+          debugPrint('BroadcastCommandHandler: Rules imported successfully');
+          return CommandResult(success: true);
+        } catch (e) {
+          debugPrint('BroadcastCommandHandler: Error importing rules: $e');
+          return CommandResult(success: false, error: e.toString());
+        }
       default:
         debugPrint('BroadcastCommandHandler: Unknown command: $command');
         return CommandResult(
@@ -111,6 +124,9 @@ mixin BroadcastCommandHandler on ChangeNotifier {
 
   /// 处理清空规则
   Future<void> handleClearRules();
+
+  /// 处理导入规则
+  Future<void> handleImportRules(String rulesJson);
 
   @override
   void dispose() {

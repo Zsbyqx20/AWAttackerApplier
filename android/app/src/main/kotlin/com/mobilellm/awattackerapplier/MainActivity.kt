@@ -301,6 +301,7 @@ class MainActivity : FlutterActivity(), CoroutineScope {
             addAction(ServiceControlReceiver.ACTION_STOP_SERVICE)
             addAction(ServiceControlReceiver.ACTION_SET_GRPC_CONFIG)
             addAction(ServiceControlReceiver.ACTION_CLEAR_RULES)
+            addAction(ServiceControlReceiver.ACTION_IMPORT_RULES)
         }
         registerReceiver(serviceReceiver, filter)
     }
