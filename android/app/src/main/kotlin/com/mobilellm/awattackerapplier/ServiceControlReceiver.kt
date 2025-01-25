@@ -18,6 +18,7 @@ class ServiceControlReceiver : BroadcastReceiver() {
         const val ACTION_START_SERVICE = "com.mobilellm.awattackerapplier.START_SERVICE"
         const val ACTION_STOP_SERVICE = "com.mobilellm.awattackerapplier.STOP_SERVICE"
         const val ACTION_SET_GRPC_CONFIG = "com.mobilellm.awattackerapplier.SET_GRPC_CONFIG"
+        const val ACTION_CLEAR_RULES = "com.mobilellm.awattackerapplier.CLEAR_RULES"
         
         // 结果码
         const val RESULT_SUCCESS = 1           // 成功通知 Flutter
@@ -164,6 +165,43 @@ class ServiceControlReceiver : BroadcastReceiver() {
                         } catch (e: Exception) {
                             Log.e(TAG, "更新gRPC配置失败", e)
                             pendingResult.setResult(RESULT_ERROR, "Failed to update gRPC configuration: ${e.message}", null)
+                        }
+                    }
+                    ACTION_CLEAR_RULES -> {
+                        Log.i(TAG, "收到清空规则命令")
+                        
+                        // 检查服务状态
+                        val service = AWAccessibilityService.getInstance()
+                        val isServiceRunning = service?.isDetectionEnabled() == true
+                        
+                        if (isServiceRunning) {
+                            Log.w(TAG, "服务正在运行，无法清空规则")
+                            pendingResult.setResult(RESULT_INVALID_STATE, "Cannot clear rules while service is running", null)
+                            return@launch
+                        }
+                        
+                        try {
+                            withTimeout(TIMEOUT_MS) {
+                                val result = invokeMethodWithResult(
+                                    "handleServiceCommand",
+                                    mapOf("command" to "CLEAR_RULES")
+                                )
+                                
+                                val success = result["success"] as? Boolean ?: false
+                                val error = result["error"] as? String
+                                
+                                if (success) {
+                                    pendingResult.setResult(RESULT_SUCCESS, "Rules cleared successfully", null)
+                                } else {
+                                    pendingResult.setResult(RESULT_ERROR, error ?: "Failed to clear rules", null)
+                                }
+                            }
+                        } catch (e: TimeoutCancellationException) {
+                            Log.e(TAG, "清空规则超时")
+                            pendingResult.setResult(RESULT_ERROR, "Clear rules timeout", null)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "清空规则失败", e)
+                            pendingResult.setResult(RESULT_ERROR, "Failed to clear rules: ${e.message}", null)
                         }
                     }
                     else -> {

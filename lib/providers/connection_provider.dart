@@ -539,6 +539,26 @@ class ConnectionProvider extends ChangeNotifier with BroadcastCommandHandler {
     }
   }
 
+  @override
+  Future<void> handleClearRules() async {
+    debugPrint('🔄 通过广播清空规则...');
+
+    if (_isServiceRunning) {
+      debugPrint('❌ 服务正在运行，无法清空规则');
+      throw Exception('Cannot clear rules while service is running');
+    }
+
+    try {
+      await _ruleProvider.clearRules();
+      debugPrint('✅ 规则清空成功');
+      // 通知UI更新
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ 清空规则失败: $e');
+      rethrow;
+    }
+  }
+
   Future<void> _initializeService() async {
     debugPrint('🔄 开始初始化服务...');
 

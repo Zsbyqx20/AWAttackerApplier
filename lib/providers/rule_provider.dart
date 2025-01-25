@@ -433,8 +433,7 @@ class RuleProvider extends ChangeNotifier {
     ).toJson();
   }
 
-  /// 清空规则列表（仅用于测试）
-  @visibleForTesting
+  /// 清空规则列表
   Future<void> clearRules() async {
     _rules.clear();
     // ignore: invalid_use_of_visible_for_testing_member

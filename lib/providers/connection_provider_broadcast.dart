@@ -83,6 +83,16 @@ mixin BroadcastCommandHandler on ChangeNotifier {
           debugPrint('BroadcastCommandHandler: Error stopping service: $e');
           return CommandResult(success: false, error: e.toString());
         }
+      case 'CLEAR_RULES':
+        try {
+          debugPrint('BroadcastCommandHandler: Clearing rules');
+          await handleClearRules();
+          debugPrint('BroadcastCommandHandler: Rules cleared successfully');
+          return CommandResult(success: true);
+        } catch (e) {
+          debugPrint('BroadcastCommandHandler: Error clearing rules: $e');
+          return CommandResult(success: false, error: e.toString());
+        }
       default:
         debugPrint('BroadcastCommandHandler: Unknown command: $command');
         return CommandResult(
@@ -98,6 +108,9 @@ mixin BroadcastCommandHandler on ChangeNotifier {
 
   /// 处理gRPC配置更新
   Future<void> handleSetGrpcConfig(String host, int port);
+
+  /// 处理清空规则
+  Future<void> handleClearRules();
 
   @override
   void dispose() {

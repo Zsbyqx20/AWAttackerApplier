@@ -252,6 +252,18 @@ class MainActivity : FlutterActivity(), CoroutineScope {
                                 result.error("SET_GRPC_CONFIG_FAILED", e.message, null)
                             }
                         }
+                        "CLEAR_RULES" -> {
+                            try {
+                                // 返回与其他命令一致的格式
+                                result.success(mapOf(
+                                    "success" to true,
+                                    "error" to null
+                                ))
+                            } catch (e: Exception) {
+                                Log.e(TAG, "清空规则失败", e)
+                                result.error("CLEAR_RULES_FAILED", e.message, null)
+                            }
+                        }
                         else -> result.notImplemented()
                     }
                 }
@@ -288,6 +300,7 @@ class MainActivity : FlutterActivity(), CoroutineScope {
             addAction(ServiceControlReceiver.ACTION_START_SERVICE)
             addAction(ServiceControlReceiver.ACTION_STOP_SERVICE)
             addAction(ServiceControlReceiver.ACTION_SET_GRPC_CONFIG)
+            addAction(ServiceControlReceiver.ACTION_CLEAR_RULES)
         }
         registerReceiver(serviceReceiver, filter)
     }
