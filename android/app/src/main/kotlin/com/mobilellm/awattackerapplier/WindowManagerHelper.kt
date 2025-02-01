@@ -125,11 +125,30 @@ class WindowManagerHelper private constructor(private val context: Context) {
         return height
     }
 
+    private fun getScreenWidth(): Int {
+        val displayMetrics = context.resources.displayMetrics
+        return displayMetrics.widthPixels
+    }
+
     private fun createLayoutParams(params: Map<String, Any>): WindowManager.LayoutParams {
         val posX = (params["x"] as? Double)?.toInt() ?: 0
         val posY = (params["y"] as? Double)?.toInt() ?: 0
         
         Log.d(TAG, "Original coordinates: x=$posX, y=$posY")
+        
+        // 获取屏幕宽度
+        val screenWidth = getScreenWidth()
+        // 获取请求的宽度，如果没有指定则使用WRAP_CONTENT
+        var requestedWidth = (params["width"] as? Double)?.toInt() ?: WindowManager.LayoutParams.WRAP_CONTENT
+        
+        // 如果指定了具体宽度，确保x + width不超过屏幕宽度
+        if (requestedWidth != WindowManager.LayoutParams.WRAP_CONTENT) {
+            // 如果x + width超过屏幕宽度，调整width
+            if (posX + requestedWidth > screenWidth) {
+                requestedWidth = screenWidth - posX
+                Log.d(TAG, "Adjusting width to fit screen: $requestedWidth (x=$posX, screen width=$screenWidth)")
+            }
+        }
         
         return WindowManager.LayoutParams().apply {
             type = if (context is AccessibilityService) {
@@ -148,7 +167,7 @@ class WindowManagerHelper private constructor(private val context: Context) {
             
             x = posX
             y = posY
-            width = (params["width"] as? Double)?.toInt() ?: WindowManager.LayoutParams.WRAP_CONTENT
+            width = requestedWidth
             height = (params["height"] as? Double)?.toInt() ?: WindowManager.LayoutParams.WRAP_CONTENT
             
             gravity = Gravity.TOP or Gravity.START
