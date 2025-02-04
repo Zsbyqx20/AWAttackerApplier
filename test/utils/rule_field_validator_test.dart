@@ -96,6 +96,9 @@ void main() {
           '.MainActivity',
           '.ui.MainActivity',
           '.view.main.MainActivity',
+          'MainActivity',
+          'com.example.MainActivity',
+          'com.example.ui.MainActivity',
         ];
 
         for (final activityName in validActivityNames) {
@@ -104,11 +107,14 @@ void main() {
         }
       });
 
-      test('应当拒绝不以点号开头的活动名', () {
+      test('应当拒绝包含无效字符的活动名', () {
         const invalidActivityNames = [
-          'MainActivity',
-          'ui.MainActivity',
-          'view.main.MainActivity',
+          '.Main-Activity',
+          '.ui/MainActivity',
+          '.view@main.MainActivity',
+          'Main-Activity',
+          'com/example/MainActivity',
+          'com.example@MainActivity',
         ];
 
         for (final activityName in invalidActivityNames) {
@@ -116,10 +122,6 @@ void main() {
           expect(result.isValid, isFalse);
           expect(result.fieldName, equals('activityName'));
           expect(result.errorMessage, equals('Invalid field value'));
-          expect(
-              result.errorDetails,
-              equals(
-                  'Field activityName: Activity name must start with a dot (.)'));
         }
       });
 

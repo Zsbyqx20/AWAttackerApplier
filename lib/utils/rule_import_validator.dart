@@ -18,14 +18,19 @@ class RuleImportValidator {
 
   /// 验证活动名格式
   static void validateActivityName(String activityName) {
-    if (!activityName.startsWith('.')) {
+    if (activityName.isEmpty) {
       throw RuleImportException.invalidFieldValue(
         'activityName',
-        'Activity name must start with a dot (.)',
+        'Activity name cannot be empty',
       );
     }
 
-    final regex = RegExp(r'^\.[a-zA-Z][a-zA-Z0-9_$.]*$');
+    // 根据是否以点号开头使用不同的正则表达式
+    final regex = activityName.startsWith('.')
+        ? RegExp(r'^\.[a-zA-Z][a-zA-Z0-9_$.]*$') // 相对活动名格式
+        : RegExp(
+            r'^[a-zA-Z][a-zA-Z0-9_$.]*(\.[a-zA-Z][a-zA-Z0-9_$.]*)*$'); // 绝对活动名格式
+
     if (!regex.hasMatch(activityName)) {
       throw RuleImportException.invalidFieldValue(
         'activityName',

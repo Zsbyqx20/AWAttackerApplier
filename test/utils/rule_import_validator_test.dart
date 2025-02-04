@@ -9,8 +9,7 @@ import 'package:awattackerapplier/utils/rule_import_validator.dart';
 void main() {
   group('RuleImportValidator', () {
     group('validateActivityName', () {
-      test('应当通过以点号开头的有效活动名', () {
-        // 有效的活动名
+      test('应当通过以点号开头的相对活动名', () {
         const validActivityNames = [
           '.MainActivity',
           '.ui.MainActivity',
@@ -25,23 +24,17 @@ void main() {
         }
       });
 
-      test('应当拒绝不以点号开头的活动名', () {
-        const invalidActivityNames = [
+      test('应当通过不以点号开头的绝对活动名', () {
+        const validActivityNames = [
           'MainActivity',
-          'ui.MainActivity',
-          'view.main.MainActivity',
+          'com.example.MainActivity',
+          'com.example.ui.MainActivity',
         ];
 
-        for (final activityName in invalidActivityNames) {
+        for (final activityName in validActivityNames) {
           expect(
             () => RuleImportValidator.validateActivityName(activityName),
-            throwsA(
-              predicate((e) =>
-                  e is RuleImportException &&
-                  e.code == 'INVALID_FIELD_VALUE' &&
-                  e.message == 'Invalid field value' &&
-                  (e.details as String).startsWith('Field activityName:')),
-            ),
+            returnsNormally,
           );
         }
       });
@@ -51,6 +44,9 @@ void main() {
           '.Main-Activity',
           '.ui/MainActivity',
           '.view@main.MainActivity',
+          'Main-Activity',
+          'com/example/MainActivity',
+          'com.example@MainActivity',
         ];
 
         for (final activityName in invalidActivityNames) {

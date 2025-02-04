@@ -151,8 +151,6 @@ impl AdbCommand {
                     if !activity_name.starts_with('.') {
                         activity_name = format!(".{}", activity_name);
                     }
-                } else if !activity_name.starts_with('.') {
-                    activity_name = format!(".{}", activity_name);
                 }
 
                 println!(

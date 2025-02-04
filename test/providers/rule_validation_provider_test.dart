@@ -61,7 +61,7 @@ void main() {
       });
 
       test('验证无效的活动名', () {
-        provider.validateField('activityName', 'MainActivity');
+        provider.validateField('activityName', 'Main/Activity');
 
         expect(provider.state.isValid, isFalse);
         expect(provider.isFieldValid('activityName'), isFalse);
@@ -190,7 +190,7 @@ void main() {
         final rule = Rule(
           name: '', // 无效的名称
           packageName: '', // 无效的包名
-          activityName: 'MainActivity', // 无效的活动名（没有以点号开头）
+          activityName: 'Main/Activity', // 无效的活动名（包含无效字符）
           isEnabled: true,
           overlayStyles: [], // 无效的悬浮窗样式列表
           tags: <String>[''], // 无效的标签列表（包含空字符串）
