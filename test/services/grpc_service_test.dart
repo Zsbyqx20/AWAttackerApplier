@@ -1,14 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grpc/grpc.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:awattackerapplier/generated/accessibility.pbgrpc.dart';
 import 'package:awattackerapplier/generated/window_info.pbgrpc.dart';
-import 'package:awattackerapplier/services/grpc_service.dart';
 import 'package:awattackerapplier/services/accessibility_service.dart';
+import 'package:awattackerapplier/services/grpc_service.dart';
 import 'grpc_service_test_helper.dart';
 
 // Test implementation of GrpcService
