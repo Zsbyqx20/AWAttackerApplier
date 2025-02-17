@@ -24,6 +24,7 @@ A configurable dynamic attacker app designed for Android World.
   - Rule validation and error reporting
   - Local rule persistence storage
   - Rule preview and testing functionality
+  - Allow & Deny for fine-grained element locating
 
 - 🎨 **Modern Material Design**
   - Clean and intuitive user interface
@@ -38,4 +39,4 @@ A configurable dynamic attacker app designed for Android World.
 - [x] Organize rules with customizable tags
 - [x] Support rule format validation and version compatibility checks
 - [x] Support Start/Stop service and specify gRPC config by `adb` broadcasting
-- [ ] Support refresh rules by `adb` broadcasting
+- [x] Support refresh rules by `adb` broadcasting
