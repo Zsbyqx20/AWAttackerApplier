@@ -84,6 +84,103 @@ void main() {
       expect(copied.tags, equals(['tag3']));
     });
 
+    test('创建带有条件的 OverlayStyle', () {
+      final styleWithConditions = testStyle.copyWith(
+        allow: ['condition1', 'condition2'],
+        deny: ['condition3', 'condition4'],
+      );
+
+      final rule = Rule(
+        name: 'Test Rule',
+        packageName: 'com.example.app',
+        activityName: '.MainActivity',
+        isEnabled: true,
+        overlayStyles: [styleWithConditions],
+      );
+
+      expect(
+          rule.overlayStyles.first.allow, equals(['condition1', 'condition2']));
+      expect(
+          rule.overlayStyles.first.deny, equals(['condition3', 'condition4']));
+    });
+
+    test('JSON 序列化包含条件', () {
+      final styleWithConditions = testStyle.copyWith(
+        allow: ['condition1', 'condition2'],
+        deny: ['condition3', 'condition4'],
+      );
+
+      final rule = Rule(
+        name: 'Test Rule',
+        packageName: 'com.example.app',
+        activityName: '.MainActivity',
+        isEnabled: true,
+        overlayStyles: [styleWithConditions],
+      );
+
+      final json = rule.toJson();
+      final styleJson = json['overlayStyles'][0];
+
+      expect(styleJson['allow'], equals(['condition1', 'condition2']));
+      expect(styleJson['deny'], equals(['condition3', 'condition4']));
+
+      final decodedRule = Rule.fromJson(json);
+      expect(decodedRule.overlayStyles.first.allow,
+          equals(['condition1', 'condition2']));
+      expect(decodedRule.overlayStyles.first.deny,
+          equals(['condition3', 'condition4']));
+    });
+
+    test('JSON 序列化处理空条件', () {
+      final styleWithEmptyConditions = testStyle.copyWith(
+        allow: [],
+        deny: [],
+      );
+
+      final rule = Rule(
+        name: 'Test Rule',
+        packageName: 'com.example.app',
+        activityName: '.MainActivity',
+        isEnabled: true,
+        overlayStyles: [styleWithEmptyConditions],
+      );
+
+      final json = rule.toJson();
+      final styleJson = json['overlayStyles'][0];
+
+      expect(styleJson['allow'], isEmpty);
+      expect(styleJson['deny'], isEmpty);
+
+      final decodedRule = Rule.fromJson(json);
+      expect(decodedRule.overlayStyles.first.allow, isEmpty);
+      expect(decodedRule.overlayStyles.first.deny, isEmpty);
+    });
+
+    test('JSON 序列化处理空值条件', () {
+      final styleWithNullConditions = testStyle.copyWith(
+        allow: null,
+        deny: null,
+      );
+
+      final rule = Rule(
+        name: 'Test Rule',
+        packageName: 'com.example.app',
+        activityName: '.MainActivity',
+        isEnabled: true,
+        overlayStyles: [styleWithNullConditions],
+      );
+
+      final json = rule.toJson();
+      final styleJson = json['overlayStyles'][0];
+
+      expect(styleJson['allow'], isNull);
+      expect(styleJson['deny'], isNull);
+
+      final decodedRule = Rule.fromJson(json);
+      expect(decodedRule.overlayStyles.first.allow, isNull);
+      expect(decodedRule.overlayStyles.first.deny, isNull);
+    });
+
     group('相等性和哈希值', () {
       test('内容相同的规则应该相等', () {
         final rule1 = Rule(

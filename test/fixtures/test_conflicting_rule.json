@@ -26,7 +26,13 @@
                         "bottom": 8
                     },
                     "horizontalAlign": "start",
-                    "verticalAlign": "center"
+                    "verticalAlign": "center",
+                    "allow": [
+                        "condition7"
+                    ],
+                    "deny": [
+                        "condition8"
+                    ]
                 }
             ]
         }

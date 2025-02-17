@@ -147,5 +147,86 @@ void main() {
 
       expect(convertedStyle.padding, equals(testStyle.padding));
     });
+
+    test('styleToNative converts conditions', () {
+      final styleWithConditions = testStyle.copyWith(
+        allow: ['condition1', 'condition2'],
+        deny: ['condition3', 'condition4'],
+      );
+
+      final nativeMap = OverlayConverter.styleToNative(styleWithConditions);
+
+      expect(nativeMap['allow'], equals(['condition1', 'condition2']));
+      expect(nativeMap['deny'], equals(['condition3', 'condition4']));
+    });
+
+    test('styleFromNative converts conditions', () {
+      final nativeMap = {
+        'x': 100.0,
+        'y': 200.0,
+        'width': 300.0,
+        'height': 400.0,
+        'text': '测试文本',
+        'fontSize': 16.0,
+        'backgroundColor': 0xFF2196F3,
+        'textColor': 0xFFF44336,
+        'horizontalAlign': 1,
+        'verticalAlign': 1,
+        'padding': {
+          'left': 10.0,
+          'top': 20.0,
+          'right': 30.0,
+          'bottom': 40.0,
+        },
+        'uiAutomatorCode': 'test_code',
+        'allow': ['condition1', 'condition2'],
+        'deny': ['condition3', 'condition4'],
+      };
+
+      final style = OverlayConverter.styleFromNative(nativeMap);
+
+      expect(style.allow, equals(['condition1', 'condition2']));
+      expect(style.deny, equals(['condition3', 'condition4']));
+    });
+
+    test('conditions conversion bidirectional consistency', () {
+      final styleWithConditions = testStyle.copyWith(
+        allow: ['condition1', 'condition2'],
+        deny: ['condition3', 'condition4'],
+      );
+
+      final nativeMap = OverlayConverter.styleToNative(styleWithConditions);
+      final convertedStyle = OverlayConverter.styleFromNative(nativeMap);
+
+      expect(convertedStyle.allow, equals(styleWithConditions.allow));
+      expect(convertedStyle.deny, equals(styleWithConditions.deny));
+    });
+
+    test('handles null conditions', () {
+      final styleWithNullConditions = testStyle.copyWith(
+        allow: null,
+        deny: null,
+      );
+
+      final nativeMap = OverlayConverter.styleToNative(styleWithNullConditions);
+      final convertedStyle = OverlayConverter.styleFromNative(nativeMap);
+
+      expect(convertedStyle.allow, isNull);
+      expect(convertedStyle.deny, isNull);
+    });
+
+    test('handles empty conditions', () {
+      final styleWithEmptyConditions = testStyle.copyWith(
+        allow: [],
+        deny: [],
+      );
+
+      final nativeMap =
+          OverlayConverter.styleToNative(styleWithEmptyConditions);
+      final convertedStyle = OverlayConverter.styleFromNative(nativeMap);
+
+      expect(convertedStyle.allow, isEmpty);
+      expect(convertedStyle.deny, isEmpty);
+    });
   });
 }

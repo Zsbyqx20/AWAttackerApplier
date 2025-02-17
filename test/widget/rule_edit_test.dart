@@ -13,6 +13,7 @@ import 'package:awattackerapplier/repositories/rule_repository.dart';
 import 'package:awattackerapplier/repositories/storage_repository.dart';
 import 'package:awattackerapplier/widgets/color_picker_field.dart';
 import 'package:awattackerapplier/widgets/rule_card.dart';
+import 'package:awattackerapplier/widgets/style_editor.dart';
 import 'package:awattackerapplier/widgets/tag_chip.dart';
 import 'package:awattackerapplier/widgets/text_input_field.dart';
 
@@ -227,6 +228,10 @@ void main() {
           reason: 'New rule should be disabled');
       expect(savedRule.overlayStyles.length, equals(1),
           reason: 'Should have one default overlay style');
+      expect(savedRule.overlayStyles.first.allow, isNull,
+          reason: 'Allow conditions should be null initially');
+      expect(savedRule.overlayStyles.first.deny, isNull,
+          reason: 'Deny conditions should be null initially');
 
       // 验证规则是否被正确保存到 SharedPreferences
       final savedRules = await ruleRepository.loadRules();
@@ -237,6 +242,10 @@ void main() {
           reason: 'Persisted rule name should match');
       expect(persistedRule.overlayStyles.length, equals(1),
           reason: 'Persisted rule should have one style');
+      expect(persistedRule.overlayStyles.first.allow, isNull,
+          reason: 'Persisted allow conditions should be null');
+      expect(persistedRule.overlayStyles.first.deny, isNull,
+          reason: 'Persisted deny conditions should be null');
     });
 
     testWidgets('Successfully save rule with multiple overlay styles',
@@ -335,7 +344,17 @@ void main() {
       await tester.pumpAndSettle();
 
       // 添加第二个浮窗样式
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      // 找到样式标题旁边的添加按钮
+      final addStyleButton = find.descendant(
+        of: find.ancestor(
+          of: find.text(l10n.overlayStyleTitle),
+          matching: find.byType(Row),
+        ),
+        matching: find.byIcon(Icons.add_circle_outline),
+      );
+      expect(addStyleButton, findsOneWidget,
+          reason: 'Add style button should be present');
+      await tester.tap(addStyleButton);
       await tester.pumpAndSettle();
 
       // 修改第二个浮窗的文本
@@ -393,6 +412,14 @@ void main() {
       expect(savedRule.overlayStyles.length, equals(2),
           reason: 'Should have two overlay styles');
 
+      // 验证两个样式的条件列表
+      for (final style in savedRule.overlayStyles) {
+        expect(style.allow, isNull,
+            reason: 'Allow conditions should be null initially');
+        expect(style.deny, isNull,
+            reason: 'Deny conditions should be null initially');
+      }
+
       // 验证规则是否被正确保存到 SharedPreferences
       final savedRules = await ruleRepository.loadRules();
       expect(savedRules.length, equals(1),
@@ -402,6 +429,12 @@ void main() {
           reason: 'Persisted rule name should match');
       expect(persistedRule.overlayStyles.length, equals(2),
           reason: 'Persisted rule should have two styles');
+      for (final style in persistedRule.overlayStyles) {
+        expect(style.allow, isNull,
+            reason: 'Persisted allow conditions should be null');
+        expect(style.deny, isNull,
+            reason: 'Persisted deny conditions should be null');
+      }
     });
 
     testWidgets('Successfully save rule with style customization',
@@ -652,6 +685,8 @@ void main() {
           reason: 'Right padding should match');
       expect(style.padding.bottom, equals(10),
           reason: 'Bottom padding should match');
+      expect(style.allow, isNull, reason: 'Allow conditions should be null');
+      expect(style.deny, isNull, reason: 'Deny conditions should be null');
 
       // 验证规则是否被正确保存到 SharedPreferences
       final savedRules = await ruleRepository.loadRules();
@@ -695,13 +730,15 @@ void main() {
         reason: 'Should show 0 for all stats initially',
       );
 
-      // 点击添加按钮
-      await tester.tap(find.byIcon(Icons.add));
+      // 点击主 FAB 展开菜单
+      await tester.tap(find.byType(FloatingActionButton).first);
       await tester.pumpAndSettle();
 
       // 点击添加规则按钮
-      final addRuleButton =
-          find.widgetWithText(FloatingActionButton, l10n.addRule);
+      final addRuleButton = find.byWidgetPredicate((widget) =>
+          widget is FloatingActionButton && widget.heroTag == 'add');
+      expect(addRuleButton, findsOneWidget,
+          reason: 'Add rule button should be present');
       await tester.tap(addRuleButton);
       await tester.pumpAndSettle();
 
@@ -743,7 +780,16 @@ void main() {
       await tester.pumpAndSettle();
 
       // 添加第二个悬浮窗样式
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      final addStyleButton = find.descendant(
+        of: find.ancestor(
+          of: find.text(l10n.overlayStyleTitle),
+          matching: find.byType(Row),
+        ),
+        matching: find.byIcon(Icons.add_circle_outline),
+      );
+      expect(addStyleButton, findsOneWidget,
+          reason: 'Add style button should be present');
+      await tester.tap(addStyleButton);
       await tester.pumpAndSettle();
 
       // 填写第二个悬浮窗样式的文本和UI Automator代码
@@ -762,7 +808,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 点击保存按钮
-      await tester.tap(find.text(l10n.save));
+      await tester.tap(find.widgetWithText(TextButton, l10n.save));
       await tester.pumpAndSettle();
 
       // 等待页面完全更新
@@ -1021,6 +1067,10 @@ void main() {
       expect(updatedRule.overlayStyles[0].uiAutomatorCode,
           equals('new UiSelector().text("Updated Text")'),
           reason: 'UI Automator code should be updated');
+      expect(updatedRule.overlayStyles[0].allow, isNull,
+          reason: 'Allow conditions should remain null');
+      expect(updatedRule.overlayStyles[0].deny, isNull,
+          reason: 'Deny conditions should remain null');
 
       // 验证 UI 更新
       expect(find.text('Updated Rule'), findsOneWidget,
@@ -1033,6 +1083,234 @@ void main() {
           reason: 'Package name should be visible in list');
       expect(find.text('.MainActivity'), findsOneWidget,
           reason: 'Activity name should be visible in list');
+    });
+
+    testWidgets('Successfully add and remove conditions', (tester) async {
+      // 设置足够大的窗口尺寸
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      // 清空规则列表
+      await ruleProvider.clearRules();
+
+      // 构建测试页面
+      await buildTestApp(tester, ruleProvider, validationProvider);
+      await tester.pumpAndSettle();
+
+      // 点击主 FAB 展开菜单
+      await tester.tap(find.byType(FloatingActionButton).first);
+      await tester.pumpAndSettle();
+
+      // 点击添加规则按钮
+      final addRuleButton = find.byWidgetPredicate((widget) =>
+          widget is FloatingActionButton && widget.heroTag == 'add');
+      expect(addRuleButton, findsOneWidget);
+      await tester.tap(addRuleButton);
+      await tester.pumpAndSettle();
+
+      // 填写基本信息
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextInputField && widget.label == l10n.ruleName),
+        'Test Rule',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextInputField && widget.label == l10n.packageName),
+        'com.example.app',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextInputField && widget.label == l10n.activityName),
+        '.MainActivity',
+      );
+      await tester.pumpAndSettle();
+
+      // 填写文本和UI Automator代码
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (widget) => widget is TextInputField && widget.label == l10n.text,
+        ),
+        'Test Text',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is TextInputField && widget.label == l10n.uiAutomatorCode,
+        ),
+        'new UiSelector().text("Test Text")',
+      );
+      await tester.pumpAndSettle();
+
+      // 滚动到条件列表编辑器
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text(l10n.allowConditions),
+        500.0,
+        scrollable: scrollable.first,
+      );
+      await tester.pumpAndSettle();
+
+      // 找到条件列表编辑器的标题行
+      final allowConditionsRow = find.ancestor(
+        of: find.text(l10n.allowConditions),
+        matching: find.byType(Row),
+      );
+      expect(allowConditionsRow, findsOneWidget);
+
+      // 在标题行中找到并点击添加按钮
+      final addConditionButton = find.descendant(
+        of: allowConditionsRow,
+        matching: find.byWidgetPredicate((widget) =>
+            widget is IconButton && widget.tooltip == 'Add condition'),
+      );
+      expect(addConditionButton, findsOneWidget);
+
+      await tester.tap(addConditionButton);
+      await tester.pumpAndSettle();
+
+      // 输入条件
+      final conditionTextField = find.descendant(
+        of: find.byType(ConditionListEditor),
+        matching: find.byType(TextField),
+      );
+      expect(conditionTextField, findsOneWidget);
+      await tester.enterText(conditionTextField, 'Test Condition');
+      await tester.pumpAndSettle();
+
+      // 点击保存按钮
+      await tester.tap(find.widgetWithText(TextButton, l10n.save));
+      await tester.pumpAndSettle();
+
+      // 等待页面完全更新
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // 验证规则是否被正确保存
+      final rules = await ruleRepository.loadRules();
+      expect(rules.length, equals(1), reason: 'Should have one rule saved');
+
+      final savedRule = rules.first;
+      expect(savedRule.name, equals('Test Rule'),
+          reason: 'Rule name should match');
+      expect(savedRule.packageName, equals('com.example.app'),
+          reason: 'Package name should match');
+      expect(savedRule.activityName, equals('.MainActivity'),
+          reason: 'Activity name should match');
+      expect(savedRule.overlayStyles.length, equals(1),
+          reason: 'Should have one overlay style');
+      expect(savedRule.overlayStyles.first.allow, equals(['Test Condition']),
+          reason: 'Allow conditions should match');
+    });
+
+    testWidgets('Empty conditions are not saved', (tester) async {
+      // 设置测试窗口大小
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      // 清空规则列表
+      await ruleProvider.clearRules();
+
+      // 构建测试页面
+      await buildTestApp(tester, ruleProvider, validationProvider);
+
+      // 点击主 FAB 展开菜单
+      await tester.tap(find.byType(FloatingActionButton).first);
+      await tester.pumpAndSettle();
+
+      // 点击添加规则按钮
+      await tester.tap(find.byWidgetPredicate((widget) =>
+          widget is FloatingActionButton && widget.heroTag == 'add'));
+      await tester.pumpAndSettle();
+
+      // 填写必要的字段
+      await tester.enterText(
+          find.widgetWithText(TextInputField, l10n.ruleName), 'Test Rule');
+      await tester.enterText(
+          find.widgetWithText(TextInputField, l10n.packageName),
+          'com.example.app');
+      await tester.enterText(
+          find.widgetWithText(TextInputField, l10n.activityName),
+          '.MainActivity');
+      await tester.enterText(
+          find.widgetWithText(TextInputField, l10n.text), 'Test Text');
+      await tester.enterText(
+          find.widgetWithText(TextInputField, l10n.uiAutomatorCode),
+          'new UiSelector().text("Test Text")');
+
+      // 点击保存按钮
+      await tester.tap(find.widgetWithText(TextButton, l10n.save));
+      await tester.pumpAndSettle();
+
+      // 等待页面完全更新
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // 验证规则是否被正确保存
+      final rules = await ruleRepository.loadRules();
+      expect(rules.length, equals(1), reason: 'Should have one rule saved');
+
+      final savedRule = rules.first;
+      expect(savedRule.name, equals('Test Rule'),
+          reason: 'Rule name should match');
+      expect(savedRule.packageName, equals('com.example.app'),
+          reason: 'Package name should match');
+      expect(savedRule.activityName, equals('.MainActivity'),
+          reason: 'Activity name should match');
+      expect(savedRule.overlayStyles.length, equals(1),
+          reason: 'Should have one overlay style');
+
+      // 验证条件列表
+      final style = savedRule.overlayStyles.first;
+      expect(style.allow, isNull, reason: 'Allow conditions should be null');
+      expect(style.deny, isNull, reason: 'Deny conditions should be null');
+    });
+
+    testWidgets('Displays empty state hint text for conditions',
+        (tester) async {
+      // 设置测试窗口大小
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      // 清空规则列表
+      await ruleProvider.clearRules();
+
+      // 创建一个导航观察器来捕获返回的规则
+      final navigator = NavigatorObserver();
+
+      // 构建测试页面
+      await buildTestApp(tester, ruleProvider, validationProvider,
+          navigator: navigator);
+
+      // 点击主 FAB 展开菜单
+      await tester.tap(find.byType(FloatingActionButton).first);
+      await tester.pumpAndSettle();
+
+      // 点击添加规则按钮
+      final addRuleButton = find.byWidgetPredicate((widget) =>
+          widget is FloatingActionButton && widget.heroTag == 'add');
+      expect(addRuleButton, findsOneWidget);
+      await tester.tap(addRuleButton);
+      await tester.pumpAndSettle();
+
+      // 验证空状态提示文本
+      expect(find.text(l10n.emptyConditionListHint), findsNWidgets(2));
+
+      // 验证提示文本的样式
+      final hintText = find.text(l10n.emptyConditionListHint).first;
+      final textWidget = tester.widget<Text>(hintText);
+      expect(textWidget.style?.color, Colors.grey[600]);
+      expect(textWidget.textAlign, TextAlign.center);
     });
   });
 }

@@ -200,9 +200,13 @@ void main() {
       expect(rules[0].overlayStyles[0].text, 'Test Style 1');
       expect(rules[0].overlayStyles[0].uiAutomatorCode,
           'new UiSelector().text("Test Style 1")');
+      expect(rules[0].overlayStyles[0].allow, ['condition1']);
+      expect(rules[0].overlayStyles[0].deny, ['condition2']);
       expect(rules[0].overlayStyles[1].text, 'Test Style 2');
       expect(rules[0].overlayStyles[1].uiAutomatorCode,
           'new UiSelector().text("Test Style 2")');
+      expect(rules[0].overlayStyles[1].allow, ['condition3']);
+      expect(rules[0].overlayStyles[1].deny, ['condition4']);
 
       // Verify rule is saved in SharedPreferences
       final savedRules = await ruleRepository.loadRules();
@@ -215,9 +219,13 @@ void main() {
       expect(savedRules[0].overlayStyles[0].text, 'Test Style 1');
       expect(savedRules[0].overlayStyles[0].uiAutomatorCode,
           'new UiSelector().text("Test Style 1")');
+      expect(savedRules[0].overlayStyles[0].allow, ['condition1']);
+      expect(savedRules[0].overlayStyles[0].deny, ['condition2']);
       expect(savedRules[0].overlayStyles[1].text, 'Test Style 2');
       expect(savedRules[0].overlayStyles[1].uiAutomatorCode,
           'new UiSelector().text("Test Style 2")');
+      expect(savedRules[0].overlayStyles[1].allow, ['condition3']);
+      expect(savedRules[0].overlayStyles[1].deny, ['condition4']);
     });
 
     testWidgets('Import mergeable rule', (WidgetTester tester) async {

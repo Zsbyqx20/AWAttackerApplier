@@ -27,7 +27,13 @@
                         "bottom": 8
                     },
                     "horizontalAlign": "start",
-                    "verticalAlign": "center"
+                    "verticalAlign": "center",
+                    "allow": [
+                        "condition1"
+                    ],
+                    "deny": [
+                        "condition2"
+                    ]
                 },
                 {
                     "text": "Test Style 2",
@@ -46,7 +52,13 @@
                         "bottom": 6
                     },
                     "horizontalAlign": "end",
-                    "verticalAlign": "top"
+                    "verticalAlign": "top",
+                    "allow": [
+                        "condition3"
+                    ],
+                    "deny": [
+                        "condition4"
+                    ]
                 }
             ]
         }
