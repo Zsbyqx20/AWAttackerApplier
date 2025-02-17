@@ -44,6 +44,8 @@ class OverlayConverter {
         'bottom': style.padding.bottom,
       },
       'uiAutomatorCode': style.uiAutomatorCode,
+      'allow': style.allow,
+      'deny': style.deny,
     };
   }
 
@@ -71,6 +73,10 @@ class OverlayConverter {
             OverlayStyle.alphaShift) |
         (textColor & OverlayStyle.colorMask);
 
+    // 处理 allow 和 deny 列表
+    final allowList = map['allow'] as List<String>?;
+    final denyList = map['deny'] as List<String>?;
+
     return OverlayStyle(
       x: (map['x'] as num).toDouble(),
       y: (map['y'] as num).toDouble(),
@@ -89,6 +95,8 @@ class OverlayConverter {
         (map['padding']['bottom'] as num).toDouble(),
       ),
       uiAutomatorCode: map['uiAutomatorCode'] as String,
+      allow: allowList?.cast<String>(),
+      deny: denyList?.cast<String>(),
     );
   }
 

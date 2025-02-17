@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../exceptions/rule_import_exception.dart';
@@ -75,6 +76,8 @@ class OverlayStyle {
   final TextAlign verticalAlign;
   final String uiAutomatorCode;
   final EdgeInsets padding;
+  final List<String>? allow;
+  final List<String>? deny;
 
   @override
   int get hashCode {
@@ -91,6 +94,8 @@ class OverlayStyle {
       verticalAlign,
       uiAutomatorCode,
       padding,
+      allow,
+      deny,
     );
   }
 
@@ -107,6 +112,8 @@ class OverlayStyle {
     this.verticalAlign = TextAlign.center,
     this.uiAutomatorCode = defaultUiAutomatorCode,
     this.padding = const EdgeInsets.all(0),
+    this.allow,
+    this.deny,
   });
 
   factory OverlayStyle.defaultStyle() {
@@ -226,6 +233,8 @@ class OverlayStyle {
           (paddingMap['right'] as num?)?.toDouble() ?? defaultPadding,
           (paddingMap['bottom'] as num?)?.toDouble() ?? defaultPadding,
         ),
+        allow: (json['allow'] as List?)?.cast<String>(),
+        deny: (json['deny'] as List?)?.cast<String>(),
       );
     } catch (e, stackTrace) {
       if (e is RuleImportException) {
@@ -258,7 +267,9 @@ class OverlayStyle {
         other.horizontalAlign == horizontalAlign &&
         other.verticalAlign == verticalAlign &&
         other.uiAutomatorCode == uiAutomatorCode &&
-        other.padding == padding;
+        other.padding == padding &&
+        listEquals(other.allow, allow) &&
+        listEquals(other.deny, deny);
   }
 
   OverlayStyle copyWith({
@@ -274,6 +285,8 @@ class OverlayStyle {
     TextAlign? verticalAlign,
     String? uiAutomatorCode,
     EdgeInsets? padding,
+    List<String>? allow,
+    List<String>? deny,
   }) {
     return OverlayStyle(
       x: x ?? this.x,
@@ -288,6 +301,8 @@ class OverlayStyle {
       verticalAlign: verticalAlign ?? this.verticalAlign,
       uiAutomatorCode: uiAutomatorCode ?? this.uiAutomatorCode,
       padding: padding ?? this.padding,
+      allow: allow ?? this.allow,
+      deny: deny ?? this.deny,
     );
   }
 
@@ -337,6 +352,8 @@ class OverlayStyle {
         'right': padding.right,
         'bottom': padding.bottom,
       },
+      if (allow != null) 'allow': allow,
+      if (deny != null) 'deny': deny,
     };
   }
 

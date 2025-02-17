@@ -21,10 +21,16 @@ class StyleEditor extends StatelessWidget {
     required this.onVerticalAlignChanged,
     required this.onUiAutomatorCodeChanged,
     required this.onPaddingChanged,
+    required this.onAllowChanged,
+    required this.onDenyChanged,
+    required this.allowController,
+    required this.denyController,
   });
   final OverlayStyle style;
   final TextEditingController textController;
   final TextEditingController uiAutomatorCodeController;
+  final TextEditingController allowController;
+  final TextEditingController denyController;
   final ValueChanged<String> onTextChanged;
   final ValueChanged<double> onFontSizeChanged;
   final ValueChanged<String> onPositionChanged;
@@ -34,6 +40,8 @@ class StyleEditor extends StatelessWidget {
   final ValueChanged<TextAlign> onVerticalAlignChanged;
   final ValueChanged<String> onUiAutomatorCodeChanged;
   final ValueChanged<String> onPaddingChanged;
+  final ValueChanged<List<String>> onAllowChanged;
+  final ValueChanged<List<String>> onDenyChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +92,18 @@ class StyleEditor extends StatelessWidget {
           hint: l10n.uiAutomatorCodeHint,
           controller: uiAutomatorCodeController,
           onChanged: onUiAutomatorCodeChanged,
+        ),
+        const SizedBox(height: 16),
+        ConditionListEditor(
+          label: l10n.allowConditions,
+          conditions: style.allow ?? [],
+          onChanged: onAllowChanged,
+        ),
+        const SizedBox(height: 16),
+        ConditionListEditor(
+          label: l10n.denyConditions,
+          conditions: style.deny ?? [],
+          onChanged: onDenyChanged,
         ),
       ],
     );
@@ -535,6 +555,196 @@ class NumberField extends StatelessWidget {
       ),
       style: const TextStyle(fontSize: 14),
       onChanged: onChanged,
+    );
+  }
+}
+
+class ConditionListEditor extends StatefulWidget {
+  const ConditionListEditor({
+    super.key,
+    required this.label,
+    required this.conditions,
+    required this.onChanged,
+  });
+
+  final String label;
+  final List<String> conditions;
+  final ValueChanged<List<String>> onChanged;
+
+  @override
+  State<ConditionListEditor> createState() => _ConditionListEditorState();
+}
+
+class _ConditionListEditorState extends State<ConditionListEditor> {
+  // ignore: avoid-late-keyword
+  late List<TextEditingController> _controllers;
+  final _splashRadius = 24.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = widget.conditions
+        .map((condition) => TextEditingController(text: condition))
+        .toList();
+  }
+
+  void _addCondition() {
+    setState(() {
+      _controllers.add(TextEditingController());
+      _notifyChange();
+    });
+  }
+
+  void _removeCondition(int index) {
+    setState(() {
+      _controllers[index].dispose();
+      _controllers.removeAt(index);
+      _notifyChange();
+    });
+  }
+
+  void _notifyChange() {
+    final nonEmptyConditions = _controllers
+        .map((controller) => controller.text)
+        .where((text) => text.isNotEmpty)
+        .toList();
+    widget.onChanged(nonEmptyConditions);
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              widget.label,
+              style: TextStyle(
+                // ignore: no-magic-number
+                fontSize: 14,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            IconButton(
+              onPressed: _addCondition,
+              icon: Icon(
+                Icons.add_circle_outline,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              tooltip: 'Add condition',
+              splashRadius: _splashRadius,
+            ),
+          ],
+        ),
+        // const SizedBox(height: 4),
+        if (_controllers.isEmpty)
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Center(
+              child: Text(
+                AppLocalizations.of(context)?.emptyConditionListHint ?? '',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  // ignore: no-magic-number
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )
+        else
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              children: _controllers.asMap().entries.map((entry) {
+                final index = entry.key;
+                final controller = entry.value;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        // ignore: no-magic-number
+                        width: 24,
+                        // ignore: no-magic-number
+                        height: 24,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              // ignore: no-magic-number
+                              .withAlpha((0.1 * 255).round()),
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(12)),
+                        ),
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            // ignore: no-magic-number
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: controller,
+                          onChanged: (value) => _notifyChange(),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            contentPadding: const EdgeInsets.all(12),
+                            border: OutlineInputBorder(
+                              borderRadius:
+                                  const BorderRadius.all(Radius.circular(8)),
+                            ),
+                            hintText:
+                                AppLocalizations.of(context)?.addCondition ??
+                                    '',
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => _removeCondition(index),
+                        icon: Icon(
+                          Icons.remove_circle_outline,
+                          color: Colors.red.shade400,
+                        ),
+                        tooltip: 'Remove condition',
+                        splashRadius: _splashRadius,
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+      ],
     );
   }
 }

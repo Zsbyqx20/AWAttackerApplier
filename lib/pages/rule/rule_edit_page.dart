@@ -33,6 +33,10 @@ class _RuleEditPageState extends State<RuleEditPage>
   // ignore: avoid-late-keyword
   late final TextEditingController _uiAutomatorCodeController;
   // ignore: avoid-late-keyword
+  late final TextEditingController _allowController;
+  // ignore: avoid-late-keyword
+  late final TextEditingController _denyController;
+  // ignore: avoid-late-keyword
   late TabController _tabController;
   // ignore: avoid-late-keyword
   late final RuleValidationProvider _validationProvider;
@@ -72,6 +76,10 @@ class _RuleEditPageState extends State<RuleEditPage>
     _textController = TextEditingController(text: _currentStyle.text);
     _uiAutomatorCodeController =
         TextEditingController(text: _currentStyle.uiAutomatorCode);
+    _allowController =
+        TextEditingController(text: _currentStyle.allow?.join('\n') ?? '');
+    _denyController =
+        TextEditingController(text: _currentStyle.deny?.join('\n') ?? '');
 
     _initTabController();
 
@@ -105,6 +113,8 @@ class _RuleEditPageState extends State<RuleEditPage>
         _currentTabIndex = _tabController.index;
         _textController.text = _currentStyle.text;
         _uiAutomatorCodeController.text = _currentStyle.uiAutomatorCode;
+        _allowController.text = _currentStyle.allow?.join('\n') ?? '';
+        _denyController.text = _currentStyle.deny?.join('\n') ?? '';
       });
     });
   }
@@ -130,6 +140,8 @@ class _RuleEditPageState extends State<RuleEditPage>
       _currentTabIndex = newIndex;
       _textController.text = _currentStyle.text;
       _uiAutomatorCodeController.text = _currentStyle.uiAutomatorCode;
+      _allowController.text = _currentStyle.allow?.join('\n') ?? '';
+      _denyController.text = _currentStyle.deny?.join('\n') ?? '';
     });
   }
 
@@ -144,6 +156,8 @@ class _RuleEditPageState extends State<RuleEditPage>
       _currentTabIndex = newIndex;
       _textController.text = _currentStyle.text;
       _uiAutomatorCodeController.text = _currentStyle.uiAutomatorCode;
+      _allowController.text = _currentStyle.allow?.join('\n') ?? '';
+      _denyController.text = _currentStyle.deny?.join('\n') ?? '';
     });
   }
 
@@ -276,6 +290,20 @@ class _RuleEditPageState extends State<RuleEditPage>
   void _updateTags(List<String> newTags) {
     setState(() {
       _tags = newTags;
+    });
+  }
+
+  void _updateAllowConditions(List<String> conditions) {
+    setState(() {
+      _overlayStyles[_currentTabIndex] =
+          _currentStyle.copyWith(allow: conditions);
+    });
+  }
+
+  void _updateDenyConditions(List<String> conditions) {
+    setState(() {
+      _overlayStyles[_currentTabIndex] =
+          _currentStyle.copyWith(deny: conditions);
     });
   }
 
@@ -415,6 +443,8 @@ class _RuleEditPageState extends State<RuleEditPage>
     _activityNameController.dispose();
     _textController.dispose();
     _uiAutomatorCodeController.dispose();
+    _allowController.dispose();
+    _denyController.dispose();
     _tabController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -642,6 +672,10 @@ class _RuleEditPageState extends State<RuleEditPage>
                       onVerticalAlignChanged: _updateVerticalAlign,
                       onUiAutomatorCodeChanged: _updateUiAutomatorCode,
                       onPaddingChanged: _updatePadding,
+                      onAllowChanged: _updateAllowConditions,
+                      onDenyChanged: _updateDenyConditions,
+                      allowController: _allowController,
+                      denyController: _denyController,
                     ),
                   ],
                 ),

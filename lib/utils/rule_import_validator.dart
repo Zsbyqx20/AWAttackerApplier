@@ -88,6 +88,28 @@ class RuleImportValidator {
 
     // 验证文本色
     validateColor(style.textColor, 'textColor');
+
+    // 验证允许条件
+    final allow = style.allow;
+    if (allow != null) {
+      for (final condition in allow) {
+        if (condition.isEmpty) {
+          throw RuleImportException.invalidFieldValue(
+              'allow', 'Allow condition cannot be empty');
+        }
+      }
+    }
+
+    // 验证拒绝条件
+    final deny = style.deny;
+    if (deny != null) {
+      for (final condition in deny) {
+        if (condition.isEmpty) {
+          throw RuleImportException.invalidFieldValue(
+              'deny', 'Deny condition cannot be empty');
+        }
+      }
+    }
   }
 
   /// 验证颜色值

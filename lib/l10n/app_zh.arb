@@ -589,5 +589,21 @@
     "grpcInvalidPort": "无效的端口号",
     "@grpcInvalidPort": {
         "description": "Error message for gRPC invalid port"
+    },
+    "allowConditions": "允许条件",
+    "@allowConditions": {
+        "description": "Label for allow conditions field"
+    },
+    "denyConditions": "拒绝条件",
+    "@denyConditions": {
+        "description": "Label for deny conditions field"
+    },
+    "emptyConditionListHint": "点击添加按钮添加条件",
+    "@emptyConditionListHint": {
+        "description": "Hint text for empty condition list"
+    },
+    "addCondition": "输入添加条件",
+    "@addCondition": {
+        "description": "Hint text for add condition"
     }
 }

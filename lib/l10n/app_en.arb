@@ -595,5 +595,21 @@
     "grpcInvalidPort": "Invalid port number",
     "@grpcInvalidPort": {
         "description": "Error message for gRPC invalid port"
+    },
+    "allowConditions": "Allow Conditions",
+    "@allowConditions": {
+        "description": "Label for allow conditions field"
+    },
+    "denyConditions": "Deny Conditions",
+    "@denyConditions": {
+        "description": "Label for deny conditions field"
+    },
+    "emptyConditionListHint": "Click add button to add a condition",
+    "@emptyConditionListHint": {
+        "description": "Hint text for empty condition list"
+    },
+    "addCondition": "Enter to add a condition",
+    "@addCondition": {
+        "description": "Hint text for add condition"
     }
 }
