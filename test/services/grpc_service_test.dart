@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grpc/grpc.dart';
 import 'package:mocktail/mocktail.dart';
@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:awattackerapplier/generated/accessibility.pbgrpc.dart';
 import 'package:awattackerapplier/generated/window_info.pbgrpc.dart';
 import 'package:awattackerapplier/services/grpc_service.dart';
+import 'package:awattackerapplier/services/accessibility_service.dart';
 import 'grpc_service_test_helper.dart';
 
 // Test implementation of GrpcService
@@ -44,33 +45,64 @@ class TestableGrpcService extends GrpcService {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 测试绑定被初始化
+
   late TestableGrpcService grpcService;
   late MockWindowInfoServiceClient mockWindowInfoClient;
   late MockAccessibilityServiceClient mockAccessibilityClient;
   late MockClientChannel mockChannel;
 
-  setUp(() {
+  setUpAll(() {
+    // 注册 fallback values
+    registerFallbackValue(WindowInfoRequest());
+    registerFallbackValue(CallOptions());
+    registerFallbackValue(const Stream<ClientResponse>.empty());
+  });
+
+  setUp(() async {
+    // 首先创建所有的 mock 对象
     mockWindowInfoClient = MockWindowInfoServiceClient();
     mockAccessibilityClient = MockAccessibilityServiceClient();
     mockChannel = MockClientChannel();
 
+    // 然后设置 mock 行为
+    when(() => mockChannel.shutdown()).thenAnswer((_) async {});
+    when(() => mockChannel.terminate()).thenAnswer((_) async {});
+
+    // 创建 grpcService 实例
     grpcService = TestableGrpcService(
       mockWindowInfoClient: mockWindowInfoClient,
       mockAccessibilityClient: mockAccessibilityClient,
       mockChannel: mockChannel,
     );
 
-    // Register fallback values
-    registerFallbackValue(WindowInfoRequest());
-    registerFallbackValue(CallOptions());
-    registerFallbackValue(const Stream<ClientResponse>.empty());
+    // 设置 MethodChannel mock
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('com.mobilellm.awattackerapplier/overlay_service'),
+      (MethodCall methodCall) async {
+        switch (methodCall.method) {
+          case 'getLatestState':
+            return Uint8List.fromList([1, 2, 3, 4, 5]);
+          case 'checkAccessibilityPermission':
+            return true;
+          default:
+            return null;
+        }
+      },
+    );
 
-    // Setup basic mock behaviors
-    when(() => mockChannel.shutdown()).thenAnswer((_) async {});
-    when(() => mockChannel.terminate()).thenAnswer((_) async {});
+    // 初始化 AccessibilityService
+    await AccessibilityService().initialize();
   });
 
   tearDown(() {
+    // 清理 MethodChannel mock
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('com.mobilellm.awattackerapplier/overlay_service'),
+      null,
+    );
     mockAccessibilityClient.dispose();
   });
 
@@ -563,7 +595,9 @@ void main() {
           clientResponses.where((r) => r.deviceId == 'test_device').firstOrNull;
       expect(accessibilityResponse, isNotNull);
       expect(accessibilityResponse!.deviceId, equals('test_device'));
-      expect(accessibilityResponse.success, isFalse); // 因为测试环境中无法获取真实数据
+      expect(accessibilityResponse.success, isTrue); // 因为我们提供了 mock 数据，所以应该成功
+      expect(accessibilityResponse.rawOutput,
+          equals(Uint8List.fromList([1, 2, 3, 4, 5]))); // 验证返回的数据是否正确
 
       // Cleanup
       await streamController.close();

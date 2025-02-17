@@ -15,6 +15,9 @@ class AccessibilityService extends ChangeNotifier {
   bool _initialized = false;
   bool _isDetectionEnabled = false;
   bool _isServiceRunning = false;
+  bool _isServiceReady = false;
+  final int _retryCount = 3;
+  final int _initializationTimeout = 5000;
   // ignore: avoid-late-keyword
   late StreamController<WindowEvent> _windowEventController;
 
@@ -22,6 +25,7 @@ class AccessibilityService extends ChangeNotifier {
   Stream<WindowEvent> get windowEvents => _windowEventController.stream;
 
   bool get isServiceRunning => _isServiceRunning;
+  bool get isServiceReady => _isServiceReady;
 
   factory AccessibilityService() {
     debugPrint('🏭 获取AccessibilityService实例');
@@ -41,21 +45,41 @@ class AccessibilityService extends ChangeNotifier {
 
   /// 获取最新的无障碍树数据
   Future<Uint8List?> getLatestState() async {
-    try {
-      final result = await _channel.invokeMethod<Uint8List>('getLatestState');
-      if (result != null) {
-        debugPrint('✅ 成功获取无障碍树数据: ${result.length} bytes');
+    if (!_isServiceReady) {
+      debugPrint('⏳ 等待无障碍服务就绪...');
+      final startTime = DateTime.now();
+      while (!_isServiceReady) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        if (DateTime.now().difference(startTime).inMilliseconds >
+            _initializationTimeout) {
+          debugPrint('❌ 等待无障碍服务就绪超时');
 
-        return result;
+          return null;
+        }
       }
-      debugPrint('❌ 获取无障碍树数据失败: 返回为空');
-
-      return null;
-    } catch (e) {
-      debugPrint('❌ 获取无障碍树数据时发生错误: $e');
-
-      return null;
     }
+
+    for (var i = 0; i < _retryCount; i++) {
+      try {
+        final result = await _channel.invokeMethod<Uint8List>('getLatestState');
+        if (result != null) {
+          debugPrint('✅ 成功获取无障碍树数据: ${result.length} bytes');
+
+          return result;
+        }
+        debugPrint('❌ 获取无障碍树数据失败: 返回为空，尝试次数: ${i + 1}/$_retryCount');
+        if (i < _retryCount - 1) {
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+        }
+      } catch (e) {
+        debugPrint('❌ 获取无障碍树数据时发生错误: $e，尝试次数: ${i + 1}/$_retryCount');
+        if (i < _retryCount - 1) {
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+        }
+      }
+    }
+
+    return null;
   }
 
   Future<bool> checkAndRequestPermissions() async {
@@ -190,6 +214,12 @@ class AccessibilityService extends ChangeNotifier {
             false;
     _isServiceRunning = hasPermission;
     debugPrint('🔒 无障碍服务状态: ${hasPermission ? "已启用" : "未启用"}');
+
+    if (hasPermission) {
+      await Future<void>.delayed(const Duration(milliseconds: 1000));
+      _isServiceReady = true;
+      debugPrint('✅ 无障碍服务已就绪');
+    }
 
     _initialized = true;
     notifyListeners();

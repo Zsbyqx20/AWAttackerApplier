@@ -111,12 +111,17 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         
         if (isFirstConnect) {
             isFirstConnect = false
-            isDetectionEnabled = false
             Log.d(TAG, "AccessibilityService 首次连接")
-            sendWindowEvent(
-                type = "SERVICE_CONNECTED",
-                isFirstConnect = true
-            )
+            launch {
+                delay(1000) // 给系统一些时间来完全初始化服务
+                sendWindowEvent(
+                    type = "SERVICE_CONNECTED",
+                    isFirstConnect = true
+                )
+                rootInActiveWindow?.let { rootNode ->
+                    saveCurrentState(rootNode)
+                }
+            }
         } else {
             Log.d(TAG, "AccessibilityService 重新连接，当前检测状态: $isDetectionEnabled")
             sendWindowEvent(
@@ -163,8 +168,8 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         val currentPackage = event.packageName?.toString()
         val currentActivity = event.className?.toString()
         
-        // 检查是否需要忽略此事件
-        if (currentTime - lastEventTime < EVENT_THROTTLE_TIME &&
+        if (!isFirstConnect && 
+            currentTime - lastEventTime < EVENT_THROTTLE_TIME &&
             currentPackage == lastEventPackage &&
             currentActivity == lastEventActivity) {
             Log.d(TAG, "忽略重复的窗口事件")
