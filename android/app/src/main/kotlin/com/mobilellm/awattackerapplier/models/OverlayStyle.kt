@@ -15,7 +15,9 @@ data class OverlayStyle(
     val horizontalAlign: Int = Gravity.START,
     val verticalAlign: Int = Gravity.CENTER,
     val uiAutomatorCode: String = "",
-    val padding: Padding = Padding()
+    val padding: Padding = Padding(),
+    val allow: List<String>? = null,
+    val deny: List<String>? = null
 ) {
     data class Padding(
         val left: Double = 0.0,
@@ -28,6 +30,7 @@ data class OverlayStyle(
         fun fromMap(map: Map<String, Any?>): OverlayStyle {
             val paddingMap = (map["padding"] as? Map<String, Any>) ?: emptyMap()
             
+            @Suppress("UNCHECKED_CAST")
             return OverlayStyle(
                 x = (map["x"] as? Number)?.toDouble() ?: 0.0,
                 y = (map["y"] as? Number)?.toDouble() ?: 0.0,
@@ -45,7 +48,9 @@ data class OverlayStyle(
                     top = (paddingMap["top"] as? Number)?.toDouble() ?: 0.0,
                     right = (paddingMap["right"] as? Number)?.toDouble() ?: 0.0,
                     bottom = (paddingMap["bottom"] as? Number)?.toDouble() ?: 0.0
-                )
+                ),
+                allow = map["allow"] as? List<String>,
+                deny = map["deny"] as? List<String>
             )
         }
 

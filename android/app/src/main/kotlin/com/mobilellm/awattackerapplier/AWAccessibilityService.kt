@@ -90,6 +90,8 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     private val maxQueueSize = 10
     private val queueLock = Mutex()
 
+    private val conditionChecker = ConditionChecker()
+
     private fun cancelSearch() {
         searchScope?.cancel()
         searchScope = null
@@ -316,6 +318,13 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
                     continue
                 }
 
+                // 先检查条件
+                val conditionsMatch = conditionChecker.checkConditions(rootNode, style.allow, style.deny)
+                if (!conditionsMatch) {
+                    Log.d(TAG, "条件检查不匹配，跳过元素查找")
+                    return@withContext null
+                }
+
                 val node = UiAutomatorHelper.findNodeBySelector(rootNode, style.uiAutomatorCode)
                 if (node == null) {
                     Log.d(TAG, "Node not found with selector: ${style.uiAutomatorCode}, retry: ${retryCount + 1}/$maxRetries")
@@ -435,6 +444,9 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
             val rootNode = rootInActiveWindow
             saveStateAfterSearch(rootNode)
             rootNode?.recycle()  // 记得回收根节点
+
+            // 清除条件检查缓存
+            conditionChecker.clearCache()
 
             return@withContext results
         } catch (e: CancellationException) {
