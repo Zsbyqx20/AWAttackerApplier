@@ -25,6 +25,7 @@ A configurable dynamic attacker app designed for Android World.
   - Local rule persistence storage
   - Rule preview and testing functionality
   - Allow & Deny for fine-grained element locating
+  - Automatic rule selector robust conversion in background
 
 - 🎨 **Modern Material Design**
   - Clean and intuitive user interface

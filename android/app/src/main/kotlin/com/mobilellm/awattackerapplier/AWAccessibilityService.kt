@@ -2,6 +2,7 @@ package com.mobilellm.awattackerapplier
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
 import android.util.Log
@@ -91,6 +92,16 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     private val queueLock = Mutex()
 
     private val conditionChecker = ConditionChecker()
+
+    // 选择器映射存储
+    private val selectorPrefs by lazy {
+        getSharedPreferences("selector_tracking", Context.MODE_PRIVATE)
+    }
+
+    // 生成存储key
+    private fun generateKey(packageName: String, activityName: String, selector: String): String {
+        return "$packageName:$activityName:$selector"
+    }
 
     private fun cancelSearch() {
         searchScope?.cancel()
@@ -325,7 +336,27 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
                     return@withContext null
                 }
 
-                val node = UiAutomatorHelper.findNodeBySelector(rootNode, style.uiAutomatorCode)
+                // 检查是否有学习到的文本选择器
+                val key = generateKey(
+                    lastPackage ?: "",
+                    lastActivity ?: "",
+                    style.uiAutomatorCode
+                )
+                
+                val learnedSelector = selectorPrefs.getString(key, null)
+                var node: AccessibilityNodeInfo? = null
+                
+                // 如果有学习到的选择器，使用它
+                if (learnedSelector != null) {
+                    Log.d(TAG, "使用学习到的选择器: $learnedSelector")
+                    node = UiAutomatorHelper.findNodeBySelector(rootNode, learnedSelector)
+                }
+                
+                // 如果没有学习到的选择器或学习到的选择器失败，使用原始选择器
+                if (node == null && learnedSelector == null) {
+                    node = UiAutomatorHelper.findNodeBySelector(rootNode, style.uiAutomatorCode)
+                }
+
                 if (node == null) {
                     Log.d(TAG, "Node not found with selector: ${style.uiAutomatorCode}, retry: ${retryCount + 1}/$maxRetries")
                     delay(retryDelay)
@@ -357,6 +388,20 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
                     
                     if (stablePositionCount >= requiredStableCount) {
                         Log.d(TAG, "元素位置达到要求的稳定次数，最终位置: $boundsStr")
+                        
+                        // 如果是使用原始选择器找到的节点，且不是文本选择器，则学习新的选择器
+                        if (learnedSelector == null && !style.uiAutomatorCode.contains(".text(")) {
+                            val text = node.text?.toString()
+                            if (!text.isNullOrEmpty()) {
+                                val newSelector = "new UiSelector().text(\"$text\")"
+                                // 保存学习到的选择器
+                                selectorPrefs.edit()
+                                    .putString(key, newSelector)
+                                    .apply()
+                                Log.d(TAG, "学习新的选择器: $newSelector")
+                            }
+                        }
+
                         WindowManagerHelper.getInstance(this@AWAccessibilityService)
                             .addModifiedNode(node, style.text)
                         Log.d(TAG, "Found matching node, recorded with modified text: ${style.text}")
@@ -557,6 +602,17 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         lastWindowHash = 0
         lastPackage = null
         lastActivity = null
+    }
+
+    // 清除指定Activity的选择器缓存
+    private fun clearActivitySelectors(packageName: String, activityName: String) {
+        val prefix = "$packageName:$activityName:"
+        val editor = selectorPrefs.edit()
+        selectorPrefs.all.keys
+            .filter { it.startsWith(prefix) }
+            .forEach { editor.remove(it) }
+        editor.apply()
+        Log.d(TAG, "清除Activity选择器缓存: $prefix")
     }
 }
 
