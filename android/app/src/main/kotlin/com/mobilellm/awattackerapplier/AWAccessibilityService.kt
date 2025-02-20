@@ -676,27 +676,89 @@ object UiAutomatorHelper {
         }
     }
 
+    // 判断节点是否是精确的文本匹配
+    private fun isExactTextMatch(node: AccessibilityNodeInfo, text: String): Boolean {
+        // 检查节点本身的文本是否精确匹配
+        val nodeText = node.text?.toString()
+        if (nodeText == text) {
+            // 如果有子节点，确认子节点不包含完全相同的文本
+            for (i in 0 until node.childCount) {
+                node.getChild(i)?.let { child ->
+                    if (child.text?.toString() == text) {
+                        child.recycle()
+                        return false // 如果子节点包含相同文本，当前节点不是最精确匹配
+                    }
+                    child.recycle()
+                }
+            }
+            return true
+        }
+        return false
+    }
+
+    // 查找最小的包含指定文本的节点
+    private fun findSmallestNodeContainingText(node: AccessibilityNodeInfo, text: String): AccessibilityNodeInfo? {
+        // 如果当前节点精确匹配，直接返回
+        if (isExactTextMatch(node, text)) {
+            return AccessibilityNodeInfo.obtain(node)
+        }
+        
+        // 遍历子节点寻找更精确的匹配
+        for (i in 0 until node.childCount) {
+            node.getChild(i)?.let { child ->
+                val result = findSmallestNodeContainingText(child, text)
+                if (result != null) {
+                    child.recycle()
+                    return result
+                }
+                child.recycle()
+            }
+        }
+        
+        return null
+    }
+
     private fun findNodeByText(rootNode: AccessibilityNodeInfo, text: String, instanceIdx: Int = 0): AccessibilityNodeInfo? {
         try {
+            val exactMatches = mutableListOf<AccessibilityNodeInfo>()
             val nodes = rootNode.findAccessibilityNodeInfosByText(text)
-            val actualIdx = getActualIndex(instanceIdx, nodes.size)
-            if (actualIdx == -1) {
-                Log.d(TAG, "文本节点索引越界: index=$instanceIdx, size=${nodes.size}")
-                nodes.forEach { it.recycle() }
+            
+            // 对每个找到的节点尝试查找最小的精确匹配节点
+            for (node in nodes) {
+                val smallestMatch = findSmallestNodeContainingText(node, text)
+                if (smallestMatch != null) {
+                    exactMatches.add(smallestMatch)
+                }
+                node.recycle()
+            }
+            
+            // 如果没有找到精确匹配，返回null
+            if (exactMatches.isEmpty()) {
+                Log.d(TAG, "未找到精确匹配的文本节点: '$text'")
                 return null
             }
             
-            val result = nodes[actualIdx].also {
+            // 使用精确匹配的节点列表
+            val actualIdx = getActualIndex(instanceIdx, exactMatches.size)
+            if (actualIdx == -1) {
+                Log.d(TAG, "精确匹配的文本节点索引越界: index=$instanceIdx, size=${exactMatches.size}")
+                exactMatches.forEach { it.recycle() }
+                return null
+            }
+            
+            val result = exactMatches[actualIdx].also {
                 val bounds = Rect()
                 it.getBoundsInScreen(bounds)
-                Log.d(TAG, "找到文本节点 [${actualIdx + 1}/${nodes.size}]: '$text'")
+                Log.d(TAG, "找到精确匹配的文本节点 [${actualIdx + 1}/${exactMatches.size}]: '$text', bounds=$bounds")
             }
+            
             // 回收未使用的节点
-            nodes.forEachIndexed { index, node ->
+            exactMatches.forEachIndexed { index, node ->
                 if (index != actualIdx) {
                     node.recycle()
                 }
             }
+            
             return result
         } catch (e: Exception) {
             Log.e(TAG, "通过文本查找节点时出错: ${e.message}")
@@ -717,7 +779,7 @@ object UiAutomatorHelper {
             val result = nodes[actualIdx].also {
                 val bounds = Rect()
                 it.getBoundsInScreen(bounds)
-                Log.d(TAG, "找到ID节点 [${actualIdx + 1}/${nodes.size}]: '$id'")
+                Log.d(TAG, "找到ID节点 [${actualIdx + 1}/${nodes.size}]: '$id', bounds=$bounds")
             }
             // 回收未使用的节点
             nodes.forEachIndexed { index, node ->
@@ -761,7 +823,9 @@ object UiAutomatorHelper {
             }
             
             val result = nodes[actualIdx].also {
-                Log.d(TAG, "找到类名节点 [${actualIdx + 1}/${nodes.size}]: '$className'")
+                val bounds = Rect()
+                it.getBoundsInScreen(bounds)
+                Log.d(TAG, "找到类名节点 [${actualIdx + 1}/${nodes.size}]: '$className', bounds=$bounds")
             }
             
             // 回收未使用的节点
@@ -809,7 +873,9 @@ object UiAutomatorHelper {
             }
             
             val result = nodes[actualIdx].also {
-                Log.d(TAG, "找到描述节点 [${actualIdx + 1}/${nodes.size}]: '$description'")
+                val bounds = Rect()
+                it.getBoundsInScreen(bounds)
+                Log.d(TAG, "找到描述节点 [${actualIdx + 1}/${nodes.size}]: '$description', bounds=$bounds")
             }
             
             // 回收未使用的节点

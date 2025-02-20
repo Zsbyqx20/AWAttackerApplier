@@ -1312,5 +1312,313 @@ void main() {
       expect(textWidget.style?.color, Colors.grey[600]);
       expect(textWidget.textAlign, TextAlign.center);
     });
+
+    testWidgets('Should not save rule multiple times when saving quickly',
+        (tester) async {
+      // 设置测试窗口大小
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      // 清空规则列表
+      await ruleProvider.clearRules();
+
+      // 构建测试页面
+      await buildTestApp(tester, ruleProvider, validationProvider);
+
+      // 点击主 FAB 展开菜单
+      await tester.tap(find.byType(FloatingActionButton).first);
+      await tester.pumpAndSettle();
+
+      // 点击添加规则按钮
+      final addRuleButton = find.byWidgetPredicate((widget) =>
+          widget is FloatingActionButton && widget.heroTag == 'add');
+      expect(addRuleButton, findsOneWidget);
+      await tester.tap(addRuleButton);
+      await tester.pumpAndSettle();
+
+      // 填写规则信息
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextInputField && widget.label == l10n.ruleName),
+        'Test Rule',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextInputField && widget.label == l10n.packageName),
+        'com.example.app',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextInputField && widget.label == l10n.activityName),
+        '.MainActivity',
+      );
+      await tester.pumpAndSettle();
+
+      // 添加标签
+      final tagInput = find.byType(TagChipsInput);
+      expect(tagInput, findsOneWidget);
+
+      final tagTextField = find.descendant(
+        of: tagInput,
+        matching: find.byType(TextField),
+      );
+      expect(tagTextField, findsOneWidget);
+
+      await tester.enterText(tagTextField, 'test_tag');
+      await tester.pumpAndSettle();
+
+      final addTagButton = find.descendant(
+        of: tagInput,
+        matching: find.byIcon(Icons.add),
+      );
+      await tester.tap(addTagButton);
+      await tester.pumpAndSettle();
+
+      // 添加悬浮窗样式
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (widget) => widget is TextInputField && widget.label == l10n.text,
+        ),
+        'Initial Style',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is TextInputField && widget.label == l10n.uiAutomatorCode,
+        ),
+        'new UiSelector().text("Initial Style")',
+      );
+      await tester.pumpAndSettle();
+
+      // 保存初始规则
+      final saveButton = find.widgetWithText(TextButton, l10n.save);
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // 等待保存完成
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // 验证规则只被保存了一次
+      final savedRules = await ruleRepository.loadRules();
+      expect(savedRules.length, equals(1),
+          reason: 'Rule should only be saved once');
+
+      // 验证规则内容正确
+      final savedRule = savedRules.first;
+      expect(savedRule.name, equals('Test Rule'),
+          reason: 'Rule name should match');
+      expect(savedRule.packageName, equals('com.example.app'),
+          reason: 'Package name should match');
+      expect(savedRule.activityName, equals('.MainActivity'),
+          reason: 'Activity name should match');
+      expect(savedRule.tags, equals(['test_tag']), reason: 'Tags should match');
+      expect(savedRule.overlayStyles.length, equals(1),
+          reason: 'Should have one overlay style');
+      expect(savedRule.overlayStyles.first.text, equals('Initial Style'),
+          reason: 'Style text should match');
+      expect(savedRule.overlayStyles.first.uiAutomatorCode,
+          equals('new UiSelector().text("Initial Style")'),
+          reason: 'UI Automator code should match');
+    });
+
+    testWidgets('Should maintain consistent state during rule updates',
+        (tester) async {
+      // 设置测试窗口大小
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      // 清空规则列表
+      await ruleProvider.clearRules();
+
+      // 构建测试页面
+      await buildTestApp(tester, ruleProvider, validationProvider);
+
+      // 创建并保存初始规则
+      await tester.tap(find.byType(FloatingActionButton).first);
+      await tester.pumpAndSettle();
+
+      final addRuleButton = find.byWidgetPredicate((widget) =>
+          widget is FloatingActionButton && widget.heroTag == 'add');
+      await tester.tap(addRuleButton);
+      await tester.pumpAndSettle();
+
+      // 填写初始规则信息
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextInputField && widget.label == l10n.ruleName),
+        'Initial Rule',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextInputField && widget.label == l10n.packageName),
+        'com.example.app',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextInputField && widget.label == l10n.activityName),
+        '.MainActivity',
+      );
+      await tester.pumpAndSettle();
+
+      // 添加初始标签
+      final tagInput = find.byType(TagChipsInput);
+      final tagTextField = find.descendant(
+        of: tagInput,
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(tagTextField, 'initial_tag');
+      await tester.pumpAndSettle();
+
+      final addTagButton = find.descendant(
+        of: tagInput,
+        matching: find.byIcon(Icons.add),
+      );
+      await tester.tap(addTagButton);
+      await tester.pumpAndSettle();
+
+      // 添加悬浮窗样式
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (widget) => widget is TextInputField && widget.label == l10n.text,
+        ),
+        'Initial Style',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is TextInputField && widget.label == l10n.uiAutomatorCode,
+        ),
+        'new UiSelector().text("Initial Style")',
+      );
+      await tester.pumpAndSettle();
+
+      // 保存初始规则
+      final saveButton = find.widgetWithText(TextButton, l10n.save);
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // 等待保存完成
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // 验证初始状态
+      expect(ruleProvider.rules.length, equals(1),
+          reason: 'Should have one rule initially');
+      expect(find.text('Initial Rule'), findsOneWidget,
+          reason: 'Initial rule should be visible');
+      expect(find.text('initial_tag'), findsOneWidget,
+          reason: 'Initial tag should be visible');
+
+      // 记录初始规则的状态
+      final initialRule = ruleProvider.rules.first;
+      final initialRuleId = initialRule.packageName + initialRule.activityName;
+
+      // 启用规则
+      final switchFinder = find.byType(Switch);
+      await tester.tap(switchFinder);
+      await tester.pumpAndSettle();
+
+      // 验证规则已启用
+      expect(ruleProvider.rules.first.isEnabled, isTrue,
+          reason: 'Rule should be enabled');
+
+      // 点击规则卡片进入编辑模式
+      await tester.tap(find.byType(RuleCard));
+      await tester.pumpAndSettle();
+
+      // 修改规则名称
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextInputField && widget.label == l10n.ruleName),
+        'Updated Rule',
+      );
+      await tester.pumpAndSettle();
+
+      // 添加新标签
+      await tester.enterText(tagTextField, 'new_tag');
+      await tester.pumpAndSettle();
+      await tester.tap(addTagButton);
+      await tester.pumpAndSettle();
+
+      // 保存更新后的规则
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // 验证 UI 状态
+      expect(find.text('Updated Rule'), findsOneWidget,
+          reason: 'Updated rule name should be visible');
+      expect(find.text('initial_tag'), findsOneWidget,
+          reason: 'Initial tag should still be visible');
+      expect(find.text('new_tag'), findsOneWidget,
+          reason: 'New tag should be visible');
+
+      // 验证 Provider 状态
+      expect(ruleProvider.rules.length, equals(1),
+          reason: 'Should still have only one rule');
+      final updatedRule = ruleProvider.rules.first;
+      expect(updatedRule.name, equals('Updated Rule'),
+          reason: 'Rule name should be updated in provider');
+      expect(updatedRule.isEnabled, isTrue,
+          reason: 'Rule should remain enabled');
+      expect(updatedRule.tags, containsAll(['initial_tag', 'new_tag']),
+          reason: 'Rule should have both tags in provider');
+
+      // 验证存储状态
+      final savedRules = await ruleRepository.loadRules();
+      expect(savedRules.length, equals(1),
+          reason: 'Should have one rule in storage');
+      final savedRule = savedRules.first;
+      expect(savedRule.name, equals('Updated Rule'),
+          reason: 'Rule name should be updated in storage');
+      expect(savedRule.isEnabled, isTrue,
+          reason: 'Rule should remain enabled in storage');
+      expect(savedRule.tags, containsAll(['initial_tag', 'new_tag']),
+          reason: 'Rule should have both tags in storage');
+
+      // 验证规则标识保持不变
+      final updatedRuleId = savedRule.packageName + savedRule.activityName;
+      expect(updatedRuleId, equals(initialRuleId),
+          reason: 'Rule identifier should remain unchanged');
+
+      // 验证标签状态
+      expect(ruleProvider.allTags, containsAll(['initial_tag', 'new_tag']),
+          reason: 'Provider should track all tags');
+
+      // 验证激活标签状态
+      expect(ruleProvider.activeTags, isEmpty,
+          reason: 'No tags should be active initially');
+
+      // 激活一个标签
+      await ruleProvider.activateTag('new_tag');
+      await tester.pumpAndSettle();
+
+      // 验证标签激活状态
+      expect(ruleProvider.activeTags, contains('new_tag'),
+          reason: 'Tag should be activated');
+      expect(ruleProvider.isTagActive('new_tag'), isTrue,
+          reason: 'Tag should be marked as active');
+
+      // 验证规则仍然保持启用状态
+      expect(ruleProvider.rules.first.isEnabled, isTrue,
+          reason: 'Rule should remain enabled after tag activation');
+    });
   });
 }
