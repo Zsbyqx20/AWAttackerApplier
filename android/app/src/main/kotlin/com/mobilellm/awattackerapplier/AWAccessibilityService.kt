@@ -544,6 +544,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
     override fun onDestroy() {
         super.onDestroy()
         isDetectionEnabled = false  // Reset detection state
+        clearAllSelectors() // 清理所有选择器缓存
         job.cancel()
         retryJob?.cancel()
         lastEventSource?.recycle()
@@ -554,6 +555,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
 
     override fun onUnbind(intent: Intent?): Boolean {
         isDetectionEnabled = false  // Reset detection state
+        clearAllSelectors() // 清理所有选择器缓存
         WindowManagerHelper.destroyInstance()
         instance = null
         Log.d(TAG, "AccessibilityService unbound")
@@ -592,27 +594,68 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
 
     fun startDetection() {
         Log.d(TAG, "🎯 开启界面检测")
+        clearAllSelectors() // 清理所有选择器缓存
         isDetectionEnabled = true
     }
 
     fun stopDetection() {
         Log.d(TAG, "⏹️ 停止界面检测")
         isDetectionEnabled = false
+        clearAllSelectors() // 清理所有选择器缓存
         // 重置状态
         lastWindowHash = 0
         lastPackage = null
         lastActivity = null
     }
 
+    // 清除所有选择器缓存
+    private fun clearAllSelectors() {
+        try {
+            val editor = selectorPrefs.edit()
+            val count = selectorPrefs.all.size
+            
+            // 清除所有数据
+            editor.clear()
+            editor.apply()
+            
+            if (count > 0) {
+                Log.d(TAG, "已清除所有选择器缓存，共 $count 个")
+            } else {
+                Log.v(TAG, "选择器缓存为空")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "清除所有选择器缓存时发生错误: ${e.message}")
+        }
+    }
+
     // 清除指定Activity的选择器缓存
     private fun clearActivitySelectors(packageName: String, activityName: String) {
-        val prefix = "$packageName:$activityName:"
-        val editor = selectorPrefs.edit()
-        selectorPrefs.all.keys
-            .filter { it.startsWith(prefix) }
-            .forEach { editor.remove(it) }
-        editor.apply()
-        Log.d(TAG, "清除Activity选择器缓存: $prefix")
+        try {
+            val prefix = "$packageName:$activityName:"
+            var count = 0
+            val editor = selectorPrefs.edit()
+            
+            // 获取所有需要清除的键
+            val keysToRemove = selectorPrefs.all.keys.filter { it.startsWith(prefix) }
+            count = keysToRemove.size
+            
+            // 批量删除
+            keysToRemove.forEach { key ->
+                editor.remove(key)
+                Log.v(TAG, "清除选择器: $key")
+            }
+            
+            // 提交更改
+            editor.apply()
+            
+            if (count > 0) {
+                Log.d(TAG, "已清除 ${packageName}/${activityName} 的 $count 个选择器缓存")
+            } else {
+                Log.v(TAG, "没有找到 ${packageName}/${activityName} 的选择器缓存")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "清除选择器缓存时发生错误: ${e.message}")
+        }
     }
 }
 
