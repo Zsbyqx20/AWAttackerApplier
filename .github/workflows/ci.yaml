@@ -2,16 +2,6 @@ name: flutter_ci
 
 on:
   push:
-    branches:
-      - master
-    paths:
-      - 'lib/**'
-      - 'pubspec.yaml'
-      - 'pubspec.lock'
-      - 'android/**'
-      - 'assets/**'
-      - 'web/**'
-      - 'test/**'
     tags:
       - 'v*'
 
@@ -55,7 +45,6 @@ jobs:
       - run: dart run import_sorter:main
 
       - name: Commit format fixes
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
