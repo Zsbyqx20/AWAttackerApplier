@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:awattackerapplier/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'package:awattackerapplier/l10n/app_localizations.dart';
 import '../../models/rule.dart';
 import '../../models/rule_import.dart';
 import '../../models/rule_merge_result.dart';

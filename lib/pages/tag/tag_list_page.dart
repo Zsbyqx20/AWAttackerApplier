@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:awattackerapplier/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'package:awattackerapplier/l10n/app_localizations.dart';
 import '../../providers/rule_provider.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/tag_stats_card.dart';

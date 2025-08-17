@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:awattackerapplier/l10n/app_localizations.dart';
-
 import '../providers/connection_provider.dart';
 import 'connection_status_chip.dart';
 

@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:awattackerapplier/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'package:awattackerapplier/l10n/app_localizations.dart';
 import '../models/permission_status.dart';
 import '../providers/connection_provider.dart';
 import '../widgets/grpc_config_card.dart';

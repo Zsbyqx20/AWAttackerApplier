@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:awattackerapplier/l10n/app_localizations.dart';
-
 import '../models/rule.dart';
 
 class RuleStatsCard extends StatelessWidget {

@@ -3,12 +3,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import 'package:awattackerapplier/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:awattackerapplier/l10n/app_localizations.dart';
 import 'package:awattackerapplier/models/rule.dart';
 import 'package:awattackerapplier/models/rule_import.dart';
 import 'package:awattackerapplier/pages/tag/tag_list_page.dart';

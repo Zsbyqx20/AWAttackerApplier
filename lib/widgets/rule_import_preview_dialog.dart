@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:awattackerapplier/l10n/app_localizations.dart';
-
 import '../models/rule.dart';
 import '../models/rule_merge_result.dart';
 import '../utils/rule_field_validator.dart';
