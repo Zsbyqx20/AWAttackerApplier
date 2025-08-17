@@ -244,7 +244,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         
         val builder = AccessibilityNode.newBuilder()
             .setText(text)  // 使用可能被修改的文本
-            .setContentDescription(node.contentDescription?.toString() ?: "")
+            .setContentDescription("")  // 清理原本的 content description
             .setClassName(node.className?.toString() ?: "")
             .setPackageName(node.packageName?.toString() ?: "")
             .setResourceId(node.viewIdResourceName ?: "")
