@@ -235,6 +235,12 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         node.getBoundsInScreen(bounds)
         
         val windowHelper = WindowManagerHelper.getInstance(this)
+        // 获取原本的 content description
+        val contentDescription = if (windowHelper.isNodeModified(node)) {
+            ""
+        } else {
+            node.contentDescription?.toString() ?: ""
+        }
         // 检查节点是否被修改过
         val text = if (windowHelper.isNodeModified(node)) {
             windowHelper.getModifiedText(node) ?: node.text?.toString() ?: ""
@@ -244,7 +250,7 @@ class AWAccessibilityService : AccessibilityService(), CoroutineScope {
         
         val builder = AccessibilityNode.newBuilder()
             .setText(text)  // 使用可能被修改的文本
-            .setContentDescription("")  // 清理原本的 content description
+            .setContentDescription(contentDescription)
             .setClassName(node.className?.toString() ?: "")
             .setPackageName(node.packageName?.toString() ?: "")
             .setResourceId(node.viewIdResourceName ?: "")
