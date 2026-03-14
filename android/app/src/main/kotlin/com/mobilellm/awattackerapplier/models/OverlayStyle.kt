@@ -64,7 +64,7 @@ data class OverlayStyle(
         }
 
         private fun parseTextAlign(align: String?, isHorizontal: Boolean): Int {
-            return when (align?.toLowerCase()) {
+            return when (align?.lowercase()) {
                 "left", "start" -> if (isHorizontal) Gravity.START else Gravity.TOP
                 "center" -> Gravity.CENTER
                 "right", "end" -> if (isHorizontal) Gravity.END else Gravity.BOTTOM

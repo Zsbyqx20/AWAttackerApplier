@@ -14,12 +14,12 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.32.1
+          flutter-version: 3.35.2
           cache: true
 
       - name: Install Protoc and Dart Protoc Plugin
         run: |
-          PROTOC_VERSION=32.0
+          PROTOC_VERSION=34.0
           curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
           sudo unzip -o protoc-${PROTOC_VERSION}-linux-x86_64.zip -d /usr/local
           rm protoc-${PROTOC_VERSION}-linux-x86_64.zip
@@ -28,7 +28,6 @@ jobs:
           
       - run: flutter pub get
       
-      # 确保 Dart protoc 插件在 PATH 中
       - name: Generate Proto Files
         run: |
           export PATH="$PATH:$HOME/.pub-cache/bin"
