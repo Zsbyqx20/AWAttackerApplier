@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
 
+env:
+  PROTOC_VERSION: 34.0
+  PROTOC_PLUGIN_VERSION: 22.5.0
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,12 +23,11 @@ jobs:
 
       - name: Install Protoc and Dart Protoc Plugin
         run: |
-          PROTOC_VERSION=34.0
           curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
           sudo unzip -o protoc-${PROTOC_VERSION}-linux-x86_64.zip -d /usr/local
           rm protoc-${PROTOC_VERSION}-linux-x86_64.zip
           protoc --version
-          dart pub global activate protoc_plugin
+          dart pub global activate protoc_plugin ${PROTOC_PLUGIN_VERSION}
           
       - run: flutter pub get
       

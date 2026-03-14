@@ -1,5 +1,9 @@
 .PHONY: build test clean format proto cargo-build flutter-build
 
+PROTOC_VERSION ?= 34.0
+PROTOC_PLUGIN_VERSION ?= 22.5.0
+NO_PROXY_HOSTS ?= 127.0.0.1,localhost
+
 # Rust/Cargo related targets
 cargo-build:
 	cargo build --release
@@ -13,21 +17,32 @@ cargo-clean:
 
 # Flutter related targets
 proto:
+	@echo "Using protoc $(PROTOC_VERSION) with protoc_plugin $(PROTOC_PLUGIN_VERSION)"
 	mkdir -p lib/generated
 	mkdir -p android/app/src/main/java/com/mobilellm/awattackerapplier/proto
 	protoc --dart_out=grpc:lib/generated -Iproto proto/window_info.proto proto/accessibility.proto
 	protoc --java_out=android/app/src/main/java -Iproto proto/window_info.proto proto/accessibility.proto
 
 flutter-build: proto
-	flutter build apk --release
+	env -u http_proxy -u https_proxy -u all_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY \
+		NO_PROXY=$(NO_PROXY_HOSTS) no_proxy=$(NO_PROXY_HOSTS) \
+		flutter build apk --release
 
 flutter-test:
-	flutter test --coverage
+	env -u http_proxy -u https_proxy -u all_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY \
+		NO_PROXY=$(NO_PROXY_HOSTS) no_proxy=$(NO_PROXY_HOSTS) \
+		flutter test --coverage
 
 flutter-clean:
-	flutter clean
-	flutter pub get
-	flutter gen-l10n
+	env -u http_proxy -u https_proxy -u all_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY \
+		NO_PROXY=$(NO_PROXY_HOSTS) no_proxy=$(NO_PROXY_HOSTS) \
+		flutter clean
+	env -u http_proxy -u https_proxy -u all_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY \
+		NO_PROXY=$(NO_PROXY_HOSTS) no_proxy=$(NO_PROXY_HOSTS) \
+		flutter pub get
+	env -u http_proxy -u https_proxy -u all_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY \
+		NO_PROXY=$(NO_PROXY_HOSTS) no_proxy=$(NO_PROXY_HOSTS) \
+		flutter gen-l10n
 	rm -rf lib/generated/*
 	rm -rf android/app/src/main/java/com/mobilellm/awattackerapplier/proto/*
 
