@@ -7,7 +7,7 @@ on:
 
 env:
   PROTOC_VERSION: 34.0
-  PROTOC_PLUGIN_VERSION: 22.5.0
+  PROTOC_PLUGIN_VERSION: 25.0.0
 
 jobs:
   build:
@@ -33,7 +33,6 @@ jobs:
       
       - name: Generate Proto Files
         run: |
-          export PATH="$PATH:$HOME/.pub-cache/bin"
           mkdir -p lib/generated
           mkdir -p android/app/src/main/java/com/mobilellm/awattackerapplier/proto
           protoc --dart_out=grpc:lib/generated -Iproto proto/window_info.proto proto/accessibility.proto

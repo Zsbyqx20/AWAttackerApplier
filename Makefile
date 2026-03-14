@@ -1,8 +1,10 @@
 .PHONY: build test clean format proto cargo-build flutter-build
 
 PROTOC_VERSION ?= 34.0
-PROTOC_PLUGIN_VERSION ?= 22.5.0
+PROTOC_PLUGIN_VERSION ?= 25.0.0
 NO_PROXY_HOSTS ?= 127.0.0.1,localhost
+DART ?= /Users/zachary/flutter/bin/cache/dart-sdk/bin/dart
+DART_PROTOC_PLUGIN ?= tool/protoc-gen-dart-local
 
 # Rust/Cargo related targets
 cargo-build:
@@ -20,7 +22,7 @@ proto:
 	@echo "Using protoc $(PROTOC_VERSION) with protoc_plugin $(PROTOC_PLUGIN_VERSION)"
 	mkdir -p lib/generated
 	mkdir -p android/app/src/main/java/com/mobilellm/awattackerapplier/proto
-	protoc --dart_out=grpc:lib/generated -Iproto proto/window_info.proto proto/accessibility.proto
+	protoc --plugin=protoc-gen-dart=$(DART_PROTOC_PLUGIN) --dart_out=grpc:lib/generated -Iproto proto/window_info.proto proto/accessibility.proto
 	protoc --java_out=android/app/src/main/java -Iproto proto/window_info.proto proto/accessibility.proto
 
 flutter-build: proto
